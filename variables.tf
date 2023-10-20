@@ -12,7 +12,7 @@ variable "resource_group_name_prefix" {
 
 variable "vpc_id" {
   type        = string
-  description = "VPC ID where GraphDB will be deployed"
+  description = "Network ID where GraphDB will be deployed"
 }
 
 variable "azure_region" {
@@ -55,7 +55,7 @@ variable "allowed_inbound_cidrs_ssh" {
 }
 
 variable "network_interface_id" {
-  description = "VPC ID where GraphDB will be deployed"
+  description = "Network ID where GraphDB will be deployed"
   type        = string
 }
 
@@ -74,4 +74,9 @@ variable "image_id" {
   description = "Image ID to use with GraphDB instances"
   type        = string
   default     = null
+}
+
+variable "rg_name" {
+  description = "Resource group name."
+  type = string
 }

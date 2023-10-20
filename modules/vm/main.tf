@@ -1,41 +1,40 @@
-resource "azurerm_resource_group" "rg" {
-  location = var.azure_region
-  name     = "graphdb-rg"
+data "azurerm_resource_group" "rg" {
+  name     = var.rg_name
 }
 
 data "azurerm_subnet" "subnet" {
   name                 = "gdb-main-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
+  resource_group_name  = var.rg_name
   virtual_network_name = var.network_interface_id
-  address_prefixes     = ["10.0.1.0/24"]
   count                = length(var.graphdb_subnets)
-  id                   = var.graphdb_subnets[count.index]
 }
 
 data "azurerm_images" "graphdb" {
   tags_filter         = {} # How does this work?
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.rg_name
 }
 
 data "azurerm_subnet" "lb_subnets" {
   name                 = "gdb-lb-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
+  resource_group_name  = var.rg_name
   virtual_network_name = var.network_interface_id
-  address_prefixes     = ["10.0.1.0/24"]
   count                = length(var.lb_subnets)
-  id                   = var.lb_subnets[count.index]
+}
+
+data "azurerm_virtual_network" "vn" {
+  name                = var.network_interface_id
+  resource_group_name = var.rg_name
 }
 
 data "azurerm_ip_group" "gdb_ip_group" {
   name                = "gdb-ip-group"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.rg_name
 }
 
 data "azurerm_ip_group" "gdb_lb_ip_group" {
   name                = "gdb-ip-lb-group"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.rg_name
 }
-
 
 locals {
   subnet_cidr_blocks    = [for s in data.azurerm_ip_group.gdb_ip_group : s.cidrs]
@@ -45,20 +44,19 @@ locals {
 # Create Network Security Group and rules
 resource "azurerm_network_security_group" "graphdb" {
   name                = "${var.resource_name_prefix}-graphdb"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.azure_region
+  resource_group_name = var.rg_name
 
   security_rule {
-    name                   = "graphdb_network_lb_ingress"
-    count                  = var.allowed_inbound_cidrs != null ? 1 : 0
-    description            = "CIRDs allowed to access GraphDB."
-    priority               = 1000
-    direction              = "Inbound"
-    access                 = "Allow"
-    protocol               = "Tcp"
-    source_port_range      = "7200"
-    destination_port_range = "7200"
-    source_address_prefix  = var.allowed_inbound_cidrs
+    name                    = "graphdb_network_lb_ingress"
+    description             = "CIRDs allowed to access GraphDB."
+    priority                = 1000
+    direction               = "Inbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "7200"
+    destination_port_range  = "7200"
+    source_address_prefixes = var.allowed_inbound_cidrs
   }
   security_rule {
     name                   = "graphdb_lb_healthchecks"
@@ -97,16 +95,15 @@ resource "azurerm_network_security_group" "graphdb" {
   }
 
   security_rule {
-    count                  = var.allowed_inbound_cidrs_ssh != null ? 1 : 0
-    name                   = "graphdb_ssh_inbound"
-    description            = "Allow specified CIDRs SSH access to the GraphDB instances."
-    priority               = 1001
-    direction              = "Inbound"
-    access                 = "Allow"
-    protocol               = "Tcp"
-    source_port_range      = "7300"
-    destination_port_range = "7301"
-    source_address_prefix  = local.subnet_cidr_blocks
+    name                    = "graphdb_ssh_inbound"
+    description             = "Allow specified CIDRs SSH access to the GraphDB instances."
+    priority                = 1001
+    direction               = "Inbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "7300"
+    destination_port_range  = "7301"
+    source_address_prefixes = local.subnet_cidr_blocks
   }
 
   security_rule {
@@ -118,15 +115,15 @@ resource "azurerm_network_security_group" "graphdb" {
     protocol               = "Tcp"
     source_port_range      = "*"
     destination_port_range = "*"
-    source_address_prefix  = ["0.0.0.0/0"]
+    source_address_prefixes  = ["0.0.0.0/0"]
   }
 }
 
 # Create virtual machine
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   name                = "${var.resource_name_prefix}-graphdb"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.azure_region
+  resource_group_name = var.rg_name
   admin_username      = "graphdb"
   sku                 = var.instance_type
   network_interface {
@@ -140,5 +137,5 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     storage_account_type = "Premium_LRS"
   }
   instances       = var.node_count
-  source_image_id = var.image_id != null ? var.image_id : data.azurerm_images.graphdb[0].id
+  source_image_id = var.image_id
 }

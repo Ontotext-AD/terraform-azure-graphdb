@@ -4,6 +4,11 @@ variable "azure_region" {
   type = string
 }
 
+variable "rg_name" {
+  description = "Resource group name."
+  type = string
+}
+
 variable "prefix" {
   type        = string
   default     = "win-vm-iis"
@@ -38,7 +43,7 @@ variable "allowed_inbound_cidrs_ssh" {
 }
 
 variable "network_interface_id" {
-  description = "VPC ID where GraphDB will be deployed"
+  description = "Network ID where GraphDB will be deployed"
   type        = string
 }
 
