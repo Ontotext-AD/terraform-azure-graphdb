@@ -1,5 +1,5 @@
 data "azurerm_resource_group" "rg" {
-  name     = var.rg_name
+  name = var.rg_name
 }
 
 data "azurerm_subnet" "subnet" {
@@ -9,10 +9,10 @@ data "azurerm_subnet" "subnet" {
   count                = length(var.graphdb_subnets)
 }
 
-data "azurerm_images" "graphdb" {
-  tags_filter         = {} # How does this work?
-  resource_group_name = var.rg_name
-}
+#data "azurerm_images" "graphdb" {
+#  tags_filter         = {} # How does this work?
+#  resource_group_name = var.rg_name
+#}
 
 data "azurerm_subnet" "lb_subnets" {
   name                 = "gdb-lb-subnet"
@@ -26,19 +26,32 @@ data "azurerm_virtual_network" "vn" {
   resource_group_name = var.rg_name
 }
 
-data "azurerm_ip_group" "gdb_ip_group" {
+resource "azurerm_ip_group" "gdb_ip_group" {
+
+  location            = var.azure_region
   name                = "gdb-ip-group"
   resource_group_name = var.rg_name
+  cidrs               = [
+    "10.0.0.0/19",
+    "10.0.32.0/19",
+    "10.0.64.0/19",
+  ]
 }
 
-data "azurerm_ip_group" "gdb_lb_ip_group" {
+resource "azurerm_ip_group" "gdb_lb_ip_group" {
   name                = "gdb-ip-lb-group"
   resource_group_name = var.rg_name
+  location            = var.azure_region
+  cidrs               = [
+    "10.0.0.0/19",
+    "10.0.32.0/19",
+    "10.0.64.0/19",
+  ]
 }
 
 locals {
-  subnet_cidr_blocks    = [for s in data.azurerm_ip_group.gdb_ip_group : s.cidrs]
-  lb_subnet_cidr_blocks = [for s in data.azurerm_ip_group.gdb_lb_ip_group : s.cidrs]
+  subnet_cidr_blocks    = [for s in azurerm_ip_group.gdb_ip_group : s.cidrs]
+  lb_subnet_cidr_blocks = [for s in azurerm_ip_group.gdb_lb_ip_group : s.cidrs]
 }
 
 # Create Network Security Group and rules
@@ -107,15 +120,15 @@ resource "azurerm_network_security_group" "graphdb" {
   }
 
   security_rule {
-    name                   = "graphdb_outbound"
-    description            = "Allow GraphDB nodes to send outbound traffic"
-    priority               = 1001
-    direction              = "Outbound"
-    access                 = "Allow"
-    protocol               = "Tcp"
-    source_port_range      = "*"
-    destination_port_range = "*"
-    source_address_prefixes  = ["0.0.0.0/0"]
+    name                    = "graphdb_outbound"
+    description             = "Allow GraphDB nodes to send outbound traffic"
+    priority                = 1001
+    direction               = "Outbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "*"
+    destination_port_range  = "*"
+    source_address_prefixes = ["0.0.0.0/0"]
   }
 }
 
@@ -129,7 +142,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   network_interface {
     name = var.network_interface_id
     ip_configuration {
-      name = data.azurerm_ip_group.gdb_ip_group.name
+      name = azurerm_ip_group.gdb_ip_group.name
     }
   }
   os_disk {
