@@ -1,12 +1,12 @@
 variable "azure_region" {
   default     = "eastus"
   description = "Location of the resource group."
-  type = string
+  type        = string
 }
 
 variable "rg_name" {
   description = "Resource group name."
-  type = string
+  type        = string
 }
 
 variable "prefix" {
@@ -62,4 +62,16 @@ variable "image_id" {
   description = "Image ID to use with GraphDB instances"
   type        = string
   default     = null
+}
+
+variable "ssh_key" {
+  description = "Public key for accessing the GraphDB instances"
+  type        = string
+  default     = null
+}
+
+variable "source_ssh_blocks" {
+  description = "CIDR blocks to allow SSH traffic from."
+  type = list(string)
+  default = null
 }

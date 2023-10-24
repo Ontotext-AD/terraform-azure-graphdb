@@ -8,4 +8,6 @@ module "vm" {
   image_id             = var.image_id
   rg_name              = var.rg_name
   node_count           = var.node_count
+  ssh_key              = var.ssh_key
+  source_ssh_blocks    = var.source_ssh_blocks
 }
