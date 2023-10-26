@@ -10,8 +10,8 @@ data "azurerm_subnet" "subnet" {
 }
 
 #data "azurerm_images" "graphdb" {
-#  tags_filter         = {} # How does this work?
-#  resource_group_name = var.rg_name
+#  tags_filter         = {"GDB_Version" = "10.4.0"} # This doesn't appear to work. Debug.
+#  resource_group_name = "Packer-RG"
 #}
 
 data "azurerm_subnet" "lb_subnets" {
@@ -71,11 +71,11 @@ resource "azurerm_network_security_group" "graphdb" {
   security_rule {
     name                    = "graphdb_network_lb_ingress"
     description             = "CIRDs allowed to access GraphDB."
-    priority                = 1000
+    priority                = 950
     direction               = "Inbound"
     access                  = "Allow"
     protocol                = "Tcp"
-    source_port_range       = "7200"
+    source_port_range       = "*"
     destination_port_range  = "7200"
     source_address_prefixes = local.subnet_cidr_blocks
     destination_address_prefix = "*"
@@ -123,7 +123,7 @@ resource "azurerm_network_security_group" "graphdb" {
   security_rule {
     name                    = "graphdb_ssh_inbound"
     description             = "Allow specified CIDRs SSH access to the GraphDB instances."
-    priority                = 999 # Needs to be first priority.
+    priority                = 900 # Needs to be first priority.
     direction               = "Inbound"
     access                  = "Allow"
     protocol                = "Tcp"
