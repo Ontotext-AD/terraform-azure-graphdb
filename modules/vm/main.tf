@@ -1,6 +1,3 @@
-data "azurerm_resource_group" "rg" {
-  name = var.rg_name
-}
 
 data "azurerm_subnet" "subnet" {
   name                 = "gdb-main-subnet"
@@ -14,17 +11,6 @@ data "azurerm_subnet" "subnet" {
 #  resource_group_name = "Packer-RG"
 #}
 
-data "azurerm_subnet" "lb_subnets" {
-  name                 = "gdb-lb-subnet"
-  resource_group_name  = var.rg_name
-  virtual_network_name = var.network_interface_id
-  count                = length(var.lb_subnets)
-}
-
-data "azurerm_virtual_network" "vn" {
-  name                = var.network_interface_id
-  resource_group_name = var.rg_name
-}
 
 resource "azurerm_ip_group" "gdb_ip_group" {
 
@@ -51,11 +37,6 @@ resource "azurerm_ip_group" "gdb_lb_ip_group" {
 
 locals {
   subnet_cidr_blocks = [
-    "10.0.0.0/19",
-    "10.0.32.0/19",
-    "10.0.64.0/19",
-  ]
-  lb_subnet_cidr_blocks = [
     "10.0.0.0/19",
     "10.0.32.0/19",
     "10.0.64.0/19",
