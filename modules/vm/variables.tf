@@ -72,6 +72,6 @@ variable "ssh_key" {
 
 variable "source_ssh_blocks" {
   description = "CIDR blocks to allow SSH traffic from."
-  type = list(string)
-  default = null
+  type        = list(string)
+  default     = null
 }
