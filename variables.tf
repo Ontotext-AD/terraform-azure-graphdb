@@ -1,6 +1,17 @@
-variable "vpc_id" {
+variable "resource_name_prefix" {
+  description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
-  description = "Network ID where GraphDB will be deployed"
+}
+
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type = string
+}
+
+variable "tags" {
+  description = "Common resource tags."
+  type        = map(string)
+  default     = {}
 }
 
 variable "graphdb_subnets" {
@@ -11,11 +22,6 @@ variable "graphdb_subnets" {
 variable "lb_subnets" {
   description = "The subnets used by the load balancer. If internet-facing use the public subnets, private otherwise."
   type        = list(string)
-}
-
-variable "resource_name_prefix" {
-  description = "Resource name prefix used for tagging and naming AWS resources"
-  type        = string
 }
 
 variable "node_count" {
@@ -35,11 +41,6 @@ variable "image_id" {
   default     = null
 }
 
-variable "rg_name" {
-  description = "Resource group name."
-  type        = string
-}
-
 variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
   type        = string
@@ -50,4 +51,10 @@ variable "source_ssh_blocks" {
   description = "CIDR blocks to allow SSH traffic from."
   type        = list(string)
   default     = null
+}
+
+variable "graphdb_version" {
+  description = "GraphDB version to deploy"
+  type        = string
+  default     = "10.4.0"
 }
