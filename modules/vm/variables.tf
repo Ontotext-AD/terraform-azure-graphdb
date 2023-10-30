@@ -19,8 +19,8 @@ variable "network_interface_name" {
   type        = string
 }
 
-variable "graphdb_subnet_id" {
-  description = "Private subnet where GraphDB will be deployed"
+variable "graphdb_subnet_name" {
+  description = "Name of the subnet where GraphDB will be deployed"
   type        = string
 }
 
@@ -56,4 +56,14 @@ variable "zones" {
   description = "Availability zones"
   type        = list(number)
   default     = [1, 3]
+}
+
+variable "load_balancer_backend_address_pool_id" {
+  description = "Identifier of the load balancer backend pool for GraphDB nodes"
+  type        = string
+}
+
+variable "load_balancer_fqdn" {
+  description = "FQDN of the load balancer for GraphDB"
+  type        = string
 }

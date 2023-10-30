@@ -5,23 +5,13 @@ variable "resource_name_prefix" {
 
 variable "location" {
   description = "Azure geographical location where resources will be deployed"
-  type = string
+  type        = string
 }
 
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
   default     = {}
-}
-
-variable "graphdb_subnets" {
-  description = "Private subnets where GraphDB will be deployed"
-  type        = list(string)
-}
-
-variable "lb_subnets" {
-  description = "The subnets used by the load balancer. If internet-facing use the public subnets, private otherwise."
-  type        = list(string)
 }
 
 variable "node_count" {
