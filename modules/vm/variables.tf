@@ -1,49 +1,26 @@
-variable "azure_region" {
-  default     = "eastus"
-  description = "Location of the resource group."
-  type        = string
-}
-
-variable "rg_name" {
-  description = "Resource group name."
-  type        = string
-}
-
-variable "prefix" {
-  type        = string
-  default     = "win-vm-iis"
-  description = "Prefix of the resource name"
-}
-
-variable "graphdb_subnets" {
-  description = "Private subnets where GraphDB will be deployed"
-  type        = list(string)
-}
-
-variable "lb_subnets" {
-  description = "The subnets used by the load balancer. If internet-facing use the public subnets, private otherwise."
-  type        = list(string)
-}
-
 variable "resource_name_prefix" {
-  description = "Resource name prefix used for tagging and naming AWS resources"
+  description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
 }
 
-variable "allowed_inbound_cidrs" {
-  description = "List of CIDR blocks to permit inbound traffic from to load balancer"
-  type        = list(string)
-  default     = null
+variable "tags" {
+  description = "Common resource tags."
+  type        = map(string)
+  default     = {}
 }
 
-variable "allowed_inbound_cidrs_ssh" {
-  description = "List of CIDR blocks to give SSH access to GraphDB nodes"
-  type        = list(string)
-  default     = null
+variable "resource_group_name" {
+  description = "Name of the resource group where GraphDB will be deployed."
+  type        = string
 }
 
-variable "network_interface_id" {
-  description = "Network ID where GraphDB will be deployed"
+variable "network_interface_name" {
+  description = "Network interface where GraphDB will be deployed"
+  type        = string
+}
+
+variable "graphdb_subnet_name" {
+  description = "Name of the subnet where GraphDB will be deployed"
   type        = string
 }
 
@@ -61,7 +38,6 @@ variable "instance_type" {
 variable "image_id" {
   description = "Image ID to use with GraphDB instances"
   type        = string
-  default     = null
 }
 
 variable "ssh_key" {
@@ -74,4 +50,20 @@ variable "source_ssh_blocks" {
   description = "CIDR blocks to allow SSH traffic from."
   type        = list(string)
   default     = null
+}
+
+variable "zones" {
+  description = "Availability zones"
+  type        = list(number)
+  default     = [1, 3]
+}
+
+variable "load_balancer_backend_address_pool_id" {
+  description = "Identifier of the load balancer backend pool for GraphDB nodes"
+  type        = string
+}
+
+variable "load_balancer_fqdn" {
+  description = "FQDN of the load balancer for GraphDB"
+  type        = string
 }
