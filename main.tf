@@ -226,3 +226,14 @@ module "vm" {
   # Wait for configurations to be created in the key vault and roles to be assigned
   depends_on = [module.configuration]
 }
+
+module "backup" {
+  source = "./modules/backup"
+
+  resource_name_prefix     = var.resource_name_prefix
+  resource_group_name      = azurerm_resource_group.graphdb.name
+  account_tier             = var.account_tier
+  account_replication_type = var.account_replication_type
+  identity_name            = module.identity.identity_name
+  tags                     = local.tags
+}

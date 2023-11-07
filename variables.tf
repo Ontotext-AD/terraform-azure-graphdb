@@ -131,6 +131,19 @@ variable "custom_graphdb_vm_user_data" {
   default     = null
 }
 
+# Storage account
+
+variable "account_tier" {
+  default     = "Standard"
+  description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
+  type        = string
+}
+
+variable "account_replication_type" {
+  default     = "LRS"
+  description = "Specify the data redundancy strategy for your Azure Storage Account"
+}
+
 # Data disks
 
 variable "disk_size_gb" {
