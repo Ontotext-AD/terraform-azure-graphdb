@@ -6,6 +6,9 @@ provider "azurerm" {
     resource_group {
       prevent_deletion_if_contains_resources = true
     }
+    key_vault {
+      purge_soft_delete_on_destroy = true
+    }
   }
 }
 
@@ -28,9 +31,10 @@ resource "azurerm_resource_group" "graphdb" {
 }
 
 resource "azurerm_management_lock" "graphdb-rg-lock" {
+  count      = var.lock_resources ? 1 : 0
   name       = "${var.resource_name_prefix}-rg"
-  lock_level = "CanNotDelete"
   scope      = azurerm_resource_group.graphdb.id
+  lock_level = "CanNotDelete"
   notes      = "Prevents deleting the resource group"
 }
 
@@ -51,7 +55,7 @@ resource "azurerm_subnet" "graphdb-private" {
 
 # ------------------------------------------------------------
 
-# TODO: Could go into another module
+# TODO: Could go into another module (image)
 
 # TODO: Config + how to .. refer other account group?
 data "azurerm_resource_group" "image" {
@@ -71,6 +75,46 @@ locals {
 }
 
 # ------------------------------------------------------------
+
+module "identity" {
+  source = "./modules/identity"
+
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
+  tags = local.tags
+
+  depends_on = [azurerm_resource_group.graphdb]
+}
+
+module "vault" {
+  source = "./modules/vault"
+
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
+  tags = local.tags
+
+  depends_on = [azurerm_resource_group.graphdb]
+}
+
+module "configuration" {
+  source = "./modules/configuration"
+
+  resource_group_name = azurerm_resource_group.graphdb.name
+
+  identity_name        = module.identity.identity_name
+  graphdb_license_path = var.graphdb_license_path
+  key_vault_name       = module.vault.key_vault_name
+
+  tags = local.tags
+
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    # Wait for complete module creation
+    module.vault
+  ]
+}
 
 module "load_balancer" {
   source = "./modules/load_balancer"
@@ -93,6 +137,8 @@ module "vm" {
   graphdb_subnet_name                   = azurerm_subnet.graphdb-private.name
   load_balancer_backend_address_pool_id = module.load_balancer.load_balancer_backend_address_pool_id
   load_balancer_fqdn                    = module.load_balancer.load_balancer_fqdn
+  identity_name                         = module.identity.identity_name
+  key_vault_name                        = module.vault.key_vault_name
 
   instance_type     = var.instance_type
   image_id          = local.image_id
@@ -102,5 +148,11 @@ module "vm" {
 
   tags = local.tags
 
-  depends_on = [azurerm_resource_group.graphdb, azurerm_virtual_network.graphdb, azurerm_subnet.graphdb-private]
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    azurerm_virtual_network.graphdb,
+    azurerm_subnet.graphdb-private,
+    # Needed because the license is being created at the same time as the machines.
+    module.configuration
+  ]
 }

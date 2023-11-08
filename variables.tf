@@ -1,3 +1,5 @@
+# General configurations
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
@@ -13,6 +15,14 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "lock_resources" {
+  description = "Enables a delete lock on the resource group to prevent accidental deletions."
+  type        = bool
+  default     = true
+}
+
+#
 
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
@@ -47,4 +57,9 @@ variable "graphdb_version" {
   description = "GraphDB version to deploy"
   type        = string
   default     = "10.4.0"
+}
+
+variable "graphdb_license_path" {
+  description = "Local path to a file, containing a GraphDB Enterprise license."
+  type        = string
 }

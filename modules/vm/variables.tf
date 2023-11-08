@@ -1,3 +1,5 @@
+# Common configurations
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
@@ -13,6 +15,8 @@ variable "resource_group_name" {
   description = "Name of the resource group where GraphDB will be deployed."
   type        = string
 }
+
+#
 
 variable "network_interface_name" {
   description = "Network interface where GraphDB will be deployed"
@@ -65,5 +69,15 @@ variable "load_balancer_backend_address_pool_id" {
 
 variable "load_balancer_fqdn" {
   description = "FQDN of the load balancer for GraphDB"
+  type        = string
+}
+
+variable "identity_name" {
+  description = "Name of a user assigned identity with permissions"
+  type        = string
+}
+
+variable "key_vault_name" {
+  description = "Name of a Key Vault containing GraphDB configurations"
   type        = string
 }
