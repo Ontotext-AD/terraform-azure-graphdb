@@ -111,3 +111,15 @@ variable "custom_graphdb_vm_user_data" {
   type        = string
   default     = null
 }
+
+variable "disk_size_gb" {
+  description = "Size of the managed data disk which will be created"
+  type        = number
+  default     = 500
+}
+
+variable "data_disk_performance_tier" {
+  description = "Performance tier of the managed data disk"
+  type        = string
+  default     = "P40"
+}

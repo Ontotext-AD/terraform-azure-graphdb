@@ -93,3 +93,17 @@ variable "custom_user_data" {
   type        = string
   default     = null
 }
+
+# Managed Data Disks
+
+variable "disk_size_gb" {
+  description = "Size of the managed data disk which will be created"
+  type        = number
+  default     = null
+}
+
+variable "data_disk_performance_tier" {
+  description = "Performance tier of the managed data disk"
+  type        = string
+  default     = null
+}

@@ -15,8 +15,100 @@ done
 # Login in Azure CLI with managed identity (user or system assigned)
 az login --identity
 
-# TODO: Find/create/mount volumes
-# https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/tutorial-use-disks-cli
+# Find/create/attach volumes
+INSTANCE_HOSTNAME=\'$(hostname)\'
+SUBSCRIPTION_ID=$(az account show --query "id" --output tsv)
+RESOURSE_GROUP=$(az vmss list --query "[0].resourceGroup" --output tsv)
+VMSS_NAME=$(az vmss list --query "[0].name" --output tsv)
+INSTANCE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].instanceId" --output tsv)
+ZONE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].zones" --output tsv)
+REGION_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].location" --output tsv)
+# Do NOT change the LUN. Based on this we find and mount the disk in the VM
+LUN=2
+
+TIER=${data_disk_performance_tier}
+DISK_SIZE_GB=${disk_size_gb}
+
+# TODO Define the disk name based on the hostname ??
+diskName="Disk_$${VMSS_NAME}_$${INSTANCE_ID}"
+
+for i in $(seq 1 6); do
+# Wait for existing disks in the VMSS which are unattached
+existingUnattachedDisk=$(
+  az disk list --resource-group $RESOURSE_GROUP \
+    --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}')].{Name:name}" \
+    --output tsv
+  )
+
+  if [ -z "$${existingUnattachedDisk:-}" ]; then
+    echo 'Disk not yet available'
+    sleep 10
+  else
+    break
+  fi
+done
+
+if [ -z "$existingUnattachedDisk" ]; then
+  echo "Creating a new managed disk"
+  az disk create --resource-group $RESOURSE_GROUP --name $diskName --size-gb $DISK_SIZE_GB --location $REGION_ID --sku Premium_LRS --zone $ZONE_ID --tier $TIER
+fi
+
+# Checks if a managed disk is attached to the instance
+attachedDisk=$(az vmss list-instances --resource-group "$RESOURSE_GROUP" --name "$VMSS_NAME" --query "[?instanceId==\"$INSTANCE_ID\"].storageProfile.dataDisks[].name" --output tsv)
+
+if [ -z "$attachedDisk" ]; then
+    echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
+    # Try to attach an existing managed disk
+    availableDisks=$(az disk list --resource-group $RESOURSE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    echo "Attaching available disk $availableDisks."
+    # Set Internal Field Separator to newline to handle spaces in names
+    IFS=$'\n'
+    # Would iterate through all available disks and attempt to attach them
+    for availableDisk in $availableDisks; do
+      az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURSE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
+    done
+fi
+
+# Gets device name based on LUN
+graphdb_device=$(lsscsi --scsi --size | awk '/\[1:.*:0:2\]/ {print $7}')
+
+# Check if the device is present after attaching the disk
+if [ -b "$graphdb_device" ]; then
+    echo "Device $graphdb_device is available."
+else
+    echo "Device $graphdb_device is not available. Something went wrong."
+    exit 1
+fi
+
+# create a file system if there isn't any
+if [ "$graphdb_device: data" = "$(file -s $graphdb_device)" ]; then
+  mkfs -t ext4 $graphdb_device
+fi
+
+disk_mount_point="/var/opt/graphdb"
+mkdir -p "$disk_mount_point"
+
+# Check if the disk is already mounted
+if ! mount | grep -q "$graphdb_device"; then
+  echo "The disk at $graphdb_device is not mounted."
+
+  # Add an entry to the fstab file to automatically mount the disk
+  if ! grep -q "$graphdb_device" /etc/fstab; then
+    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >> /etc/fstab
+  fi
+
+  # Mount the disk
+  mount "$disk_mount_point"
+  echo "The disk at $graphdb_device is now mounted at $disk_mount_point."
+else
+  echo "The disk at $graphdb_device is already mounted."
+fi
+
+# Recreates folders if necessary and changes owner
+
+mkdir -p /var/opt/graphdb/node /var/opt/graphdb/cluster-proxy
+# TODO research how to avoid using chown, as it would be a slow operation if data is present.
+chown -R graphdb:graphdb /var/opt/graphdb
 
 #
 # DNS hack
