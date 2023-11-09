@@ -53,26 +53,6 @@ resource "azurerm_subnet" "graphdb-vmss" {
   address_prefixes     = var.graphdb_subnet_address_prefix
 }
 
-# ------------------------------------------------------------
-
-# TODO: Could go into another module (image)
-
-# TODO: Config + how to .. refer other account group?
-data "azurerm_resource_group" "image" {
-  name = "Packer-RG"
-}
-
-# TODO: Support for multiple architectures
-data "azurerm_shared_image_version" "graphdb" {
-  name                = "latest"
-  image_name          = "${var.graphdb_version}-x86_64"
-  gallery_name        = "GraphDB"
-  resource_group_name = data.azurerm_resource_group.image.name
-}
-
-locals {
-  image_id = var.image_id != null ? var.image_id : data.azurerm_shared_image_version.graphdb.id
-}
 
 # ------------------------------------------------------------
 
@@ -127,6 +107,13 @@ module "load_balancer" {
   depends_on = [azurerm_resource_group.graphdb, azurerm_virtual_network.graphdb]
 }
 
+module "graphdb_image" {
+  source = "./modules/image"
+
+  graphdb_version  = var.graphdb_version
+  graphdb_image_id = var.graphdb_image_id
+}
+
 module "vm" {
   source = "./modules/vm"
 
@@ -141,7 +128,7 @@ module "vm" {
   key_vault_name                        = module.vault.key_vault_name
 
   instance_type     = var.instance_type
-  image_id          = local.image_id
+  image_id          = module.graphdb_image.image_id
   node_count        = var.node_count
   ssh_key           = var.ssh_key
   source_ssh_blocks = var.source_ssh_blocks

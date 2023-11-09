@@ -26,14 +26,28 @@ variable "lock_resources" {
 
 variable "virtual_network_address_space" {
   description = "Virtual network address space CIDRs."
-  type = list(string)
-  default = ["10.0.0.0/16"]
+  type        = list(string)
+  default     = ["10.0.0.0/16"]
 }
 
 variable "graphdb_subnet_address_prefix" {
   description = "Subnet address prefix CIDRs where GraphDB VMs will reside."
   type        = list(string)
   default     = ["10.0.2.0/24"]
+}
+
+# GraphDB
+
+variable "graphdb_version" {
+  description = "GraphDB version to deploy"
+  type        = string
+  default     = "10.4.0"
+}
+
+variable "graphdb_image_id" {
+  description = "Image ID to use for running GraphDB VM instances. If left unspecified, Terraform will use the image from our public Compute Gallery."
+  type        = string
+  default     = null
 }
 
 #
@@ -49,12 +63,6 @@ variable "instance_type" {
   type        = string
 }
 
-variable "image_id" {
-  description = "Image ID to use with GraphDB instances"
-  type        = string
-  default     = null
-}
-
 variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
   type        = string
@@ -67,11 +75,6 @@ variable "source_ssh_blocks" {
   default     = null
 }
 
-variable "graphdb_version" {
-  description = "GraphDB version to deploy"
-  type        = string
-  default     = "10.4.0"
-}
 
 variable "graphdb_license_path" {
   description = "Local path to a file, containing a GraphDB Enterprise license."
