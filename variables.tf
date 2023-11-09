@@ -10,6 +10,12 @@ variable "location" {
   type        = string
 }
 
+variable "zones" {
+  description = "Availability zones to use for resource deployment and HA"
+  type        = list(number)
+  default     = [1, 2, 3]
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)

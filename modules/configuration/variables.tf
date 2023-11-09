@@ -1,3 +1,5 @@
+# General configurations
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
@@ -9,6 +11,8 @@ variable "resource_group_name" {
   type        = string
 }
 
+# Dependencies
+
 variable "identity_name" {
   description = "Name of a user assigned identity for assigning permissions"
   type        = string
@@ -18,6 +22,8 @@ variable "key_vault_name" {
   description = "Name of a Key Vault containing GraphDB configurations"
   type        = string
 }
+
+# GraphDB configurations
 
 variable "graphdb_license_path" {
   description = "Local path to a file, containing a GraphDB Enterprise license."

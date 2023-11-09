@@ -1,6 +1,14 @@
+# General configurations
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
+}
+
+variable "zones" {
+  description = "Availability zones"
+  type        = list(number)
+  default     = [1, 2, 3]
 }
 
 variable "tags" {
@@ -14,11 +22,7 @@ variable "resource_group_name" {
   type        = string
 }
 
-variable "zones" {
-  description = "Availability zones"
-  type        = list(number)
-  default     = [1, 2, 3]
-}
+# Load balancer specific configurations
 
 variable "backend_port" {
   description = "Backend port for the load balancer rules"

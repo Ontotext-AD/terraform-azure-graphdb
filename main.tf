@@ -104,6 +104,7 @@ module "load_balancer" {
 
   resource_name_prefix = var.resource_name_prefix
   resource_group_name  = azurerm_resource_group.graphdb.name
+  zones                = var.zones
 
   tags = local.tags
 
@@ -125,6 +126,7 @@ module "vm" {
   resource_name_prefix   = var.resource_name_prefix
   resource_group_name    = azurerm_resource_group.graphdb.name
   network_interface_name = azurerm_virtual_network.graphdb.name
+  zones                  = var.zones
 
   graphdb_subnet_name                   = azurerm_subnet.graphdb-vmss.name
   load_balancer_backend_address_pool_id = module.load_balancer.load_balancer_backend_address_pool_id
