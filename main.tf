@@ -22,7 +22,7 @@ locals {
 
 # ------------------------------------------------------------
 
-# TODO: To be moved in another module/example module + configurations
+# TODO: To be moved in another module
 
 resource "azurerm_resource_group" "graphdb" {
   name     = var.resource_name_prefix
@@ -42,15 +42,15 @@ resource "azurerm_virtual_network" "graphdb" {
   name                = var.resource_name_prefix
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = azurerm_resource_group.graphdb.location
-  address_space       = ["10.0.0.0/16"]
+  address_space       = var.virtual_network_address_space
   tags                = local.tags
 }
 
-resource "azurerm_subnet" "graphdb-private" {
-  name                 = "${var.resource_name_prefix}-private"
+resource "azurerm_subnet" "graphdb-vmss" {
+  name                 = "${var.resource_name_prefix}-vmss"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
-  address_prefixes     = ["10.0.2.0/24"]
+  address_prefixes     = var.graphdb_subnet_address_prefix
 }
 
 # ------------------------------------------------------------
@@ -134,7 +134,7 @@ module "vm" {
   resource_group_name    = azurerm_resource_group.graphdb.name
   network_interface_name = azurerm_virtual_network.graphdb.name
 
-  graphdb_subnet_name                   = azurerm_subnet.graphdb-private.name
+  graphdb_subnet_name                   = azurerm_subnet.graphdb-vmss.name
   load_balancer_backend_address_pool_id = module.load_balancer.load_balancer_backend_address_pool_id
   load_balancer_fqdn                    = module.load_balancer.load_balancer_fqdn
   identity_name                         = module.identity.identity_name
@@ -151,7 +151,7 @@ module "vm" {
   depends_on = [
     azurerm_resource_group.graphdb,
     azurerm_virtual_network.graphdb,
-    azurerm_subnet.graphdb-private,
+    azurerm_subnet.graphdb-vmss,
     # Needed because the license is being created at the same time as the machines.
     module.configuration
   ]

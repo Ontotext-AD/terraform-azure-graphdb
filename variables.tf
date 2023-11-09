@@ -22,6 +22,20 @@ variable "lock_resources" {
   default     = true
 }
 
+# Networking
+
+variable "virtual_network_address_space" {
+  description = "Virtual network address space CIDRs."
+  type = list(string)
+  default = ["10.0.0.0/16"]
+}
+
+variable "graphdb_subnet_address_prefix" {
+  description = "Subnet address prefix CIDRs where GraphDB VMs will reside."
+  type        = list(string)
+  default     = ["10.0.2.0/24"]
+}
+
 #
 
 variable "node_count" {
