@@ -26,7 +26,7 @@ resource "azurerm_public_ip" "graphdb-load-balancer" {
   sku               = "Standard"
   allocation_method = "Static"
   zones             = var.zones
-  # TODO: Should be provided
+  # TODO: Should be provided and if not, this to be the default
   domain_name_label = "${var.resource_name_prefix}-${random_string.fqdn.result}"
 
   tags = var.tags
@@ -70,7 +70,7 @@ resource "azurerm_lb_rule" "graphdb" {
   probe_id                 = azurerm_lb_probe.graphdb.id
   backend_address_pool_ids = [azurerm_lb_backend_address_pool.graphdb.id]
 
-  name                           = "http"
+  name                           = "http-rule"
   protocol                       = "Tcp"
   frontend_port                  = 80
   backend_port                   = var.backend_port

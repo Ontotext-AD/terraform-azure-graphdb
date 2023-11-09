@@ -8,6 +8,11 @@ data "azurerm_subnet" "graphdb" {
   virtual_network_name = var.network_interface_name
 }
 
+data "azurerm_user_assigned_identity" "graphdb-instances" {
+  name                = var.identity_name
+  resource_group_name = var.resource_group_name
+}
+
 locals {
   resource_group = data.azurerm_resource_group.graphdb.name
   location       = data.azurerm_resource_group.graphdb.location
@@ -19,69 +24,55 @@ locals {
 # TODO: Move out of here to a sg module ?
 # Create Network Security Group and rules
 resource "azurerm_network_security_group" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "${var.resource_name_prefix}-nic"
   resource_group_name = local.resource_group
   location            = local.location
 
-  security_rule {
-    name                       = "graphdb_internal_http"
-    description                = "Allow GraphDB proxies and nodes to communicate (HTTP)."
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "7200"
-    source_address_prefixes    = [local.subnet_cidr]
-    destination_address_prefix = local.subnet_cidr
-  }
-
-  security_rule {
-    name                       = "graphdb_internal_raft"
-    description                = "Allow GraphDB proxies and nodes to communicate (Raft)."
-    priority                   = 1003
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "7300"
-    source_address_prefixes    = [local.subnet_cidr]
-    destination_address_prefix = local.subnet_cidr
-  }
-
-  security_rule {
-    name                       = "graphdb_ssh_inbound"
-    description                = "Allow specified CIDRs SSH access to the GraphDB instances."
-    priority                   = 900 # Needs to be first priority.
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = 22
-    source_address_prefixes    = var.source_ssh_blocks
-    destination_address_prefix = local.subnet_cidr
-  }
-
-  security_rule {
-    name                       = "graphdb_outbound"
-    description                = "Allow GraphDB nodes to send outbound traffic"
-    priority                   = 1000
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefixes    = [local.subnet_cidr]
-    destination_address_prefix = "0.0.0.0/0"
-  }
-
   tags = var.tags
+}
+
+# TODO: This won't matter when we remove the public IPs of the machines. We'd have to use Bastion
+resource "azurerm_network_security_rule" "graphdb-inbound-ssh" {
+  count = var.source_ssh_blocks != null ? 1 : 0
+
+  resource_group_name         = local.resource_group
+  network_security_group_name = azurerm_network_security_group.graphdb.name
+
+  name                       = "graphdb_ssh_inbound"
+  description                = "Allow specified CIDRs SSH access to the GraphDB instances."
+  priority                   = 900
+  direction                  = "Inbound"
+  access                     = "Allow"
+  protocol                   = "Tcp"
+  source_port_range          = "*"
+  destination_port_range     = 22
+  source_address_prefixes    = var.source_ssh_blocks
+  destination_address_prefix = local.subnet_cidr
+}
+
+# TODO: probably not the place for this to be here.. could create the NSG outside and pass it here and to the lb module?
+# TODO: We need better segmentation of NSGs, traffic should be limited to the LB only
+resource "azurerm_network_security_rule" "graphdb-proxies-inbound" {
+  resource_group_name         = local.resource_group
+  network_security_group_name = azurerm_network_security_group.graphdb.name
+
+  name                       = "graphdb_proxies_inbound"
+  description                = "Allow internet traffic to reach the GraphDB proxies"
+  priority                   = 1000
+  direction                  = "Inbound"
+  access                     = "Allow"
+  protocol                   = "Tcp"
+  source_port_range          = "*"
+  destination_port_range     = "7201"
+  source_address_prefixes    = ["0.0.0.0/0"]
+  destination_address_prefix = local.subnet_cidr
 }
 
 locals {
   # TODO: Add support for user provided one?
   user_data_script = templatefile("${path.module}/templates/entrypoint.sh.tpl", {
     load_balancer_fqdn : var.load_balancer_fqdn
+    key_vault_name : var.key_vault_name
   })
 }
 
@@ -94,6 +85,11 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   source_image_id = var.image_id
   user_data       = base64encode(local.user_data_script)
 
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [data.azurerm_user_assigned_identity.graphdb-instances.id]
+  }
+
   sku          = var.instance_type
   instances    = var.node_count
   zones        = var.zones
@@ -104,12 +100,12 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   admin_username       = "graphdb"
 
   network_interface {
-    name                      = "${var.resource_name_prefix}-profile"
+    name                      = "${var.resource_name_prefix}-vmss-nic"
     primary                   = true
     network_security_group_id = azurerm_network_security_group.graphdb.id
 
     ip_configuration {
-      name      = "IPConfiguration"
+      name      = "${var.resource_name_prefix}-ip-config"
       primary   = true
       subnet_id = local.subnet_id
 
@@ -123,9 +119,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   os_disk {
-    # TODO: size? caching?
-    caching              = "None"
-    storage_account_type = "Premium_LRS"
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
   }
 
   admin_ssh_key {

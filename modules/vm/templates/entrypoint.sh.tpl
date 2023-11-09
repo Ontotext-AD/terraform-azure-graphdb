@@ -11,6 +11,9 @@ until ping -c 1 google.com &> /dev/null; do
   sleep 5
 done
 
+# Login in Azure CLI with managed identity (user or system assigned)
+az login --identity
+
 # TODO: Find/create/mount volumes
 # https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/tutorial-use-disks-cli
 
@@ -24,6 +27,9 @@ node_dns=$(hostname)
 #
 # GraphDB configuration overrides
 #
+
+# Get the license
+az keyvault secret download --vault-name ${key_vault_name} --name graphdb-license --file /etc/graphdb/graphdb.license --encoding base64
 
 # TODO: Should come from app config or be randomly generated
 graphdb_cluster_token="xxxxxxxxxxxx"
