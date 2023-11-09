@@ -53,9 +53,9 @@ resource "azurerm_subnet" "graphdb-vmss" {
   address_prefixes     = var.graphdb_subnet_address_prefix
 }
 
-
 # ------------------------------------------------------------
 
+# Creates a user assigned identity which will be provided to GraphDB VMs.
 module "identity" {
   source = "./modules/identity"
 
@@ -67,6 +67,7 @@ module "identity" {
   depends_on = [azurerm_resource_group.graphdb]
 }
 
+# Creates Key Vault for secure storage of GraphDB configurations and secrets
 module "vault" {
   source = "./modules/vault"
 
@@ -78,6 +79,7 @@ module "vault" {
   depends_on = [azurerm_resource_group.graphdb]
 }
 
+# Managed GraphDB configurations in the Key Vault
 module "configuration" {
   source = "./modules/configuration"
 
@@ -96,6 +98,7 @@ module "configuration" {
   ]
 }
 
+# Creates a public load balancer for forwarding internet traffic to the GraphDB proxies
 module "load_balancer" {
   source = "./modules/load_balancer"
 
@@ -107,6 +110,7 @@ module "load_balancer" {
   depends_on = [azurerm_resource_group.graphdb, azurerm_virtual_network.graphdb]
 }
 
+# Module for resolving the GraphDB shared image ID
 module "graphdb_image" {
   source = "./modules/image"
 
@@ -114,6 +118,7 @@ module "graphdb_image" {
   graphdb_image_id = var.graphdb_image_id
 }
 
+# Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "vm" {
   source = "./modules/vm"
 
@@ -132,6 +137,8 @@ module "vm" {
   node_count        = var.node_count
   ssh_key           = var.ssh_key
   source_ssh_blocks = var.source_ssh_blocks
+
+  custom_user_data = var.custom_graphdb_vm_user_data
 
   tags = local.tags
 

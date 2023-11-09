@@ -50,7 +50,14 @@ variable "graphdb_image_id" {
   default     = null
 }
 
-#
+# GraphDB configurations
+
+variable "graphdb_license_path" {
+  description = "Local path to a file, containing a GraphDB Enterprise license."
+  type        = string
+}
+
+# GraphDB VM
 
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
@@ -75,8 +82,8 @@ variable "source_ssh_blocks" {
   default     = null
 }
 
-
-variable "graphdb_license_path" {
-  description = "Local path to a file, containing a GraphDB Enterprise license."
+variable "custom_graphdb_vm_user_data" {
+  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
+  default     = null
 }

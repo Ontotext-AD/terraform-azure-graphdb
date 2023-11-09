@@ -81,3 +81,9 @@ variable "key_vault_name" {
   description = "Name of a Key Vault containing GraphDB configurations"
   type        = string
 }
+
+variable "custom_user_data" {
+  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
+  type        = string
+  default     = null
+}
