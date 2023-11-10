@@ -5,6 +5,12 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "zones" {
+  description = "Availability zones"
+  type        = list(number)
+  default     = [1, 2, 3]
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
@@ -16,7 +22,7 @@ variable "resource_group_name" {
   type        = string
 }
 
-#
+# Networking
 
 variable "network_interface_name" {
   description = "Network interface where GraphDB will be deployed"
@@ -27,6 +33,32 @@ variable "graphdb_subnet_name" {
   description = "Name of the subnet where GraphDB will be deployed"
   type        = string
 }
+
+# Security
+
+variable "identity_name" {
+  description = "Name of a user assigned identity with permissions"
+  type        = string
+}
+
+variable "key_vault_name" {
+  description = "Name of a Key Vault containing GraphDB configurations"
+  type        = string
+}
+
+# Load balancer
+
+variable "load_balancer_backend_address_pool_id" {
+  description = "Identifier of the load balancer backend pool for GraphDB nodes"
+  type        = string
+}
+
+variable "load_balancer_fqdn" {
+  description = "FQDN of the load balancer for GraphDB"
+  type        = string
+}
+
+# GraphDB VM
 
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
@@ -56,28 +88,8 @@ variable "source_ssh_blocks" {
   default     = null
 }
 
-variable "zones" {
-  description = "Availability zones"
-  type        = list(number)
-  default     = [1, 3]
-}
-
-variable "load_balancer_backend_address_pool_id" {
-  description = "Identifier of the load balancer backend pool for GraphDB nodes"
+variable "custom_user_data" {
+  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
-}
-
-variable "load_balancer_fqdn" {
-  description = "FQDN of the load balancer for GraphDB"
-  type        = string
-}
-
-variable "identity_name" {
-  description = "Name of a user assigned identity with permissions"
-  type        = string
-}
-
-variable "key_vault_name" {
-  description = "Name of a Key Vault containing GraphDB configurations"
-  type        = string
+  default     = null
 }

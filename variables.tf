@@ -10,6 +10,12 @@ variable "location" {
   type        = string
 }
 
+variable "zones" {
+  description = "Availability zones to use for resource deployment and HA"
+  type        = list(number)
+  default     = [1, 2, 3]
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
@@ -22,7 +28,42 @@ variable "lock_resources" {
   default     = true
 }
 
-#
+# Networking
+
+variable "virtual_network_address_space" {
+  description = "Virtual network address space CIDRs."
+  type        = list(string)
+  default     = ["10.0.0.0/16"]
+}
+
+variable "graphdb_subnet_address_prefix" {
+  description = "Subnet address prefix CIDRs where GraphDB VMs will reside."
+  type        = list(string)
+  default     = ["10.0.2.0/24"]
+}
+
+# GraphDB
+
+variable "graphdb_version" {
+  description = "GraphDB version to deploy"
+  type        = string
+  default     = "10.4.0"
+}
+
+variable "graphdb_image_id" {
+  description = "Image ID to use for running GraphDB VM instances. If left unspecified, Terraform will use the image from our public Compute Gallery."
+  type        = string
+  default     = null
+}
+
+# GraphDB configurations
+
+variable "graphdb_license_path" {
+  description = "Local path to a file, containing a GraphDB Enterprise license."
+  type        = string
+}
+
+# GraphDB VM
 
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
@@ -33,12 +74,6 @@ variable "node_count" {
 variable "instance_type" {
   description = "Azure instance type"
   type        = string
-}
-
-variable "image_id" {
-  description = "Image ID to use with GraphDB instances"
-  type        = string
-  default     = null
 }
 
 variable "ssh_key" {
@@ -53,13 +88,8 @@ variable "source_ssh_blocks" {
   default     = null
 }
 
-variable "graphdb_version" {
-  description = "GraphDB version to deploy"
+variable "custom_graphdb_vm_user_data" {
+  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
-  default     = "10.4.0"
-}
-
-variable "graphdb_license_path" {
-  description = "Local path to a file, containing a GraphDB Enterprise license."
-  type        = string
+  default     = null
 }

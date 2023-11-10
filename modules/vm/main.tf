@@ -69,8 +69,7 @@ resource "azurerm_network_security_rule" "graphdb-proxies-inbound" {
 }
 
 locals {
-  # TODO: Add support for user provided one?
-  user_data_script = templatefile("${path.module}/templates/entrypoint.sh.tpl", {
+  user_data_script = var.custom_user_data != null ? var.custom_user_data : templatefile("${path.module}/templates/entrypoint.sh.tpl", {
     load_balancer_fqdn : var.load_balancer_fqdn
     key_vault_name : var.key_vault_name
   })
