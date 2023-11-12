@@ -47,7 +47,7 @@ variable "graphdb_subnet_address_prefix" {
 variable "graphdb_version" {
   description = "GraphDB version to deploy"
   type        = string
-  default     = "10.4.0"
+  default     = "10.4.1"
 }
 
 variable "graphdb_image_id" {
@@ -61,6 +61,24 @@ variable "graphdb_image_id" {
 variable "graphdb_license_path" {
   description = "Local path to a file, containing a GraphDB Enterprise license."
   type        = string
+}
+
+variable "graphdb_cluster_token" {
+  description = "Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared."
+  type        = string
+  default     = null
+}
+
+variable "graphdb_properties_path" {
+  description = "Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM."
+  type        = string
+  default     = null
+}
+
+variable "graphdb_java_options" {
+  description = "GraphDB options to pass to GraphDB with GRAPHDB_JAVA_OPTS environment variable."
+  type        = string
+  default     = null
 }
 
 # GraphDB VM
