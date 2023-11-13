@@ -123,3 +123,15 @@ variable "data_disk_performance_tier" {
   type        = string
   default     = "P40"
 }
+
+variable "deploy_bastion" {
+  description = "Deploy bastion module"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_address_prefix" {
+  description = "Bastion subnet address prefix"
+  type        = list(string)
+  default     = ["10.0.3.0/27"]
+}

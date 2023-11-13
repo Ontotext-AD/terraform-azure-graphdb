@@ -122,6 +122,24 @@ module "graphdb_image" {
   graphdb_image_id = var.graphdb_image_id
 }
 
+module "bastion" {
+  count = var.deploy_bastion ? 1 : 0
+
+  source = "./modules/bastion"
+
+  resource_group_name           = azurerm_resource_group.graphdb.name
+  virtual_network_name          = azurerm_virtual_network.graphdb.name
+  resource_name_prefix          = var.resource_name_prefix
+  bastion_subnet_address_prefix = var.bastion_subnet_address_prefix
+
+  tags = local.tags
+
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    azurerm_virtual_network.graphdb
+  ]
+}
+
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "vm" {
   source = "./modules/vm"
