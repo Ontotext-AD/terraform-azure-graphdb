@@ -84,10 +84,13 @@ module "configuration" {
   source = "./modules/configuration"
 
   resource_group_name = azurerm_resource_group.graphdb.name
+  identity_name       = module.identity.identity_name
+  key_vault_name      = module.vault.key_vault_name
 
-  identity_name        = module.identity.identity_name
-  graphdb_license_path = var.graphdb_license_path
-  key_vault_name       = module.vault.key_vault_name
+  graphdb_license_path    = var.graphdb_license_path
+  graphdb_cluster_token   = var.graphdb_cluster_token
+  graphdb_properties_path = var.graphdb_properties_path
+  graphdb_java_options    = var.graphdb_java_options
 
   tags = local.tags
 
