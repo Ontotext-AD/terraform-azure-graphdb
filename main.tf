@@ -316,3 +316,35 @@ module "vm" {
   # Wait for configurations to be created in the key vault and roles to be assigned
   depends_on = [module.configuration, module.roles]
 }
+
+
+module "dns" {
+  source = "./modules/dns"
+
+  resource_name_prefix = var.resource_name_prefix
+  identity_name        = module.identity.identity_name
+
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    azurerm_virtual_network.graphdb,
+    azurerm_subnet.graphdb-vmss,
+    module.configuration,
+    module.identity
+  ]
+}
+
+
+module "dns" {
+  source = "./modules/dns"
+
+  resource_name_prefix = var.resource_name_prefix
+  identity_name        = module.identity.identity_name
+
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    azurerm_virtual_network.graphdb,
+    azurerm_subnet.graphdb-vmss,
+    module.configuration,
+    module.identity
+  ]
+}

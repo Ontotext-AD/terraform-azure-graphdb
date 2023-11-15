@@ -35,3 +35,9 @@ terraform.rc
 
 # IDEs
 .idea/
+
+#Certificates
+cerificate.*
+privatekey.pem
+certificate.pem
+certificate.p12
