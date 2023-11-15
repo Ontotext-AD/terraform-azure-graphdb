@@ -183,7 +183,42 @@ if [[ $secrets == *"graphdb-java-options"* ]]; then
   )
 fi
 
-# TODO: Backup cron
+# Configure the GraphDB backup cron job
+
+cat <<-EOF > /usr/bin/graphdb_backup
+#!/bin/bash
+
+set -euxo pipefail
+
+az login --identity
+
+BACKUP_NAME="\$(date +'%Y-%m-%d_%H-%M-%S').tar"
+TEMP_BACKUP_DIR="/var/opt/graphdb/"
+RESOURCE_GROUP="\$(az vmss list --query "[0].resourceGroup" --output tsv)"
+STORAGE_ACCOUNT="\$(az storage account list --resource-group "\$RESOURCE_GROUP" --query "[].name" --output tsv)"
+CONTAINER_NAME="\$(az storage container list --account-name "\$STORAGE_ACCOUNT" --query "[].name" --output tsv --auth-mode login)"
+BLOB_URL="\$(az storage blob url --account-name "\$STORAGE_ACCOUNT" --container-name "\$CONTAINER_NAME" --name "\$BACKUP_NAME" --auth-mode login --output tsv)"
+
+function trigger_backup {
+  curl -X POST --output "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}" -H 'Content-Type: application/json' 'http://localhost:7200/rest/recovery/backup'
+  upload_to_azure_storage
+}
+
+function upload_to_azure_storage {
+  az storage blob upload --file "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}" --blob-url "\$BLOB_URL" --auth-mode login --validate-content
+}
+
+trigger_backup
+
+# Delete local backup file after upload
+rm "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}"
+
+echo "Backup and upload completed successfully."
+
+EOF
+
+chmod +x /usr/bin/graphdb_backup
+echo "${backup_schedule} graphdb /usr/bin/graphdb_backup" > /etc/cron.d/graphdb_backup
 
 # TODO: Monitoring/instrumenting
 

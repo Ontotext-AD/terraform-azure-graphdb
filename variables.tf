@@ -133,15 +133,23 @@ variable "custom_graphdb_vm_user_data" {
 
 # Storage account
 
-variable "account_tier" {
+variable "storage_account_tier" {
   default     = "Standard"
   description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
   type        = string
 }
 
-variable "account_replication_type" {
+variable "storage_account_replication_type" {
   default     = "LRS"
   description = "Specify the data redundancy strategy for your Azure Storage Account"
+}
+
+# Backup configurations
+
+variable "backup_schedule" {
+  description = "Cron expression for the backup job."
+  type        = string
+  default     = "0 0 * * *"
 }
 
 # Data disks

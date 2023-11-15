@@ -131,3 +131,8 @@ variable "disk_mbps_read_write" {
   type        = number
   default     = null
 }
+
+variable "backup_schedule" {
+  description = "Cron expression for the backup job."
+  type        = string
+}

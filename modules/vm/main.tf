@@ -48,10 +48,11 @@ locals {
     disk_iops_read_write : var.disk_iops_read_write
     disk_mbps_read_write : var.disk_mbps_read_write
     disk_size_gb : var.disk_size_gb
+    backup_schedule : var.backup_schedule
   })
 }
 
-# Create virtual machine
+# Create virtual machine scale set
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   name                = var.resource_name_prefix
   resource_group_name = var.resource_group_name
@@ -133,3 +134,29 @@ resource "azurerm_role_assignment" "rg-contributor-role" {
   role_definition_name = "ManagedDiskManager"
   depends_on           = [azurerm_role_definition.managed_disk_manager]
 }
+
+resource "azurerm_role_definition" "backup_role" {
+  name        = "ReadOnlyVMSSStorageRole"
+  scope       = var.resource_group_id
+  description = "This is a custom role created via Terraform required for creating backups in GraphDB"
+
+  permissions {
+    actions = [
+      "Microsoft.Compute/virtualMachineScaleSets/read",
+      "Microsoft.Storage/storageAccounts/read"
+    ]
+    not_actions = []
+  }
+
+  assignable_scopes = [
+    var.resource_group_id
+  ]
+}
+
+resource "azurerm_role_assignment" "rg-reader-role" {
+  principal_id         = var.identity_principal_id
+  scope                = var.resource_group_id
+  role_definition_name = "ReadOnlyVMSSStorageRole"
+  depends_on           = [azurerm_role_definition.backup_role]
+}
+
