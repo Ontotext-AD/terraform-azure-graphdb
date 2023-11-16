@@ -1,3 +1,7 @@
+data "azurerm_resource_group" "graphdb" {
+  name = var.resource_group_name
+}
+
 data "azurerm_user_assigned_identity" "graphdb-instances" {
   name                = var.identity_name
   resource_group_name = var.resource_group_name
@@ -75,4 +79,11 @@ resource "azurerm_role_assignment" "graphdb-license-secret-reader" {
   principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
   scope                = data.azurerm_key_vault.graphdb.id
   role_definition_name = "Key Vault Secrets User"
+}
+
+# TODO should be moved to vm module
+resource "azurerm_role_assignment" "rg-contributor-role" {
+  principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
+  scope                = data.azurerm_resource_group.graphdb.id
+  role_definition_name = "Contributor"
 }

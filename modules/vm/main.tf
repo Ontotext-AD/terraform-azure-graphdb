@@ -72,6 +72,8 @@ locals {
   user_data_script = var.custom_user_data != null ? var.custom_user_data : templatefile("${path.module}/templates/entrypoint.sh.tpl", {
     load_balancer_fqdn : var.load_balancer_fqdn
     key_vault_name : var.key_vault_name
+    data_disk_performance_tier : var.data_disk_performance_tier
+    disk_size_gb : var.disk_size_gb
   })
 }
 

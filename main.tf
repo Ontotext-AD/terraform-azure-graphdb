@@ -137,6 +137,9 @@ module "vm" {
   identity_name                         = module.identity.identity_name
   key_vault_name                        = module.vault.key_vault_name
 
+  data_disk_performance_tier = var.data_disk_performance_tier
+  disk_size_gb               = var.disk_size_gb
+
   instance_type     = var.instance_type
   image_id          = module.graphdb_image.image_id
   node_count        = var.node_count
