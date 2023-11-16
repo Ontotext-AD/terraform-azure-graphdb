@@ -161,5 +161,5 @@ resource "azurerm_role_assignment" "rg-contributor-role" {
   principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
   scope                = data.azurerm_resource_group.graphdb.id
   role_definition_name = "ManagedDiskManager"
-  depends_on = [azurerm_role_definition.managed_disk_manager]
+  depends_on           = [azurerm_role_definition.managed_disk_manager]
 }
