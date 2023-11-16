@@ -131,3 +131,35 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
 
   tags = var.tags
 }
+
+resource "azurerm_role_definition" "managed_disk_manager" {
+  name        = "ManagedDiskManager"
+  scope       = data.azurerm_resource_group.graphdb.id
+  description = "This is a custom role created via Terraform required for creating data disks for GraphDB"
+
+  permissions {
+    actions = [
+      "Microsoft.Compute/disks/read",
+      "Microsoft.Compute/disks/write",
+      "Microsoft.Compute/virtualMachineScaleSets/read",
+      "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/write",
+      "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/read",
+      "Microsoft.Network/virtualNetworks/subnets/join/action",
+      "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+      "Microsoft.Network/networkSecurityGroups/join/action"
+    ]
+    not_actions = []
+  }
+
+  assignable_scopes = [
+    data.azurerm_resource_group.graphdb.id
+  ]
+  depends_on = [data.azurerm_resource_group.graphdb]
+}
+
+resource "azurerm_role_assignment" "rg-contributor-role" {
+  principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
+  scope                = data.azurerm_resource_group.graphdb.id
+  role_definition_name = "ManagedDiskManager"
+  depends_on = [azurerm_role_definition.managed_disk_manager]
+}
