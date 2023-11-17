@@ -36,10 +36,29 @@ variable "virtual_network_address_space" {
   default     = ["10.0.0.0/16"]
 }
 
+variable "app_gateway_subnet_address_prefix" {
+  description = "Subnet address prefix CIDRs where the application gateway will reside."
+  type        = list(string)
+  default     = ["10.0.1.0/24"]
+}
+
 variable "graphdb_subnet_address_prefix" {
   description = "Subnet address prefix CIDRs where GraphDB VMs will reside."
   type        = list(string)
   default     = ["10.0.2.0/24"]
+}
+
+# TLS
+
+variable "tls_certificate_path" {
+  description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB."
+  type        = string
+}
+
+variable "tls_certificate_password" {
+  description = "TLS certificate password for password protected certificates."
+  type        = string
+  default     = null
 }
 
 # GraphDB

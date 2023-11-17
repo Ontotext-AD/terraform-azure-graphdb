@@ -46,6 +46,13 @@ resource "azurerm_virtual_network" "graphdb" {
   tags                = local.tags
 }
 
+resource "azurerm_subnet" "graphdb-gateway" {
+  name                 = "${var.resource_name_prefix}-gateway"
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  virtual_network_name = azurerm_virtual_network.graphdb.name
+  address_prefixes     = var.app_gateway_subnet_address_prefix
+}
+
 resource "azurerm_subnet" "graphdb-vmss" {
   name                 = "${var.resource_name_prefix}-vmss"
   resource_group_name  = azurerm_resource_group.graphdb.name
@@ -54,6 +61,19 @@ resource "azurerm_subnet" "graphdb-vmss" {
 }
 
 # ------------------------------------------------------------
+
+# Creates a public IP address with assigned FQDN from the regional Azure DNS
+module "address" {
+  source = "./modules/address"
+
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  zones                = var.zones
+
+  tags = local.tags
+
+  depends_on = [azurerm_resource_group.graphdb]
+}
 
 # Creates a user assigned identity which will be provided to GraphDB VMs.
 module "identity" {
@@ -101,17 +121,45 @@ module "configuration" {
   ]
 }
 
-# Creates a public load balancer for forwarding internet traffic to the GraphDB proxies
-module "load_balancer" {
-  source = "./modules/load_balancer"
+# Creates a TLS certificate secret in the Key Vault and related identity
+module "tls" {
+  source = "./modules/tls"
 
   resource_name_prefix = var.resource_name_prefix
   resource_group_name  = azurerm_resource_group.graphdb.name
-  zones                = var.zones
+
+  key_vault_name           = module.vault.key_vault_name
+  tls_certificate          = filebase64(var.tls_certificate_path)
+  tls_certificate_password = var.tls_certificate_password
 
   tags = local.tags
 
-  depends_on = [azurerm_resource_group.graphdb, azurerm_virtual_network.graphdb]
+  depends_on = [azurerm_resource_group.graphdb, module.identity, module.vault]
+}
+
+# Creates a public application gateway for forwarding internet traffic to the GraphDB proxies
+module "application_gateway" {
+  source = "./modules/gateway"
+
+  resource_name_prefix   = var.resource_name_prefix
+  resource_group_name    = azurerm_resource_group.graphdb.name
+  network_interface_name = azurerm_virtual_network.graphdb.name
+
+  gateway_subnet_name = azurerm_subnet.graphdb-gateway.name
+
+  gateway_public_ip_name            = module.address.public_ip_address_name
+  gateway_identity_name             = module.tls.tls_identity_name
+  gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
+
+  tags = local.tags
+
+  depends_on = [
+    azurerm_resource_group.graphdb,
+    azurerm_virtual_network.graphdb,
+    azurerm_subnet.graphdb-vmss,
+    module.address,
+    module.tls
+  ]
 }
 
 # Module for resolving the GraphDB shared image ID
@@ -122,6 +170,7 @@ module "graphdb_image" {
   graphdb_image_id = var.graphdb_image_id
 }
 
+# Creates a bastion host for secure remote connections
 module "bastion" {
   count = var.deploy_bastion ? 1 : 0
 
@@ -149,11 +198,12 @@ module "vm" {
   network_interface_name = azurerm_virtual_network.graphdb.name
   zones                  = var.zones
 
-  graphdb_subnet_name                   = azurerm_subnet.graphdb-vmss.name
-  load_balancer_backend_address_pool_id = module.load_balancer.load_balancer_backend_address_pool_id
-  load_balancer_fqdn                    = module.load_balancer.load_balancer_fqdn
-  identity_name                         = module.identity.identity_name
-  key_vault_name                        = module.vault.key_vault_name
+  graphdb_subnet_name                          = azurerm_subnet.graphdb-vmss.name
+  application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
+  identity_name                                = module.identity.identity_name
+  key_vault_name                               = module.vault.key_vault_name
+
+  graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
 
   data_disk_performance_tier = var.data_disk_performance_tier
   disk_size_gb               = var.disk_size_gb

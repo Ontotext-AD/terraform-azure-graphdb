@@ -140,8 +140,8 @@ EOF
 cat << EOF > /etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
-graphdb.external-url=http://${load_balancer_fqdn}
-graphdb.vhosts=http://${load_balancer_fqdn},http://$${node_dns}:7201
+graphdb.external-url=https://${graphdb_external_address_fqdn}
+graphdb.vhosts=https://${graphdb_external_address_fqdn},http://$${node_dns}:7201
 graphdb.rpc.address=$${node_dns}:7301
 graphdb.proxy.hosts=$${node_dns}:7300
 EOF

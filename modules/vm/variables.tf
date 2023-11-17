@@ -46,15 +46,18 @@ variable "key_vault_name" {
   type        = string
 }
 
-# Load balancer
+# Application Gateway
 
-variable "load_balancer_backend_address_pool_id" {
-  description = "Identifier of the load balancer backend pool for GraphDB nodes"
-  type        = string
+variable "application_gateway_backend_address_pool_ids" {
+  description = "Array of identifiers of load balancer backend pools for the GraphDB nodes"
+  type        = list(string)
+  default     = []
 }
 
-variable "load_balancer_fqdn" {
-  description = "FQDN of the load balancer for GraphDB"
+# GraphDB configurations
+
+variable "graphdb_external_address_fqdn" {
+  description = "External FQDN for GraphDB"
   type        = string
 }
 
