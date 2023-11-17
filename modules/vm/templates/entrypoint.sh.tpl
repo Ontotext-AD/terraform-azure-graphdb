@@ -146,6 +146,22 @@ graphdb.rpc.address=$${node_dns}:7301
 graphdb.proxy.hosts=$${node_dns}:7300
 EOF
 
+# Get total memory in kilobytes
+total_memory_kb=$(grep -i "MemTotal" /proc/meminfo | awk '{print $2}')
+
+# Convert total memory to gigabytes
+total_memory_gb=$(echo "scale=2; $total_memory_kb / 1024 / 1024" | bc)
+
+# Calculate 85% of total memory
+jvm_max_memory=$(echo "$total_memory_gb * 0.85" | bc | cut -d'.' -f1)
+
+mkdir -p /etc/systemd/system/graphdb.service.d/
+
+cat << EOF > /etc/systemd/system/graphdb.service.d/overrides.conf
+[Service]
+Environment="GDB_HEAP_SIZE=$${jvm_max_memory}g"
+EOF
+
 # TODO: overrides for the proxy?
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"graphdb-properties"* ]]; then
