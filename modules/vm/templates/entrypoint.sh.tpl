@@ -4,13 +4,8 @@ set -euxo pipefail
 
 echo "Configuring GraphDB instance"
 
+# Stop in order to override configurations
 systemctl stop graphdb
-
-# TODO: If GraphDB is behind closed network, this would break the whole initialization...
-until ping -c 1 google.com &> /dev/null; do
-  echo "waiting for outbound connectivity"
-  sleep 5
-done
 
 # Login in Azure CLI with managed identity (user or system assigned)
 az login --identity

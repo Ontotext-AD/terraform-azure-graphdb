@@ -65,11 +65,12 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     identity_ids = [var.identity_id]
   }
 
-  sku          = var.instance_type
-  instances    = var.node_count
-  zones        = var.zones
-  zone_balance = true
-  upgrade_mode = "Manual"
+  sku           = var.instance_type
+  instances     = var.node_count
+  zones         = var.zones
+  zone_balance  = true
+  upgrade_mode  = "Manual"
+  overprovision = false
 
   computer_name_prefix = "${var.resource_name_prefix}-"
   admin_username       = "graphdb"
@@ -84,11 +85,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
       primary                                      = true
       subnet_id                                    = var.graphdb_subnet_id
       application_gateway_backend_address_pool_ids = var.application_gateway_backend_address_pool_ids
-
-      # TODO: Temporary for testing. Remove after configuring the LB
-      public_ip_address {
-        name = "first"
-      }
     }
   }
 
@@ -103,6 +99,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   tags = var.tags
+
+  depends_on = [azurerm_role_assignment.rg-contributor-role]
 }
 
 resource "azurerm_role_definition" "managed_disk_manager" {

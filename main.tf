@@ -174,6 +174,20 @@ module "bastion" {
   tags = local.tags
 }
 
+# Creates a NAT gateway associated with GraphDB's subnet
+module "nat" {
+  source = "./modules/nat"
+
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  zones                = var.zones
+
+  nat_subnet_id = azurerm_subnet.graphdb-vmss.id
+
+  tags = local.tags
+}
+
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "vm" {
   source = "./modules/vm"
