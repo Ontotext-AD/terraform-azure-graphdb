@@ -1,4 +1,4 @@
-output "load_balancer_fqdn" {
-  description = "FQDN of the load balancer for GraphDB"
-  value       = module.load_balancer.load_balancer_fqdn
+output "public_address_fqdn" {
+  description = "External FQDN address for GraphDB"
+  value       = module.address.public_ip_address_fqdn
 }

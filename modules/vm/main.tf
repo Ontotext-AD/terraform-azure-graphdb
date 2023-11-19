@@ -70,7 +70,7 @@ resource "azurerm_network_security_rule" "graphdb-proxies-inbound" {
 
 locals {
   user_data_script = var.custom_user_data != null ? var.custom_user_data : templatefile("${path.module}/templates/entrypoint.sh.tpl", {
-    load_balancer_fqdn : var.load_balancer_fqdn
+    graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
     key_vault_name : var.key_vault_name
     data_disk_performance_tier : var.data_disk_performance_tier
     disk_size_gb : var.disk_size_gb
@@ -106,11 +106,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     network_security_group_id = azurerm_network_security_group.graphdb.id
 
     ip_configuration {
-      name      = "${var.resource_name_prefix}-ip-config"
-      primary   = true
-      subnet_id = local.subnet_id
-
-      load_balancer_backend_address_pool_ids = [var.load_balancer_backend_address_pool_id]
+      name                                         = "${var.resource_name_prefix}-ip-config"
+      primary                                      = true
+      subnet_id                                    = local.subnet_id
+      application_gateway_backend_address_pool_ids = var.application_gateway_backend_address_pool_ids
 
       # TODO: Temporary for testing. Remove after configuring the LB
       public_ip_address {
@@ -145,7 +144,7 @@ resource "azurerm_role_definition" "managed_disk_manager" {
       "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/write",
       "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/read",
       "Microsoft.Network/virtualNetworks/subnets/join/action",
-      "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+      "Microsoft.Network/applicationGateways/backendAddressPools/join/action",
       "Microsoft.Network/networkSecurityGroups/join/action"
     ]
     not_actions = []

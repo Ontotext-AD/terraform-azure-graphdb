@@ -65,7 +65,7 @@ resource "azurerm_key_vault_secret" "graphdb-java-options" {
 resource "azurerm_role_assignment" "graphdb-license-reader" {
   principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
   scope                = data.azurerm_key_vault.graphdb.id
-  role_definition_name = "Reader"
+  role_definition_name = "Key Vault Reader"
 }
 
 # Give rights to the provided identity to actually get the secret value
