@@ -3,6 +3,11 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type        = string
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)

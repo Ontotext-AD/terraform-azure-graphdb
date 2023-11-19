@@ -67,12 +67,11 @@ module "address" {
   source = "./modules/address"
 
   resource_name_prefix = var.resource_name_prefix
+  location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
   tags = local.tags
-
-  depends_on = [azurerm_resource_group.graphdb]
 }
 
 # Creates a user assigned identity which will be provided to GraphDB VMs.
@@ -80,11 +79,10 @@ module "identity" {
   source = "./modules/identity"
 
   resource_name_prefix = var.resource_name_prefix
+  location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
   tags = local.tags
-
-  depends_on = [azurerm_resource_group.graphdb]
 }
 
 # Creates Key Vault for secure storage of GraphDB configurations and secrets
@@ -92,20 +90,18 @@ module "vault" {
   source = "./modules/vault"
 
   resource_name_prefix = var.resource_name_prefix
+  location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
   tags = local.tags
-
-  depends_on = [azurerm_resource_group.graphdb]
 }
 
 # Managed GraphDB configurations in the Key Vault
 module "configuration" {
   source = "./modules/configuration"
 
-  resource_group_name = azurerm_resource_group.graphdb.name
-  identity_name       = module.identity.identity_name
-  key_vault_name      = module.vault.key_vault_name
+  key_vault_id          = module.vault.key_vault_id
+  identity_principal_id = module.identity.identity_principal_id
 
   graphdb_license_path    = var.graphdb_license_path
   graphdb_cluster_token   = var.graphdb_cluster_token
@@ -114,11 +110,8 @@ module "configuration" {
 
   tags = local.tags
 
-  depends_on = [
-    azurerm_resource_group.graphdb,
-    # Wait for complete module creation
-    module.vault
-  ]
+  # Wait for role assignments
+  depends_on = [module.vault]
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity
@@ -126,40 +119,36 @@ module "tls" {
   source = "./modules/tls"
 
   resource_name_prefix = var.resource_name_prefix
+  location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  key_vault_name           = module.vault.key_vault_name
+  key_vault_id             = module.vault.key_vault_id
   tls_certificate          = filebase64(var.tls_certificate_path)
   tls_certificate_password = var.tls_certificate_password
 
   tags = local.tags
 
-  depends_on = [azurerm_resource_group.graphdb, module.identity, module.vault]
+  # Wait for role assignments
+  depends_on = [module.identity, module.vault]
 }
 
 # Creates a public application gateway for forwarding internet traffic to the GraphDB proxies
 module "application_gateway" {
   source = "./modules/gateway"
 
-  resource_name_prefix   = var.resource_name_prefix
-  resource_group_name    = azurerm_resource_group.graphdb.name
-  network_interface_name = azurerm_virtual_network.graphdb.name
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
 
-  gateway_subnet_name = azurerm_subnet.graphdb-gateway.name
-
-  gateway_public_ip_name            = module.address.public_ip_address_name
-  gateway_identity_name             = module.tls.tls_identity_name
+  gateway_subnet_id                 = azurerm_subnet.graphdb-gateway.id
+  gateway_public_ip_id              = module.address.public_ip_address_id
+  gateway_identity_id               = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
 
   tags = local.tags
 
-  depends_on = [
-    azurerm_resource_group.graphdb,
-    azurerm_virtual_network.graphdb,
-    azurerm_subnet.graphdb-vmss,
-    module.address,
-    module.tls
-  ]
+  # Wait for role assignments
+  depends_on = [module.tls]
 }
 
 # Module for resolving the GraphDB shared image ID
@@ -177,36 +166,36 @@ module "bastion" {
   source = "./modules/bastion"
 
   resource_group_name           = azurerm_resource_group.graphdb.name
+  location                      = var.location
   virtual_network_name          = azurerm_virtual_network.graphdb.name
   resource_name_prefix          = var.resource_name_prefix
   bastion_subnet_address_prefix = var.bastion_subnet_address_prefix
 
   tags = local.tags
-
-  depends_on = [
-    azurerm_resource_group.graphdb,
-    azurerm_virtual_network.graphdb
-  ]
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "vm" {
   source = "./modules/vm"
 
-  resource_name_prefix   = var.resource_name_prefix
-  resource_group_name    = azurerm_resource_group.graphdb.name
-  network_interface_name = azurerm_virtual_network.graphdb.name
-  zones                  = var.zones
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_id    = azurerm_resource_group.graphdb.id
+  zones                = var.zones
 
-  graphdb_subnet_name                          = azurerm_subnet.graphdb-vmss.name
+  graphdb_subnet_id   = azurerm_subnet.graphdb-vmss.id
+  graphdb_subnet_cidr = one(azurerm_subnet.graphdb-vmss.address_prefixes)
+
+  identity_id                                  = module.identity.identity_id
+  identity_principal_id                        = module.identity.identity_principal_id
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
-  identity_name                                = module.identity.identity_name
-  key_vault_name                               = module.vault.key_vault_name
 
+  # Configurations for the user data script
   graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
-
-  data_disk_performance_tier = var.data_disk_performance_tier
-  disk_size_gb               = var.disk_size_gb
+  key_vault_name                = module.vault.key_vault_name
+  data_disk_performance_tier    = var.data_disk_performance_tier
+  disk_size_gb                  = var.disk_size_gb
 
   instance_type     = var.instance_type
   image_id          = module.graphdb_image.image_id
@@ -218,11 +207,6 @@ module "vm" {
 
   tags = local.tags
 
-  depends_on = [
-    azurerm_resource_group.graphdb,
-    azurerm_virtual_network.graphdb,
-    azurerm_subnet.graphdb-vmss,
-    # Needed because the license is being created at the same time as the machines.
-    module.configuration
-  ]
+  # Wait for configurations to be created in the key vault and roles to be assigned
+  depends_on = [module.configuration]
 }

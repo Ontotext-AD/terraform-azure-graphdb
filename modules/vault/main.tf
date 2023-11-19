@@ -1,7 +1,3 @@
-data "azurerm_resource_group" "graphdb" {
-  name = var.resource_group_name
-}
-
 data "azurerm_client_config" "current" {
 }
 
@@ -20,8 +16,8 @@ locals {
 # TODO: Improve the security of the vault (non-public + nacl + network firewall)
 resource "azurerm_key_vault" "graphdb" {
   name                = local.vault_name
-  resource_group_name = data.azurerm_resource_group.graphdb.name
-  location            = data.azurerm_resource_group.graphdb.location
+  resource_group_name = var.resource_group_name
+  location            = var.location
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   sku_name                  = "standard"

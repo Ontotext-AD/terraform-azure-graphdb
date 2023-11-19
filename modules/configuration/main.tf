@@ -1,13 +1,3 @@
-data "azurerm_user_assigned_identity" "graphdb-instances" {
-  name                = var.identity_name
-  resource_group_name = var.resource_group_name
-}
-
-data "azurerm_key_vault" "graphdb" {
-  name                = var.key_vault_name
-  resource_group_name = var.resource_group_name
-}
-
 resource "random_password" "graphdb-cluster-token" {
   count   = var.graphdb_cluster_token != null ? 0 : 1
   length  = 16
@@ -19,7 +9,7 @@ locals {
 }
 
 resource "azurerm_key_vault_secret" "graphdb-license" {
-  key_vault_id = data.azurerm_key_vault.graphdb.id
+  key_vault_id = var.key_vault_id
 
   name  = var.graphdb_license_secret_name
   value = filebase64(var.graphdb_license_path)
@@ -28,7 +18,7 @@ resource "azurerm_key_vault_secret" "graphdb-license" {
 }
 
 resource "azurerm_key_vault_secret" "graphdb-cluster-token" {
-  key_vault_id = data.azurerm_key_vault.graphdb.id
+  key_vault_id = var.key_vault_id
 
   name  = var.graphdb_cluster_token_name
   value = base64encode(local.graphdb_cluster_token)
@@ -39,7 +29,7 @@ resource "azurerm_key_vault_secret" "graphdb-cluster-token" {
 resource "azurerm_key_vault_secret" "graphdb-properties" {
   count = var.graphdb_properties_path != null ? 1 : 0
 
-  key_vault_id = data.azurerm_key_vault.graphdb.id
+  key_vault_id = var.key_vault_id
 
   name  = var.graphdb_properties_secret_name
   value = filebase64(var.graphdb_properties_path)
@@ -50,7 +40,7 @@ resource "azurerm_key_vault_secret" "graphdb-properties" {
 resource "azurerm_key_vault_secret" "graphdb-java-options" {
   count = var.graphdb_java_options != null ? 1 : 0
 
-  key_vault_id = data.azurerm_key_vault.graphdb.id
+  key_vault_id = var.key_vault_id
 
   name  = var.graphdb_java_options_secret_name
   value = base64encode(var.graphdb_java_options)
@@ -63,14 +53,14 @@ resource "azurerm_key_vault_secret" "graphdb-java-options" {
 
 # Give rights to the provided identity to be able to read it from the vault
 resource "azurerm_role_assignment" "graphdb-license-reader" {
-  principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
-  scope                = data.azurerm_key_vault.graphdb.id
+  principal_id         = var.identity_principal_id
+  scope                = var.key_vault_id
   role_definition_name = "Key Vault Reader"
 }
 
 # Give rights to the provided identity to actually get the secret value
 resource "azurerm_role_assignment" "graphdb-license-secret-reader" {
-  principal_id         = data.azurerm_user_assigned_identity.graphdb-instances.principal_id
-  scope                = data.azurerm_key_vault.graphdb.id
+  principal_id         = var.identity_principal_id
+  scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
 }

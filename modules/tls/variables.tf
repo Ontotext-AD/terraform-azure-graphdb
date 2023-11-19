@@ -5,6 +5,11 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type        = string
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
@@ -18,8 +23,8 @@ variable "resource_group_name" {
 
 # Key Vault
 
-variable "key_vault_name" {
-  description = "Name of a Key Vault containing GraphDB configurations"
+variable "key_vault_id" {
+  description = "Identifier of a Key Vault for storing secrets and certificates"
   type        = string
 }
 
