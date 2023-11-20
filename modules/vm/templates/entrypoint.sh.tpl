@@ -26,7 +26,8 @@ REGION_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
 
-TIER=${data_disk_performance_tier}
+DISK_IOPS=${disk_iops_read_write}
+DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
 
 # TODO Define the disk name based on the hostname ??
@@ -50,7 +51,15 @@ done
 
 if [ -z "$existingUnattachedDisk" ]; then
   echo "Creating a new managed disk"
-  az disk create --resource-group $RESOURSE_GROUP --name $diskName --size-gb $DISK_SIZE_GB --location $REGION_ID --sku Premium_LRS --zone $ZONE_ID --tier $TIER
+  az disk create --resource-group $RESOURSE_GROUP \
+   --name $diskName \
+   --size-gb $DISK_SIZE_GB \
+   --location $REGION_ID \
+   --sku PremiumV2_LRS \
+   --zone $ZONE_ID \
+   --os-type Linux \
+   --disk-iops-read-write $DISK_IOPS \
+   --disk-mbps-read-write $DISK_THROUGHPUT
 fi
 
 # Checks if a managed disk is attached to the instance
@@ -178,8 +187,6 @@ if [[ $secrets == *"graphdb-java-options"* ]]; then
     echo "GDB_JAVA_OPTS=$GDB_JAVA_OPTS $extra_graphdb_java_options" >> /etc/graphdb/graphdb.env
   )
 fi
-
-# TODO: -Xmx based on the machine's memory size
 
 # TODO: Backup cron
 
