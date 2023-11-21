@@ -5,6 +5,11 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type        = string
+}
+
 variable "zones" {
   description = "Availability zones"
   type        = list(number)
@@ -22,22 +27,32 @@ variable "resource_group_name" {
   type        = string
 }
 
-# Networking
-
-variable "network_interface_name" {
-  description = "Network interface where GraphDB will be deployed"
+variable "resource_group_id" {
+  description = "Identifier of the resource group where GraphDB will be deployed."
   type        = string
 }
 
-variable "graphdb_subnet_name" {
-  description = "Name of the subnet where GraphDB will be deployed"
+# Networking
+
+variable "graphdb_subnet_id" {
+  description = "Identifier of the subnet where GraphDB will be deployed"
+  type        = string
+}
+
+variable "graphdb_subnet_cidr" {
+  description = "CIDR of the subnet where GraphDB will be deployed"
   type        = string
 }
 
 # Security
 
-variable "identity_name" {
-  description = "Name of a user assigned identity with permissions"
+variable "identity_id" {
+  description = "Identifier of a user assigned identity with permissions"
+  type        = string
+}
+
+variable "identity_principal_id" {
+  description = "Principal identifier of a user assigned identity with permissions"
   type        = string
 }
 

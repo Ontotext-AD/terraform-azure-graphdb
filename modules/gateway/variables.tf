@@ -5,6 +5,11 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type        = string
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)
@@ -18,18 +23,13 @@ variable "resource_group_name" {
 
 # Networking
 
-variable "network_interface_name" {
-  description = "Network ID where GraphDB will be deployed"
+variable "gateway_subnet_id" {
+  description = "Subnet identifier where the Application Gateway will be deployed"
   type        = string
 }
 
-variable "gateway_subnet_name" {
-  description = "Subnet where the Application Gateway will be deployed"
-  type        = string
-}
-
-variable "gateway_public_ip_name" {
-  description = "Name of the public IP address to be used by the Application Gateway"
+variable "gateway_public_ip_id" {
+  description = "Identifier of the public IP address to be used by the Application Gateway"
   type        = string
 }
 
@@ -110,7 +110,7 @@ variable "gateway_tls_certificate_secret_id" {
   type        = string
 }
 
-variable "gateway_identity_name" {
-  description = "Name of a user assigned identity having access to the TLS certificate in the Key Vault"
+variable "gateway_identity_id" {
+  description = "Identifier of a user assigned identity having access to the TLS certificate in the Key Vault"
   type        = string
 }

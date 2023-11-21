@@ -7,3 +7,8 @@ output "tls_identity_name" {
   description = "Name of the user assigned identity having permissions for reading the TLS certificate secret"
   value       = azurerm_user_assigned_identity.graphdb-tls-certificate.name
 }
+
+output "tls_identity_id" {
+  description = "Identifier of the user assigned identity having permissions for reading the TLS certificate secret"
+  value       = azurerm_user_assigned_identity.graphdb-tls-certificate.id
+}

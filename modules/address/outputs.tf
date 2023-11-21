@@ -3,6 +3,11 @@ output "public_ip_address_name" {
   value       = azurerm_public_ip.graphdb-public-ip-address.name
 }
 
+output "public_ip_address_id" {
+  description = "Name of the public IP address"
+  value       = azurerm_public_ip.graphdb-public-ip-address.id
+}
+
 output "public_ip_address_fqdn" {
   description = "The assigned FQDN of the public IP address"
   value       = azurerm_public_ip.graphdb-public-ip-address.fqdn

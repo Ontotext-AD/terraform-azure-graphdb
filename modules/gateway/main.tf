@@ -1,27 +1,4 @@
-data "azurerm_resource_group" "graphdb" {
-  name = var.resource_group_name
-}
-
-data "azurerm_subnet" "graphdb-gateway" {
-  name                 = var.gateway_subnet_name
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = var.network_interface_name
-}
-
-data "azurerm_public_ip" "graphdb-gateway" {
-  name                = var.gateway_public_ip_name
-  resource_group_name = var.resource_group_name
-}
-
-data "azurerm_user_assigned_identity" "graphdb-gateway-tls" {
-  name                = var.gateway_identity_name
-  resource_group_name = var.resource_group_name
-}
-
 locals {
-  resource_group = data.azurerm_resource_group.graphdb.name
-  location       = data.azurerm_resource_group.graphdb.location
-
   gateway_ip_configuration_name           = "${var.resource_name_prefix}-gateway-ip"
   gateway_frontend_http_port_name         = "${var.resource_name_prefix}-gateway-http"
   gateway_frontend_https_port_name        = "${var.resource_name_prefix}-gateway-https"
@@ -39,8 +16,8 @@ locals {
 
 resource "azurerm_application_gateway" "graphdb" {
   name                = var.resource_name_prefix
-  resource_group_name = local.resource_group
-  location            = local.location
+  resource_group_name = var.resource_group_name
+  location            = var.location
 
   autoscale_configuration {
     min_capacity = var.gateway_min_capacity
@@ -58,7 +35,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [data.azurerm_user_assigned_identity.graphdb-gateway-tls.id]
+    identity_ids = [var.gateway_identity_id]
   }
 
   ssl_certificate {
@@ -68,7 +45,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   gateway_ip_configuration {
     name      = local.gateway_ip_configuration_name
-    subnet_id = data.azurerm_subnet.graphdb-gateway.id
+    subnet_id = var.gateway_subnet_id
   }
 
   # HTTP
@@ -85,7 +62,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   frontend_ip_configuration {
     name                 = local.gateway_frontend_ip_configuration_name
-    public_ip_address_id = data.azurerm_public_ip.graphdb-gateway.id
+    public_ip_address_id = var.gateway_public_ip_id
   }
 
   backend_address_pool {

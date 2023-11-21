@@ -1,12 +1,12 @@
 # Common configurations
 
-variable "resource_group_name" {
-  description = "Name of the resource group where Bastion will be deployed."
+variable "resource_name_prefix" {
+  description = "Resource name prefix"
   type        = string
 }
 
-variable "resource_name_prefix" {
-  description = "Resource name prefix"
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
   type        = string
 }
 
@@ -14,6 +14,11 @@ variable "tags" {
   description = "Common resource tags."
   type        = map(string)
   default     = {}
+}
+
+variable "resource_group_name" {
+  description = "Name of the resource group where Bastion will be deployed."
+  type        = string
 }
 
 # Networking

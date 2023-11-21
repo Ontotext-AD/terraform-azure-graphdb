@@ -5,6 +5,11 @@ variable "resource_name_prefix" {
   type        = string
 }
 
+variable "location" {
+  description = "Azure geographical location where resources will be deployed"
+  type        = string
+}
+
 variable "zones" {
   description = "Availability zones for the public IP address."
   type        = list(number)

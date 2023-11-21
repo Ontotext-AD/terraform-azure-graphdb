@@ -6,20 +6,15 @@ variable "tags" {
   default     = {}
 }
 
-variable "resource_group_name" {
-  description = "Name of the resource group where GraphDB will be deployed."
-  type        = string
-}
-
 # Security dependencies
 
-variable "identity_name" {
-  description = "Name of a user assigned identity for assigning permissions"
+variable "identity_principal_id" {
+  description = "Principal identifier of a user assigned identity for assigning permissions"
   type        = string
 }
 
-variable "key_vault_name" {
-  description = "Name of a Key Vault containing GraphDB configurations"
+variable "key_vault_id" {
+  description = "Identifier of a Key Vault for storing GraphDB configurations"
   type        = string
 }
 
