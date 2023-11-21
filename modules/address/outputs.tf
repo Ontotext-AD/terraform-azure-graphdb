@@ -3,8 +3,13 @@ output "public_ip_address_name" {
   value       = azurerm_public_ip.graphdb-public-ip-address.name
 }
 
+output "public_ip_address" {
+  description = "The public IPv4 address"
+  value       = azurerm_public_ip.graphdb-public-ip-address.ip_address
+}
+
 output "public_ip_address_id" {
-  description = "Name of the public IP address"
+  description = "Identifier of the public IP address"
   value       = azurerm_public_ip.graphdb-public-ip-address.id
 }
 
