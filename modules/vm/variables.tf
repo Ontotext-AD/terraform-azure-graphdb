@@ -120,8 +120,14 @@ variable "disk_size_gb" {
   default     = null
 }
 
-variable "data_disk_performance_tier" {
-  description = "Performance tier of the managed data disk"
-  type        = string
+variable "disk_iops_read_write" {
+  description = "Data disk IOPS"
+  type        = number
+  default     = null
+}
+
+variable "disk_mbps_read_write" {
+  description = "Data disk throughput"
+  type        = number
   default     = null
 }

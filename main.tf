@@ -194,8 +194,10 @@ module "vm" {
   # Configurations for the user data script
   graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
   key_vault_name                = module.vault.key_vault_name
-  data_disk_performance_tier    = var.data_disk_performance_tier
-  disk_size_gb                  = var.disk_size_gb
+
+  disk_iops_read_write = var.disk_iops_read_write
+  disk_mbps_read_write = var.disk_mbps_read_write
+  disk_size_gb         = var.disk_size_gb
 
   instance_type     = var.instance_type
   image_id          = module.graphdb_image.image_id

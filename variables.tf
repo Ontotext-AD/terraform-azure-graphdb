@@ -131,17 +131,27 @@ variable "custom_graphdb_vm_user_data" {
   default     = null
 }
 
+# Data disks
+
 variable "disk_size_gb" {
   description = "Size of the managed data disk which will be created"
   type        = number
   default     = 500
 }
 
-variable "data_disk_performance_tier" {
-  description = "Performance tier of the managed data disk"
-  type        = string
-  default     = "P40"
+variable "disk_iops_read_write" {
+  description = "Data disk IOPS"
+  type        = number
+  default     = 7500
 }
+
+variable "disk_mbps_read_write" {
+  description = "Data disk throughput"
+  type        = number
+  default     = 250
+}
+
+# Bastion
 
 variable "deploy_bastion" {
   description = "Deploy bastion module"
