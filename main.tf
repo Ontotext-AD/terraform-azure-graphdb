@@ -103,6 +103,7 @@ module "configuration" {
   key_vault_id          = module.vault.key_vault_id
   identity_principal_id = module.identity.identity_principal_id
 
+  graphdb_password        = var.graphdb_password
   graphdb_license_path    = var.graphdb_license_path
   graphdb_cluster_token   = var.graphdb_cluster_token
   graphdb_properties_path = var.graphdb_properties_path
@@ -221,8 +222,28 @@ module "vm" {
 
   custom_user_data = var.custom_graphdb_vm_user_data
 
+  backup_schedule = var.backup_schedule
+
   tags = local.tags
 
   # Wait for configurations to be created in the key vault and roles to be assigned
   depends_on = [module.configuration]
+}
+
+module "backup" {
+  source = "./modules/backup"
+
+  resource_name_prefix             = var.resource_name_prefix
+  resource_group_name              = azurerm_resource_group.graphdb.name
+  storage_account_tier             = var.storage_account_tier
+  storage_account_replication_type = var.storage_account_replication_type
+  identity_name                    = module.identity.identity_name
+  location                         = var.location
+  identity_principal_id            = module.identity.identity_principal_id
+
+  tags = local.tags
+
+  depends_on = [
+    azurerm_resource_group.graphdb
+  ]
 }

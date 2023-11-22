@@ -88,6 +88,12 @@ variable "graphdb_cluster_token" {
   default     = null
 }
 
+variable "graphdb_password" {
+  description = "Secret token used to access GraphDB cluster."
+  type        = string
+  default     = null
+}
+
 variable "graphdb_properties_path" {
   description = "Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM."
   type        = string
@@ -129,6 +135,27 @@ variable "custom_graphdb_vm_user_data" {
   description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
   default     = null
+}
+
+# Storage account
+
+variable "storage_account_tier" {
+  default     = "Standard"
+  description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
+  type        = string
+}
+
+variable "storage_account_replication_type" {
+  default     = "LRS"
+  description = "Specify the data redundancy strategy for your Azure Storage Account"
+}
+
+# Backup configurations
+
+variable "backup_schedule" {
+  description = "Cron expression for the backup job."
+  type        = string
+  default     = "0 0 * * *"
 }
 
 # Data disks
