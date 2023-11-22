@@ -192,9 +192,19 @@ set -euxo pipefail
 
 az login --identity
 
+RESOURCE_GROUP="\$(az vmss list --query "[0].resourceGroup" --output tsv)"
+
+# TODO change secret name when exists
+GRAPHDB_ADMIN_PASSWORD="\$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
+NODE_STATE="\$(curl --silent --fail --user "admin:\$GRAPHDB_ADMIN_PASSWORD" localhost:7200/rest/cluster/node/status | jq -r .nodeState)"
+
+if [ "\$NODE_STATE" != "LEADER" ]; then
+  echo "current node is not a leader, but \$NODE_STATE"
+  exit 0
+fi
+
 BACKUP_NAME="\$(date +'%Y-%m-%d_%H-%M-%S').tar"
 TEMP_BACKUP_DIR="/var/opt/graphdb/"
-RESOURCE_GROUP="\$(az vmss list --query "[0].resourceGroup" --output tsv)"
 STORAGE_ACCOUNT="\$(az storage account list --resource-group "\$RESOURCE_GROUP" --query "[].name" --output tsv)"
 CONTAINER_NAME="\$(az storage container list --account-name "\$STORAGE_ACCOUNT" --query "[].name" --output tsv --auth-mode login)"
 BLOB_URL="\$(az storage blob url --account-name "\$STORAGE_ACCOUNT" --container-name "\$CONTAINER_NAME" --name "\$BACKUP_NAME" --auth-mode login --output tsv)"
@@ -219,6 +229,12 @@ EOF
 
 chmod +x /usr/bin/graphdb_backup
 echo "${backup_schedule} graphdb /usr/bin/graphdb_backup" > /etc/cron.d/graphdb_backup
+
+# Set keepalive and file max size
+echo 'net.ipv4.tcp_keepalive_time = 120' | tee -a /etc/sysctl.conf
+echo 'fs.file-max = 262144' | tee -a /etc/sysctl.conf
+
+sysctl -p
 
 # TODO: Monitoring/instrumenting
 

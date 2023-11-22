@@ -37,6 +37,12 @@ variable "graphdb_cluster_token" {
   default     = null
 }
 
+variable "graphdb_password" {
+  description = "Secret token used to access GraphDB cluster."
+  type        = string
+  default     = null
+}
+
 variable "graphdb_cluster_token_name" {
   description = "Name of the Key Vault secret that contains the GraphDB cluster secret token."
   type        = string

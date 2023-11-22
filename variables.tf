@@ -88,6 +88,12 @@ variable "graphdb_cluster_token" {
   default     = null
 }
 
+variable "graphdb_password" {
+  description = "Secret token used to access GraphDB cluster."
+  type        = string
+  default     = null
+}
+
 variable "graphdb_properties_path" {
   description = "Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM."
   type        = string

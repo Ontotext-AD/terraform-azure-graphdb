@@ -103,6 +103,7 @@ module "configuration" {
   key_vault_id          = module.vault.key_vault_id
   identity_principal_id = module.identity.identity_principal_id
 
+  graphdb_password        = var.graphdb_password
   graphdb_license_path    = var.graphdb_license_path
   graphdb_cluster_token   = var.graphdb_cluster_token
   graphdb_properties_path = var.graphdb_properties_path
