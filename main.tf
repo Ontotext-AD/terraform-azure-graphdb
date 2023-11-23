@@ -20,9 +20,9 @@ locals {
   }, var.tags)
 }
 
-# ------------------------------------------------------------
+# COMMON NETWORKING -------------------------------------------
 
-# TODO: To be moved in another module
+# TODO: To be moved in another module ?
 
 resource "azurerm_resource_group" "graphdb" {
   name     = var.resource_name_prefix
@@ -58,6 +58,57 @@ resource "azurerm_subnet" "graphdb-vmss" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.graphdb_subnet_address_prefix
+}
+
+resource "azurerm_network_security_group" "graphdb-gateway" {
+  name                = "${var.resource_name_prefix}-gateway"
+  resource_group_name = azurerm_resource_group.graphdb.name
+  location            = var.location
+
+  security_rule {
+    name                       = "AllowGatewayManager"
+    description                = "Allows Gateway Manager to perform health monitoring."
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_address_prefix      = "GatewayManager"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = "65200-65535"
+  }
+
+  security_rule {
+    name                         = "AllowInternetInbound"
+    description                  = "Allows inbound internet traffic to the gateway subnet."
+    priority                     = 1000
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_address_prefix        = "Internet"
+    source_port_range            = "*"
+    destination_address_prefixes = var.app_gateway_subnet_address_prefix
+    destination_port_ranges      = [80, 443]
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_network_security_group" "graphdb-vmss" {
+  name                = "${var.resource_name_prefix}-vmss"
+  resource_group_name = azurerm_resource_group.graphdb.name
+  location            = var.location
+  tags                = var.tags
+}
+
+resource "azurerm_subnet_network_security_group_association" "graphdb-gateway" {
+  network_security_group_id = azurerm_network_security_group.graphdb-gateway.id
+  subnet_id                 = azurerm_subnet.graphdb-gateway.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "graphdb-vmss" {
+  network_security_group_id = azurerm_network_security_group.graphdb-vmss.id
+  subnet_id                 = azurerm_subnet.graphdb-vmss.id
 }
 
 # ------------------------------------------------------------
@@ -166,11 +217,13 @@ module "bastion" {
 
   source = "./modules/bastion"
 
-  resource_group_name           = azurerm_resource_group.graphdb.name
-  location                      = var.location
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
   virtual_network_name          = azurerm_virtual_network.graphdb.name
-  resource_name_prefix          = var.resource_name_prefix
   bastion_subnet_address_prefix = var.bastion_subnet_address_prefix
+  bastion_allowed_cidr_blocks   = var.management_cidr_blocks
 
   tags = local.tags
 }
@@ -199,8 +252,7 @@ module "vm" {
   resource_group_id    = azurerm_resource_group.graphdb.id
   zones                = var.zones
 
-  graphdb_subnet_id   = azurerm_subnet.graphdb-vmss.id
-  graphdb_subnet_cidr = one(azurerm_subnet.graphdb-vmss.address_prefixes)
+  graphdb_subnet_id = azurerm_subnet.graphdb-vmss.id
 
   identity_id                                  = module.identity.identity_id
   identity_principal_id                        = module.identity.identity_principal_id
@@ -214,11 +266,10 @@ module "vm" {
   disk_mbps_read_write = var.disk_mbps_read_write
   disk_size_gb         = var.disk_size_gb
 
-  instance_type     = var.instance_type
-  image_id          = module.graphdb_image.image_id
-  node_count        = var.node_count
-  ssh_key           = var.ssh_key
-  source_ssh_blocks = var.source_ssh_blocks
+  instance_type = var.instance_type
+  image_id      = module.graphdb_image.image_id
+  node_count    = var.node_count
+  ssh_key       = var.ssh_key
 
   custom_user_data = var.custom_graphdb_vm_user_data
 

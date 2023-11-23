@@ -1,46 +1,3 @@
-# Create Network Security Group and rules
-resource "azurerm_network_security_group" "graphdb" {
-  name                = "${var.resource_name_prefix}-nic"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-
-  tags = var.tags
-}
-
-resource "azurerm_network_security_rule" "graphdb-inbound-ssh" {
-  count = var.source_ssh_blocks != null ? 1 : 0
-
-  resource_group_name         = var.resource_group_name
-  network_security_group_name = azurerm_network_security_group.graphdb.name
-
-  name                       = "graphdb_ssh_inbound"
-  description                = "Allow specified CIDRs SSH access to the GraphDB instances."
-  priority                   = 900
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_port_range          = "*"
-  destination_port_range     = 22
-  source_address_prefixes    = var.source_ssh_blocks
-  destination_address_prefix = var.graphdb_subnet_cidr
-}
-
-resource "azurerm_network_security_rule" "graphdb-proxies-inbound" {
-  resource_group_name         = var.resource_group_name
-  network_security_group_name = azurerm_network_security_group.graphdb.name
-
-  name                       = "graphdb_proxies_inbound"
-  description                = "Allow internet traffic to reach the GraphDB proxies"
-  priority                   = 1000
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_port_range          = "*"
-  destination_port_range     = "7201"
-  source_address_prefixes    = ["0.0.0.0/0"]
-  destination_address_prefix = var.graphdb_subnet_cidr
-}
-
 locals {
   user_data_script = var.custom_user_data != null ? var.custom_user_data : templatefile("${path.module}/templates/entrypoint.sh.tpl", {
     graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
@@ -76,10 +33,14 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   computer_name_prefix = "${var.resource_name_prefix}-"
   admin_username       = "graphdb"
 
+  scale_in {
+    # In case of re-balancing, remove the newest VM which might have not been IN-SYNC yet with the cluster
+    rule = "NewestVM"
+  }
+
   network_interface {
-    name                      = "${var.resource_name_prefix}-vmss-nic"
-    primary                   = true
-    network_security_group_id = azurerm_network_security_group.graphdb.id
+    name    = "${var.resource_name_prefix}-vmss-nic"
+    primary = true
 
     ip_configuration {
       name                                         = "${var.resource_name_prefix}-ip-config"
@@ -102,6 +63,26 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   tags = var.tags
 
   depends_on = [azurerm_role_assignment.rg-contributor-role]
+}
+
+resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
+  name                = "${var.resource_name_prefix}-vmss"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  target_resource_id  = azurerm_linux_virtual_machine_scale_set.graphdb.id
+
+  profile {
+    name = "${var.resource_name_prefix}-vmss-fixed"
+
+    # We want to keep a tight count for 3 node quorum
+    capacity {
+      default = var.node_count
+      maximum = var.node_count
+      minimum = var.node_count
+    }
+  }
+
+  tags = var.tags
 }
 
 resource "azurerm_role_definition" "managed_disk_manager" {
