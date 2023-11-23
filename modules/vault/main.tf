@@ -13,7 +13,6 @@ locals {
   vault_name = "${var.resource_name_prefix}-${random_string.vault_name_suffix.result}"
 }
 
-# TODO: Improve the security of the vault (non-public + nacl + network firewall)
 resource "azurerm_key_vault" "graphdb" {
   name                = local.vault_name
   resource_group_name = var.resource_group_name
@@ -22,6 +21,13 @@ resource "azurerm_key_vault" "graphdb" {
 
   sku_name                  = "standard"
   enable_rbac_authorization = true
+
+  network_acls {
+    bypass                     = "AzureServices"
+    default_action             = "Deny"
+    virtual_network_subnet_ids = var.nacl_subnet_ids
+    ip_rules                   = var.nacl_ip_rules
+  }
 
   tags = var.tags
 }

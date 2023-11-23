@@ -35,8 +35,8 @@ resource "azurerm_key_vault_secret" "graphdb-cluster-token" {
 resource "azurerm_key_vault_secret" "graphdb-password" {
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_cluster_token_name
-  value = base64encode(local.graphdb_cluster_token)
+  name  = var.graphdb_password_secret_name
+  value = base64encode(local.graphdb_password)
 
   tags = var.tags
 }

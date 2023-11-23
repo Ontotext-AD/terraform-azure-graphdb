@@ -1,3 +1,5 @@
+# Common configurations
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
@@ -17,4 +19,18 @@ variable "tags" {
 variable "resource_group_name" {
   description = "Name of the resource group where GraphDB will be deployed."
   type        = string
+}
+
+# Networking
+
+variable "nacl_subnet_ids" {
+  description = "List of subnet identifiers allowed to access the key vault internally over a service link"
+  type        = list(string)
+  default     = []
+}
+
+variable "nacl_ip_rules" {
+  description = "List of CIDR blocks allowed to access the key vault from the internet"
+  type        = list(string)
+  default     = []
 }
