@@ -101,6 +101,12 @@ variable "custom_user_data" {
   default     = null
 }
 
+variable "encryption_at_host" {
+  description = "Enables encryption at rest on the VM host"
+  type        = bool
+  default     = true
+}
+
 # Managed Data Disks
 
 variable "disk_size_gb" {

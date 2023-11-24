@@ -21,13 +21,22 @@ locals {
 
 # Create an Azure Storage Account for backups
 resource "azurerm_storage_account" "graphdb-backup" {
-  name                      = local.storage_account_name
-  resource_group_name       = var.resource_group_name
-  location                  = var.location
-  account_tier              = var.storage_account_tier
-  account_replication_type  = var.storage_account_replication_type
-  enable_https_traffic_only = true
-  min_tls_version           = "TLS1_2"
+  name                = local.storage_account_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  account_tier                    = var.storage_account_tier
+  account_replication_type        = var.storage_account_replication_type
+  enable_https_traffic_only       = true
+  allow_nested_items_to_be_public = false
+  min_tls_version                 = "TLS1_2"
+
+  network_rules {
+    bypass                     = ["AzureServices"]
+    default_action             = "Deny"
+    virtual_network_subnet_ids = var.nacl_subnet_ids
+    ip_rules                   = var.nacl_ip_rules
+  }
 
   tags = var.tags
 }

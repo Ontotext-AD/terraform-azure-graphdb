@@ -66,6 +66,21 @@ variable "tls_certificate_password" {
   default     = null
 }
 
+# Key Vault
+
+# Enable only for production
+variable "key_vault_enable_purge_protection" {
+  description = "Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed."
+  type        = bool
+  default     = false
+}
+
+variable "key_vault_retention_days" {
+  description = "Retention period in days during which soft deleted secrets are kept"
+  type        = number
+  default     = 30
+}
+
 # GraphDB
 
 variable "graphdb_version" {
@@ -139,14 +154,15 @@ variable "custom_graphdb_vm_user_data" {
 # Storage account
 
 variable "storage_account_tier" {
-  default     = "Standard"
   description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
   type        = string
+  default     = "Standard"
 }
 
 variable "storage_account_replication_type" {
-  default     = "LRS"
   description = "Specify the data redundancy strategy for your Azure Storage Account"
+  type        = string
+  default     = "ZRS"
 }
 
 # Backup configurations

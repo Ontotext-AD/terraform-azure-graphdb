@@ -59,7 +59,7 @@ resource "azurerm_subnet" "graphdb-vmss" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.graphdb_subnet_address_prefix
-  service_endpoints    = ["Microsoft.KeyVault"]
+  service_endpoints    = ["Microsoft.KeyVault", "Microsoft.Storage"]
 }
 
 resource "azurerm_network_security_group" "graphdb-gateway" {
@@ -148,6 +148,9 @@ module "vault" {
 
   nacl_subnet_ids = [azurerm_subnet.graphdb-gateway.id, azurerm_subnet.graphdb-vmss.id]
   nacl_ip_rules   = var.management_cidr_blocks
+
+  key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
+  key_vault_retention_days          = var.key_vault_retention_days
 
   tags = local.tags
 }
@@ -294,7 +297,9 @@ module "backup" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  identity_name                    = module.identity.identity_name
+  nacl_subnet_ids = [azurerm_subnet.graphdb-vmss.id]
+  nacl_ip_rules   = var.management_cidr_blocks
+
   identity_principal_id            = module.identity.identity_principal_id
   storage_account_tier             = var.storage_account_tier
   storage_account_replication_type = var.storage_account_replication_type

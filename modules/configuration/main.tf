@@ -17,8 +17,9 @@ locals {
 resource "azurerm_key_vault_secret" "graphdb-license" {
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_license_secret_name
-  value = filebase64(var.graphdb_license_path)
+  name         = var.graphdb_license_secret_name
+  value        = filebase64(var.graphdb_license_path)
+  content_type = "text/plain"
 
   tags = var.tags
 }
@@ -26,8 +27,9 @@ resource "azurerm_key_vault_secret" "graphdb-license" {
 resource "azurerm_key_vault_secret" "graphdb-cluster-token" {
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_cluster_token_name
-  value = base64encode(local.graphdb_cluster_token)
+  name         = var.graphdb_cluster_token_name
+  value        = base64encode(local.graphdb_cluster_token)
+  content_type = "text/plain"
 
   tags = var.tags
 }
@@ -35,8 +37,9 @@ resource "azurerm_key_vault_secret" "graphdb-cluster-token" {
 resource "azurerm_key_vault_secret" "graphdb-password" {
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_password_secret_name
-  value = base64encode(local.graphdb_password)
+  name         = var.graphdb_password_secret_name
+  value        = base64encode(local.graphdb_password)
+  content_type = "text/plain"
 
   tags = var.tags
 }
@@ -46,8 +49,9 @@ resource "azurerm_key_vault_secret" "graphdb-properties" {
 
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_properties_secret_name
-  value = filebase64(var.graphdb_properties_path)
+  name         = var.graphdb_properties_secret_name
+  value        = filebase64(var.graphdb_properties_path)
+  content_type = "text/plain"
 
   tags = var.tags
 }
@@ -57,8 +61,9 @@ resource "azurerm_key_vault_secret" "graphdb-java-options" {
 
   key_vault_id = var.key_vault_id
 
-  name  = var.graphdb_java_options_secret_name
-  value = base64encode(var.graphdb_java_options)
+  name         = var.graphdb_java_options_secret_name
+  value        = base64encode(var.graphdb_java_options)
+  content_type = "text/plain"
 
   tags = var.tags
 }

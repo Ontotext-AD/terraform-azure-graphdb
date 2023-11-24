@@ -21,12 +21,21 @@ variable "resource_group_name" {
   type        = string
 }
 
-# Identity
+# Networking
 
-variable "identity_name" {
-  description = "Name of a user assigned identity for assigning permissions"
-  type        = string
+variable "nacl_subnet_ids" {
+  description = "List of subnet identifiers allowed to access the storage account internally over a service link"
+  type        = list(string)
+  default     = []
 }
+
+variable "nacl_ip_rules" {
+  description = "List of CIDR blocks allowed to access the storage account"
+  type        = list(string)
+  default     = []
+}
+
+# Identity
 
 variable "identity_principal_id" {
   description = "Principal identifier of a user assigned identity for assigning permissions"
@@ -36,12 +45,13 @@ variable "identity_principal_id" {
 # Storage specifics
 
 variable "storage_account_tier" {
-  default     = "Standard"
   description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
   type        = string
+  default     = "Standard"
 }
 
 variable "storage_account_replication_type" {
-  default     = "LRS"
   description = "Specify the data redundancy strategy for your Azure Storage Account"
+  type        = string
+  default     = "ZRS"
 }

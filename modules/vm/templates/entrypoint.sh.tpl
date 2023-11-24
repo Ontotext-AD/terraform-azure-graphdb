@@ -54,7 +54,9 @@ if [ -z "$existingUnattachedDisk" ]; then
    --zone $ZONE_ID \
    --os-type Linux \
    --disk-iops-read-write $DISK_IOPS \
-   --disk-mbps-read-write $DISK_THROUGHPUT
+   --disk-mbps-read-write $DISK_THROUGHPUT \
+   --public-network-access Disabled \
+   --network-access-policy DenyAll
 fi
 
 # Checks if a managed disk is attached to the instance

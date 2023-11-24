@@ -34,3 +34,18 @@ variable "nacl_ip_rules" {
   type        = list(string)
   default     = []
 }
+
+# Key Vault
+
+# Enable only for production
+variable "key_vault_enable_purge_protection" {
+  description = "Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed."
+  type        = bool
+  default     = false
+}
+
+variable "key_vault_retention_days" {
+  description = "Retention period in days during which soft deleted secrets are kept"
+  type        = number
+  default     = 30
+}

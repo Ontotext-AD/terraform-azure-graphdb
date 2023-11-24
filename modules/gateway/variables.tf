@@ -47,6 +47,12 @@ variable "gateway_max_capacity" {
   default     = 2
 }
 
+variable "gateway_ssl_policy_profile" {
+  description = "The predefined SSL policy to use in the Application Gateway"
+  type        = string
+  default     = "AppGwSslPolicy20220101S"
+}
+
 variable "gateway_backend_port" {
   description = "Backend port for the Application Gateway rules"
   type        = number
