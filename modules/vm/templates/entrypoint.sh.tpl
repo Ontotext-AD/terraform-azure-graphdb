@@ -25,14 +25,21 @@ DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
 
+
+# Fetch the number of elements
+numElements=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+
+# Increment the number for the new name
+DISK_ORDER=$((numElements + 1))
+
 # TODO Define the disk name based on the hostname ??
-diskName="Disk_$${VMSS_NAME}_$${INSTANCE_ID}"
+diskName="Disk_$${RESOURSE_GROUP}_$${ZONE_ID}_$${DISK_ORDER}"
 
 for i in $(seq 1 6); do
 # Wait for existing disks in the VMSS which are unattached
 existingUnattachedDisk=$(
   az disk list --resource-group $RESOURSE_GROUP \
-    --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}')].{Name:name}" \
+    --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${RESOURSE_GROUP}_$${ZONE_ID}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
     --output tsv
   )
 
@@ -44,6 +51,7 @@ existingUnattachedDisk=$(
   fi
 done
 
+# TODO This is not executed in 3rd AZ for some reason
 if [ -z "$existingUnattachedDisk" ]; then
   echo "Creating a new managed disk"
   az disk create --resource-group $RESOURSE_GROUP \
@@ -63,7 +71,7 @@ attachedDisk=$(az vmss list-instances --resource-group "$RESOURSE_GROUP" --name 
 if [ -z "$attachedDisk" ]; then
     echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
     # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURSE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    availableDisks=$(az disk list --resource-group $RESOURSE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${RESOURSE_GROUP}_$${ZONE_ID}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
     echo "Attaching available disk $availableDisks."
     # Set Internal Field Separator to newline to handle spaces in names
     IFS=$'\n'
