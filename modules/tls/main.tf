@@ -6,9 +6,8 @@ resource "azurerm_user_assigned_identity" "graphdb-tls-certificate" {
   tags = var.tags
 }
 
-# TODO: probably have to add Key Vault Reader as well
-
-resource "azurerm_role_assignment" "graphdb-tls-certificate-reader" {
+# Azure AG requires this role to the be assigned to the Key Vault directly
+resource "azurerm_role_assignment" "graphdb-tls-key-vault-secrets-reader" {
   principal_id         = azurerm_user_assigned_identity.graphdb-tls-certificate.principal_id
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"

@@ -5,6 +5,7 @@ locals {
     disk_iops_read_write : var.disk_iops_read_write
     disk_mbps_read_write : var.disk_mbps_read_write
     disk_size_gb : var.disk_size_gb
+    backup_storage_container_url : var.backup_storage_container_url,
     backup_schedule : var.backup_schedule
   })
 }
@@ -63,8 +64,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   tags = var.tags
-
-  depends_on = [azurerm_role_assignment.rg-contributor-role, azurerm_role_assignment.rg-reader-role]
 }
 
 resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
@@ -86,60 +85,3 @@ resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
 
   tags = var.tags
 }
-
-resource "azurerm_role_definition" "managed_disk_manager" {
-  name        = "${var.resource_name_prefix}-ManagedDiskManager"
-  scope       = var.resource_group_id
-  description = "This is a custom role created via Terraform required for creating data disks for GraphDB"
-
-  permissions {
-    actions = [
-      "Microsoft.Compute/disks/read",
-      "Microsoft.Compute/disks/write",
-      "Microsoft.Compute/virtualMachineScaleSets/read",
-      "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/write",
-      "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/read",
-      "Microsoft.Network/virtualNetworks/subnets/join/action",
-      "Microsoft.Network/applicationGateways/backendAddressPools/join/action",
-      "Microsoft.Network/networkSecurityGroups/join/action"
-    ]
-    not_actions = []
-  }
-
-  assignable_scopes = [
-    var.resource_group_id
-  ]
-}
-
-resource "azurerm_role_assignment" "rg-contributor-role" {
-  principal_id         = var.identity_principal_id
-  scope                = var.resource_group_id
-  role_definition_name = "${var.resource_name_prefix}-ManagedDiskManager"
-  depends_on           = [azurerm_role_definition.managed_disk_manager]
-}
-
-resource "azurerm_role_definition" "backup_role" {
-  name        = "${var.resource_name_prefix}-ReadOnlyVMSSStorageRole"
-  scope       = var.resource_group_id
-  description = "This is a custom role created via Terraform required for creating backups in GraphDB"
-
-  permissions {
-    actions = [
-      "Microsoft.Compute/virtualMachineScaleSets/read",
-      "Microsoft.Storage/storageAccounts/read"
-    ]
-    not_actions = []
-  }
-
-  assignable_scopes = [
-    var.resource_group_id
-  ]
-}
-
-resource "azurerm_role_assignment" "rg-reader-role" {
-  principal_id         = var.identity_principal_id
-  scope                = var.resource_group_id
-  role_definition_name = "${var.resource_name_prefix}-ReadOnlyVMSSStorageRole"
-  depends_on           = [azurerm_role_definition.backup_role]
-}
-

@@ -27,11 +27,6 @@ variable "resource_group_name" {
   type        = string
 }
 
-variable "resource_group_id" {
-  description = "Identifier of the resource group where GraphDB will be deployed."
-  type        = string
-}
-
 # Networking
 
 variable "graphdb_subnet_id" {
@@ -43,11 +38,6 @@ variable "graphdb_subnet_id" {
 
 variable "identity_id" {
   description = "Identifier of a user assigned identity with permissions"
-  type        = string
-}
-
-variable "identity_principal_id" {
-  description = "Principal identifier of a user assigned identity with permissions"
   type        = string
 }
 
@@ -125,6 +115,13 @@ variable "disk_mbps_read_write" {
   description = "Data disk throughput"
   type        = number
   default     = null
+}
+
+# Backups
+
+variable "backup_storage_container_url" {
+  description = "URL to a storage container for uploading GraphDB backups"
+  type        = string
 }
 
 variable "backup_schedule" {

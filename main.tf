@@ -155,6 +155,35 @@ module "vault" {
   tags = local.tags
 }
 
+# Creates a storage account for storing GraphDB backups
+module "backup" {
+  source = "./modules/backup"
+
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
+  nacl_subnet_ids = [azurerm_subnet.graphdb-vmss.id]
+  nacl_ip_rules   = var.management_cidr_blocks
+
+  storage_account_tier             = var.storage_account_tier
+  storage_account_replication_type = var.storage_account_replication_type
+
+  tags = local.tags
+}
+
+# Creates and assigns required roles to the identity and services
+module "roles" {
+  source = "./modules/roles"
+
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_id    = azurerm_resource_group.graphdb.id
+
+  identity_principal_id        = module.identity.identity_principal_id
+  key_vault_id                 = module.vault.key_vault_id
+  backups_storage_container_id = module.backup.storage_account_id
+}
+
 # Managed GraphDB configurations in the Key Vault
 module "configuration" {
   source = "./modules/configuration"
@@ -189,7 +218,7 @@ module "tls" {
   tags = local.tags
 
   # Wait for role assignments
-  depends_on = [module.identity, module.vault]
+  depends_on = [module.vault]
 }
 
 # Creates a public application gateway for forwarding internet traffic to the GraphDB proxies
@@ -257,13 +286,11 @@ module "vm" {
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
-  resource_group_id    = azurerm_resource_group.graphdb.id
   zones                = var.zones
 
   graphdb_subnet_id = azurerm_subnet.graphdb-vmss.id
 
   identity_id                                  = module.identity.identity_id
-  identity_principal_id                        = module.identity.identity_principal_id
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
 
   # Configurations for the user data script
@@ -281,28 +308,11 @@ module "vm" {
 
   custom_user_data = var.custom_graphdb_vm_user_data
 
-  backup_schedule = var.backup_schedule
+  backup_storage_container_url = module.backup.storage_container_id
+  backup_schedule              = var.backup_schedule
 
   tags = local.tags
 
   # Wait for configurations to be created in the key vault and roles to be assigned
-  depends_on = [module.configuration]
-}
-
-# Creates a storage account for storing GraphDB backups
-module "backup" {
-  source = "./modules/backup"
-
-  resource_name_prefix = var.resource_name_prefix
-  location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
-
-  nacl_subnet_ids = [azurerm_subnet.graphdb-vmss.id]
-  nacl_ip_rules   = var.management_cidr_blocks
-
-  identity_principal_id            = module.identity.identity_principal_id
-  storage_account_tier             = var.storage_account_tier
-  storage_account_replication_type = var.storage_account_replication_type
-
-  tags = local.tags
+  depends_on = [module.configuration, module.roles]
 }
