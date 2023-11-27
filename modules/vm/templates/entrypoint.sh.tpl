@@ -13,11 +13,11 @@ az login --identity
 # Find/create/attach volumes
 INSTANCE_HOSTNAME=\'$(hostname)\'
 SUBSCRIPTION_ID=$(az account show --query "id" --output tsv)
-RESOURSE_GROUP=$(az vmss list --query "[0].resourceGroup" --output tsv)
+RESOURCE_GROUP=$(az vmss list --query "[0].resourceGroup" --output tsv)
 VMSS_NAME=$(az vmss list --query "[0].name" --output tsv)
-INSTANCE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].instanceId" --output tsv)
-ZONE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].zones" --output tsv)
-REGION_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].location" --output tsv)
+INSTANCE_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].instanceId" --output tsv)
+ZONE_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].zones" --output tsv)
+REGION_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].location" --output tsv)
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
 
@@ -25,14 +25,11 @@ DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
 
-# TODO Define the disk name based on the hostname ??
-diskName="Disk_$${VMSS_NAME}_$${INSTANCE_ID}"
-
 for i in $(seq 1 6); do
 # Wait for existing disks in the VMSS which are unattached
 existingUnattachedDisk=$(
-  az disk list --resource-group $RESOURSE_GROUP \
-    --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}')].{Name:name}" \
+  az disk list --resource-group $RESOURCE_GROUP \
+    --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
     --output tsv
   )
 
@@ -46,7 +43,16 @@ done
 
 if [ -z "$existingUnattachedDisk" ]; then
   echo "Creating a new managed disk"
-  az disk create --resource-group $RESOURSE_GROUP \
+  # Fetch the number of elements
+  numElements=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+
+  # Increment the number for the new name
+  DISK_ORDER=$((numElements + 1))
+
+  # TODO Define the disk name based on the hostname ??
+  diskName="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
+
+  az disk create --resource-group $RESOURCE_GROUP \
    --name $diskName \
    --size-gb $DISK_SIZE_GB \
    --location $REGION_ID \
@@ -55,23 +61,24 @@ if [ -z "$existingUnattachedDisk" ]; then
    --os-type Linux \
    --disk-iops-read-write $DISK_IOPS \
    --disk-mbps-read-write $DISK_THROUGHPUT \
+   --tags createdBy=$INSTANCE_HOSTNAME \
    --public-network-access Disabled \
    --network-access-policy DenyAll
 fi
 
 # Checks if a managed disk is attached to the instance
-attachedDisk=$(az vmss list-instances --resource-group "$RESOURSE_GROUP" --name "$VMSS_NAME" --query "[?instanceId==\"$INSTANCE_ID\"].storageProfile.dataDisks[].name" --output tsv)
+attachedDisk=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId==\"$INSTANCE_ID\"].storageProfile.dataDisks[].name" --output tsv)
 
 if [ -z "$attachedDisk" ]; then
     echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
     # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURSE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
     echo "Attaching available disk $availableDisks."
     # Set Internal Field Separator to newline to handle spaces in names
     IFS=$'\n'
     # Would iterate through all available disks and attempt to attach them
     for availableDisk in $availableDisks; do
-      az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURSE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
+      az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
     done
 fi
 
@@ -120,8 +127,28 @@ chown -R graphdb:graphdb /var/opt/graphdb
 # DNS hack
 #
 
-# TODO: Should be based on something stable, e.g. volume id
-node_dns=$(hostname)
+# TODO This won't handle cases where we have 2 VMs in 1 AZ. Since we cannot change the computerName when in VMSS our hands are tied
+
+ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
+IP_ADDRESS=$(hostname -I | xargs)
+VMSS_INSTANCE_NAME=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2021-01-01&format=text")
+ATTACHED_DISK_NAME=$(az disk list --query "[?diskState == 'Attached' && contains(managedBy, '$${VMSS_INSTANCE_NAME}')].name" --output tsv)
+RECORD_NAME="$( echo -n "$ATTACHED_DISK_NAME" | sed 's/^Disk/Node/' )"
+
+EXISTING_DNS_RECORD=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --output json) || EXISTING_DNS_RECORD=""
+
+  if [ -z "$EXISTING_DNS_RECORD" ]; then
+      echo "Creating a new DNS record..."
+      az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
+      echo "DNS record created successfully."
+  else
+      echo "Updating existing DNS record..."
+      az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+      echo "DNS record updated successfully."
+  fi
+
+# Gets the full DNS record for the current instance
+node_dns=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
 #
 # GraphDB configuration overrides

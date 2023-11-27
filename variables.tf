@@ -206,10 +206,3 @@ variable "bastion_subnet_address_prefix" {
   type        = list(string)
   default     = ["10.0.3.0/27"]
 }
-
-# DNS
-
-variable "zone_dns_name" {
-  description = "Zone DNS Name"
-  type        = string
-}

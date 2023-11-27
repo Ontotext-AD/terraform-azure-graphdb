@@ -317,28 +317,16 @@ module "vm" {
   depends_on = [module.configuration, module.roles]
 }
 
-
 module "dns" {
   source = "./modules/dns"
 
-  resource_name_prefix = var.resource_name_prefix
-  identity_name        = module.identity.identity_name
+  resource_name_prefix  = var.resource_name_prefix
+  resource_group_name   = azurerm_resource_group.graphdb.name
+  identity_name         = module.identity.identity_name
+  identity_principal_id = module.identity.identity_principal_id
+  virtual_network_id    = azurerm_virtual_network.graphdb.id
 
-  depends_on = [
-    azurerm_resource_group.graphdb,
-    azurerm_virtual_network.graphdb,
-    azurerm_subnet.graphdb-vmss,
-    module.configuration,
-    module.identity
-  ]
-}
-
-
-module "dns" {
-  source = "./modules/dns"
-
-  resource_name_prefix = var.resource_name_prefix
-  identity_name        = module.identity.identity_name
+  tags = local.tags
 
   depends_on = [
     azurerm_resource_group.graphdb,
