@@ -329,10 +329,7 @@ module "dns" {
   tags = local.tags
 
   depends_on = [
-    azurerm_resource_group.graphdb,
-    azurerm_virtual_network.graphdb,
-    azurerm_subnet.graphdb-vmss,
-    module.configuration,
-    module.identity
+    module.identity,
+    module.vm
   ]
 }
