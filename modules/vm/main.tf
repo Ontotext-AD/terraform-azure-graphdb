@@ -86,7 +86,7 @@ resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
 }
 
 resource "azurerm_role_definition" "managed_disk_manager" {
-  name        = "ManagedDiskManager"
+  name        = "${var.resource_name_prefix}-ManagedDiskManager"
   scope       = var.resource_group_id
   description = "This is a custom role created via Terraform required for creating data disks for GraphDB"
 
@@ -112,12 +112,12 @@ resource "azurerm_role_definition" "managed_disk_manager" {
 resource "azurerm_role_assignment" "rg-contributor-role" {
   principal_id         = var.identity_principal_id
   scope                = var.resource_group_id
-  role_definition_name = "ManagedDiskManager"
+  role_definition_name = "${var.resource_name_prefix}-ManagedDiskManager"
   depends_on           = [azurerm_role_definition.managed_disk_manager]
 }
 
 resource "azurerm_role_definition" "backup_role" {
-  name        = "ReadOnlyVMSSStorageRole"
+  name        = "${var.resource_name_prefix}-ReadOnlyVMSSStorageRole"
   scope       = var.resource_group_id
   description = "This is a custom role created via Terraform required for creating backups in GraphDB"
 
@@ -137,7 +137,7 @@ resource "azurerm_role_definition" "backup_role" {
 resource "azurerm_role_assignment" "rg-reader-role" {
   principal_id         = var.identity_principal_id
   scope                = var.resource_group_id
-  role_definition_name = "ReadOnlyVMSSStorageRole"
+  role_definition_name = "${var.resource_name_prefix}-ReadOnlyVMSSStorageRole"
   depends_on           = [azurerm_role_definition.backup_role]
 }
 

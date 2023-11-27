@@ -51,6 +51,7 @@ resource "azurerm_subnet" "graphdb-gateway" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.app_gateway_subnet_address_prefix
+  service_endpoints    = ["Microsoft.KeyVault"]
 }
 
 resource "azurerm_subnet" "graphdb-vmss" {
@@ -58,6 +59,7 @@ resource "azurerm_subnet" "graphdb-vmss" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.graphdb_subnet_address_prefix
+  service_endpoints    = ["Microsoft.KeyVault"]
 }
 
 resource "azurerm_network_security_group" "graphdb-gateway" {
@@ -143,6 +145,9 @@ module "vault" {
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
+
+  nacl_subnet_ids = [azurerm_subnet.graphdb-gateway.id, azurerm_subnet.graphdb-vmss.id]
+  nacl_ip_rules   = var.management_cidr_blocks
 
   tags = local.tags
 }
@@ -281,20 +286,18 @@ module "vm" {
   depends_on = [module.configuration]
 }
 
+# Creates a storage account for storing GraphDB backups
 module "backup" {
   source = "./modules/backup"
 
-  resource_name_prefix             = var.resource_name_prefix
-  resource_group_name              = azurerm_resource_group.graphdb.name
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
+  identity_name                    = module.identity.identity_name
+  identity_principal_id            = module.identity.identity_principal_id
   storage_account_tier             = var.storage_account_tier
   storage_account_replication_type = var.storage_account_replication_type
-  identity_name                    = module.identity.identity_name
-  location                         = var.location
-  identity_principal_id            = module.identity.identity_principal_id
 
   tags = local.tags
-
-  depends_on = [
-    azurerm_resource_group.graphdb
-  ]
 }

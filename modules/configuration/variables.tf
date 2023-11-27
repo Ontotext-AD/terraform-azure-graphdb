@@ -37,16 +37,22 @@ variable "graphdb_cluster_token" {
   default     = null
 }
 
-variable "graphdb_password" {
-  description = "Secret token used to access GraphDB cluster."
-  type        = string
-  default     = null
-}
-
 variable "graphdb_cluster_token_name" {
   description = "Name of the Key Vault secret that contains the GraphDB cluster secret token."
   type        = string
   default     = "graphdb-cluster-token"
+}
+
+variable "graphdb_password" {
+  description = "Administrator credentials for accessing GraphDB"
+  type        = string
+  default     = null
+}
+
+variable "graphdb_password_secret_name" {
+  description = "Name of the Key Vault secret that contains the GraphDB administrator credentials"
+  type        = string
+  default     = "graphdb-password"
 }
 
 variable "graphdb_properties_path" {
