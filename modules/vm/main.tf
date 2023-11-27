@@ -30,8 +30,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   upgrade_mode  = "Manual"
   overprovision = false
 
-  computer_name_prefix = "${var.resource_name_prefix}-"
-  admin_username       = "graphdb"
+  computer_name_prefix            = "${var.resource_name_prefix}-"
+  admin_username                  = "graphdb"
+  disable_password_authentication = true
+  encryption_at_host_enabled      = var.encryption_at_host
 
   scale_in {
     # In case of re-balancing, remove the newest VM which might have not been IN-SYNC yet with the cluster
@@ -62,7 +64,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
 
   tags = var.tags
 
-  depends_on = [azurerm_role_assignment.rg-contributor-role]
+  depends_on = [azurerm_role_assignment.rg-contributor-role, azurerm_role_assignment.rg-reader-role]
 }
 
 resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {

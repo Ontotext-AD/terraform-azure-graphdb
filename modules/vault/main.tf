@@ -19,8 +19,10 @@ resource "azurerm_key_vault" "graphdb" {
   location            = var.location
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
-  sku_name                  = "standard"
-  enable_rbac_authorization = true
+  sku_name                   = "standard"
+  enable_rbac_authorization  = true
+  purge_protection_enabled   = var.key_vault_enable_purge_protection
+  soft_delete_retention_days = var.key_vault_retention_days
 
   network_acls {
     bypass                     = "AzureServices"

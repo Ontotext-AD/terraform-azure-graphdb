@@ -1,0 +1,3 @@
+# Rule: Key vault should have purge protection enabled
+# Note: There is a variable for controlling the purge protection
+AVD-AZU-0016

@@ -26,8 +26,6 @@ resource "azurerm_application_gateway" "graphdb" {
 
   enable_http2 = true
 
-  # TODO: Connection draining?
-
   sku {
     name = "Standard_v2"
     tier = "Standard_v2"
@@ -41,6 +39,11 @@ resource "azurerm_application_gateway" "graphdb" {
   ssl_certificate {
     name                = local.gateway_ssl_certificate_name
     key_vault_secret_id = var.gateway_tls_certificate_secret_id
+  }
+
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = var.gateway_ssl_policy_profile
   }
 
   gateway_ip_configuration {
