@@ -48,6 +48,11 @@ variable "graphdb_subnet_address_prefix" {
   default     = ["10.0.2.0/24"]
 }
 
+variable "management_cidr_blocks" {
+  description = "CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault."
+  type        = list(string)
+}
+
 # TLS
 
 variable "tls_certificate_path" {
@@ -122,12 +127,6 @@ variable "instance_type" {
 variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
   type        = string
-  default     = null
-}
-
-variable "source_ssh_blocks" {
-  description = "CIDR blocks to allow SSH traffic from."
-  type        = list(string)
   default     = null
 }
 

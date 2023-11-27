@@ -39,11 +39,6 @@ variable "graphdb_subnet_id" {
   type        = string
 }
 
-variable "graphdb_subnet_cidr" {
-  description = "CIDR of the subnet where GraphDB will be deployed"
-  type        = string
-}
-
 # Security
 
 variable "identity_id" {
@@ -97,12 +92,6 @@ variable "image_id" {
 variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
   type        = string
-  default     = null
-}
-
-variable "source_ssh_blocks" {
-  description = "CIDR blocks to allow SSH traffic from."
-  type        = list(string)
   default     = null
 }
 

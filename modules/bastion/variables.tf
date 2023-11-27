@@ -33,3 +33,8 @@ variable "bastion_subnet_address_prefix" {
   type        = list(string)
   default     = ["10.0.3.0/27"]
 }
+
+variable "bastion_allowed_cidr_blocks" {
+  description = "CIDR blocks allowed for connecting to Bastion"
+  type        = list(string)
+}
