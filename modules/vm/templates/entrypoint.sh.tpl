@@ -129,7 +129,17 @@ chown -R graphdb:graphdb /var/opt/graphdb
 
 # TODO This won't handle cases where we have 2 VMs in 1 AZ. Since we cannot change the computerName when in VMSS our hands are tied
 
+for i in $(seq 1 6); do
+# Wait for DNS zone to be created and role assigned
 ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
+  if [ -z "$${ZONE_NAME:-}" ]; then
+    echo 'Zone not available yet'
+    sleep 10
+  else
+    break
+  fi
+done
+
 IP_ADDRESS=$(hostname -I | xargs)
 VMSS_INSTANCE_NAME=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2021-01-01&format=text")
 ATTACHED_DISK_NAME=$(az disk list --query "[?diskState == 'Attached' && contains(managedBy, '$${VMSS_INSTANCE_NAME}')].name" --output tsv)
