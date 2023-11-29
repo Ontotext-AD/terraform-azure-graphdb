@@ -182,6 +182,7 @@ module "roles" {
   identity_principal_id        = module.identity.identity_principal_id
   key_vault_id                 = module.vault.key_vault_id
   backups_storage_container_id = module.backup.storage_account_id
+  private_dns_zone             = module.dns.private_dns_zone_id
 }
 
 # Managed GraphDB configurations in the Key Vault
@@ -314,7 +315,7 @@ module "vm" {
   tags = local.tags
 
   # Wait for configurations to be created in the key vault and roles to be assigned
-  depends_on = [module.configuration, module.roles]
+  depends_on = [module.configuration, module.roles, module.dns]
 }
 
 module "dns" {
@@ -329,7 +330,6 @@ module "dns" {
   tags = local.tags
 
   depends_on = [
-    module.identity,
-    module.vm
+    module.identity
   ]
 }

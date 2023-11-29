@@ -12,20 +12,18 @@ az login --identity
 
 # Find/create/attach volumes
 INSTANCE_HOSTNAME=\'$(hostname)\'
-SUBSCRIPTION_ID=$(az account show --query "id" --output tsv)
-RESOURCE_GROUP=$(az vmss list --query "[0].resourceGroup" --output tsv)
-VMSS_NAME=$(az vmss list --query "[0].name" --output tsv)
-INSTANCE_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].instanceId" --output tsv)
-ZONE_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].zones" --output tsv)
-REGION_ID=$(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].location" --output tsv)
+RESOURCE_GROUP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
+VMSS_NAME=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
+INSTANCE_ID=$(basename $(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
+ZONE_ID=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/zone?api-version=2021-01-01&format=text")
+REGION_ID=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-01-01&format=text")
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
-
 DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
-
 ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv)
+
 # Checks if a disk is attached (handles terraform apply updates to the userdata script)
 if [ -z "$ATTACHED_DISK" ]; then
 
@@ -127,14 +125,14 @@ chown -R graphdb:graphdb /var/opt/graphdb
 
 #
 # DNS hack
+# This provides stable network addresses for GDB instances in Azure VMSS
 #
-
-# TODO This won't handle cases where we have 2 VMs in 1 AZ. Since we cannot change the computerName when in VMSS our hands are tied
+IP_ADDRESS=$(hostname -I | xargs)
 
 for i in $(seq 1 6); do
-# Wait for DNS zone to be created and role assigned
-ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
-  if [ -z "$${ZONE_NAME:-}" ]; then
+# Waits for DNS zone to be created and role assigned
+DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
+  if [ -z "$${DNS_ZONE_NAME:-}" ]; then
     echo 'Zone not available yet'
     sleep 10
   else
@@ -142,25 +140,56 @@ ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
   fi
 done
 
-IP_ADDRESS=$(hostname -I | xargs)
-VMSS_INSTANCE_NAME=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2021-01-01&format=text")
-ATTACHED_DISK_NAME=$(az disk list --query "[?diskState == 'Attached' && contains(managedBy, '$${VMSS_INSTANCE_NAME}')].name" --output tsv)
-RECORD_NAME="$( echo -n "$ATTACHED_DISK_NAME" | sed 's/^Disk/Node/' )"
+# Get all FQDN records from the private DNS zone containing "node"
+ALL_FQDN_RECORDS=($(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv))
+# Get all instance IDs for a specific VMSS
+INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
+# Sort instance IDs
+SORTED_INSTANCE_IDs=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort))
+# Find the lowest, middle and highest instance IDs
+LOWEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[0]}
+MIDDLE_INSTANCE_ID=$${SORTED_INSTANCE_IDs[1]}
+HIGHEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[2]}
 
-EXISTING_DNS_RECORD=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --output json) || EXISTING_DNS_RECORD=""
+# Will ping a DNS record, if no response is returned, will update the DNS record with the IP of the instance
+ping_and_set_dns_record() {
+	local dns_record="$1"
+	echo "Pinging $dns_record"
+	if ping -c 3 "$dns_record"; then
+    	echo "Ping successful"
+	else
+	  echo "Ping failed for $dns_record"
+	  # Extracts the record name
+		RECORD_NAME=$(echo "$dns_record" | awk -F'.' '{print $1}')
+		az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+	fi
+}
 
-  if [ -z "$EXISTING_DNS_RECORD" ]; then
-      echo "Creating a new DNS record..."
-      az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
-      echo "DNS record created successfully."
+# assign DNS record name based on instanceId
+for i in "$${!SORTED_INSTANCE_IDs[@]}"; do
+  if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-1"
+  elif [ "$INSTANCE_ID" == "$${MIDDLE_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-2"
+  elif [ "$INSTANCE_ID" == "$${HIGHEST_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-3"
+  fi
+  # Get the FQDN for the current instance
+  FQDN=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, '$RECORD_NAME')].fqdn" --output tsv)
+
+  if [ -z "$${FQDN:-}" ]; then
+    az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
   else
-      echo "Updating existing DNS record..."
-      az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
-      echo "DNS record updated successfully."
+    for record in "$${ALL_FQDN_RECORDS[@]}"; do
+      ping_and_set_dns_record "$record"
+    done
   fi
 
+  break
+done
+
 # Gets the full DNS record for the current instance
-node_dns=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
+node_dns=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
 #
 # GraphDB configuration overrides
@@ -182,6 +211,7 @@ graphdb.external-url=http://$${node_dns}:7200/
 graphdb.rpc.address=$${node_dns}:7300
 EOF
 
+# TODO provide graphdb_external_address_fqdn
 cat << EOF > /etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201

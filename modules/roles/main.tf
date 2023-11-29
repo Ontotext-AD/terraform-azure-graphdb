@@ -43,3 +43,9 @@ resource "azurerm_role_assignment" "rg-contributor-role" {
 
   depends_on = [azurerm_role_definition.managed_disk_manager]
 }
+
+resource "azurerm_role_assignment" "dns_zone_role_assignment" {
+  principal_id         = var.identity_principal_id
+  role_definition_name = "Private DNS Zone Contributor"
+  scope                = var.private_dns_zone
+}

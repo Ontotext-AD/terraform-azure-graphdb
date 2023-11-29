@@ -11,9 +11,3 @@ resource "azurerm_private_dns_zone_virtual_network_link" "zone_link" {
   virtual_network_id    = var.virtual_network_id
   tags                  = var.tags
 }
-
-resource "azurerm_role_assignment" "dns_zone_role_assignment" {
-  principal_id         = var.identity_principal_id
-  role_definition_name = "Private DNS Zone Contributor"
-  scope                = azurerm_private_dns_zone.zone.id
-}

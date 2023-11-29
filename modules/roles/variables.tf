@@ -30,3 +30,10 @@ variable "backups_storage_container_id" {
   description = "Identifier of the storage container for GraphDB backups"
   type        = string
 }
+
+# DNS
+
+variable "private_dns_zone" {
+  description = "Identifier of a Private DNS zone"
+  type        = string
+}
