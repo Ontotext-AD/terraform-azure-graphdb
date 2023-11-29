@@ -313,3 +313,42 @@ systemctl enable graphdb-cluster-proxy.service
 systemctl start graphdb-cluster-proxy.service
 
 echo "Finished GraphDB instance configuration"
+
+#
+# Cluster creation
+#
+
+check_gdb() {
+  local gdb_address="$1:7200/protocol"
+  if curl -s --head --fail $gdb_address > /dev/null; then
+    return 0  # Success, endpoint is available
+  else
+    return 1  # Endpoint not available yet
+  fi
+}
+
+if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
+    echo $ALL_FQDN_RECORDS
+    echo $${ALL_FQDN_RECORDS[@]}
+    for record in "$${ALL_FQDN_RECORDS[@]}"; do
+      echo $record
+      # Removes the '.' at the end of the DNS address
+      cleanedAddress=$${record%?}
+      while ! check_gdb $cleanedAddress ; do
+          echo "Waiting for GDB $record to start"
+          sleep 5
+        done
+    done
+
+  echo "All GDB instances are available. Creating cluster"
+
+  is_cluster=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
+
+  if [ "$is_cluster" != 200 ]; then
+    curl -X POST -H 'Content-type: application/json' http://localhost:7200/rest/cluster/config -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
+  else
+    echo "Cluster exists"
+  fi
+fi
+
+echo "Script completed."
