@@ -25,63 +25,65 @@ DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
 
-for i in $(seq 1 6); do
-# Wait for existing disks in the VMSS which are unattached
-existingUnattachedDisk=$(
-  az disk list --resource-group $RESOURCE_GROUP \
-    --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
-    --output tsv
-  )
+ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv)
+# Checks if a disk is attached (handles terraform apply updates to the userdata script)
+if [ -z "$ATTACHED_DISK" ]; then
 
-  if [ -z "$${existingUnattachedDisk:-}" ]; then
-    echo 'Disk not yet available'
-    sleep 10
-  else
-    break
+  for i in $(seq 1 6); do
+  # Wait for existing disks in the VMSS which are unattached
+  existingUnattachedDisk=$(
+    az disk list --resource-group $RESOURCE_GROUP \
+      --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+      --output tsv
+    )
+
+    if [ -z "$${existingUnattachedDisk:-}" ]; then
+      echo 'Disk not yet available'
+      sleep 10
+    else
+      break
+    fi
+  done
+
+  if [ -z "$existingUnattachedDisk" ]; then
+    echo "Creating a new managed disk"
+    # Fetch the number of elements
+    DISKS_IN_ZONE=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+
+    # Increment the number for the new name
+    DISK_ORDER=$((DISKS_IN_ZONE + 1))
+    DISK_NAME="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
+
+    az disk create --resource-group $RESOURCE_GROUP \
+     --name $DISK_NAME \
+     --size-gb $DISK_SIZE_GB \
+     --location $REGION_ID \
+     --sku PremiumV2_LRS \
+     --zone $ZONE_ID \
+     --os-type Linux \
+     --disk-iops-read-write $DISK_IOPS \
+     --disk-mbps-read-write $DISK_THROUGHPUT \
+     --tags createdBy=$INSTANCE_HOSTNAME \
+     --public-network-access Disabled \
+     --network-access-policy DenyAll
   fi
-done
 
-if [ -z "$existingUnattachedDisk" ]; then
-  echo "Creating a new managed disk"
-  # Fetch the number of elements
-  numElements=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+  # Checks if a managed disk is attached to the instance
+  ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv)
 
-  # Increment the number for the new name
-  DISK_ORDER=$((numElements + 1))
-
-  # TODO Define the disk name based on the hostname ??
-  diskName="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
-
-  az disk create --resource-group $RESOURCE_GROUP \
-   --name $diskName \
-   --size-gb $DISK_SIZE_GB \
-   --location $REGION_ID \
-   --sku PremiumV2_LRS \
-   --zone $ZONE_ID \
-   --os-type Linux \
-   --disk-iops-read-write $DISK_IOPS \
-   --disk-mbps-read-write $DISK_THROUGHPUT \
-   --tags createdBy=$INSTANCE_HOSTNAME \
-   --public-network-access Disabled \
-   --network-access-policy DenyAll
+  if [ -z "$ATTACHED_DISK" ]; then
+      echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
+      # Try to attach an existing managed disk
+      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+      echo "Attaching available disk $availableDisks."
+      # Set Internal Field Separator to newline to handle spaces in names
+      IFS=$'\n'
+      # Would iterate through all available disks and attempt to attach them
+      for availableDisk in $availableDisks; do
+        az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
+      done
+  fi
 fi
-
-# Checks if a managed disk is attached to the instance
-attachedDisk=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId==\"$INSTANCE_ID\"].storageProfile.dataDisks[].name" --output tsv)
-
-if [ -z "$attachedDisk" ]; then
-    echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
-    # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
-    echo "Attaching available disk $availableDisks."
-    # Set Internal Field Separator to newline to handle spaces in names
-    IFS=$'\n'
-    # Would iterate through all available disks and attempt to attach them
-    for availableDisk in $availableDisks; do
-      az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
-    done
-fi
-
 # Gets device name based on LUN
 graphdb_device=$(lsscsi --scsi --size | awk '/\[1:.*:0:2\]/ {print $7}')
 
