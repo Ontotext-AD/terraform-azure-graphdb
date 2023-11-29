@@ -1,3 +1,5 @@
+# General configurations
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string

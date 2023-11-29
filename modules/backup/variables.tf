@@ -35,13 +35,6 @@ variable "nacl_ip_rules" {
   default     = []
 }
 
-# Identity
-
-variable "identity_principal_id" {
-  description = "Principal identifier of a user assigned identity for assigning permissions"
-  type        = string
-}
-
 # Storage specifics
 
 variable "storage_account_tier" {

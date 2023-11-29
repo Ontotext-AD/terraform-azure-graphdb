@@ -39,7 +39,7 @@ jobs:
           format: sarif
           output: trivy.sarif
 
-      - name: Upload SARIF file
+      - name: Upload Trivy SARIF results
         uses: github/codeql-action/upload-sarif@v2
         timeout-minutes: 1
         with:

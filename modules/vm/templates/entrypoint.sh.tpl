@@ -207,9 +207,7 @@ fi
 
 BACKUP_NAME="\$(date +'%Y-%m-%d_%H-%M-%S').tar"
 TEMP_BACKUP_DIR="/var/opt/graphdb/"
-STORAGE_ACCOUNT="\$(az storage account list --resource-group "\$RESOURCE_GROUP" --query "[].name" --output tsv)"
-CONTAINER_NAME="\$(az storage container list --account-name "\$STORAGE_ACCOUNT" --query "[].name" --output tsv --auth-mode login)"
-BLOB_URL="\$(az storage blob url --account-name "\$STORAGE_ACCOUNT" --container-name "\$CONTAINER_NAME" --name "\$BACKUP_NAME" --auth-mode login --output tsv)"
+BLOB_URL="${backup_storage_container_url}/\$${BACKUP_NAME}"
 
 function trigger_backup {
   curl -X POST --output "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}" -H 'Content-Type: application/json' 'http://localhost:7200/rest/recovery/backup'

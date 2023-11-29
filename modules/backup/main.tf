@@ -48,20 +48,6 @@ resource "azurerm_storage_container" "graphdb-backup" {
   container_access_type = "private"
 }
 
-# Create an Azure Storage blob
-resource "azurerm_storage_blob" "graphdb-backup" {
-  name                   = "${var.resource_name_prefix}-backup"
-  type                   = "Block"
-  storage_account_name   = azurerm_storage_account.graphdb-backup.name
-  storage_container_name = azurerm_storage_container.graphdb-backup.name
-}
-
-resource "azurerm_role_assignment" "graphdb-backup" {
-  principal_id         = var.identity_principal_id
-  role_definition_name = "Storage Blob Data Contributor"
-  scope                = azurerm_storage_account.graphdb-backup.id
-}
-
 resource "azurerm_storage_management_policy" "graphdb-backup-retention" {
   storage_account_id = azurerm_storage_account.graphdb-backup.id
 
