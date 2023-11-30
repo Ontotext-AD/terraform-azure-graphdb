@@ -331,11 +331,9 @@ module "vmss" {
 module "dns" {
   source = "./modules/dns"
 
-  resource_name_prefix  = var.resource_name_prefix
-  resource_group_name   = azurerm_resource_group.graphdb.name
-  identity_name         = module.identity.identity_name
-  identity_principal_id = module.identity.identity_principal_id
-  virtual_network_id    = azurerm_virtual_network.graphdb.id
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  virtual_network_id   = azurerm_virtual_network.graphdb.id
 
   tags = local.tags
 
