@@ -53,8 +53,8 @@ resource "azurerm_storage_management_policy" "graphdb_backup_retention" {
   storage_account_id = azurerm_storage_account.graphdb_backup.id
 
   rule {
-    enabled = true
     name    = "31DayRetention"
+    enabled = true
     filters {
       blob_types = ["blockBlob", "appendBlob"]
     }
@@ -67,6 +67,26 @@ resource "azurerm_storage_management_policy" "graphdb_backup_retention" {
       }
       version {
         delete_after_days_since_creation = 31
+      }
+    }
+  }
+
+  # Create a rule to change tiers to cool after specific days since creation
+  rule {
+    name    = "HotToCoolTransitionRule"
+    enabled = true
+    filters {
+      blob_types = ["blockBlob"]
+    }
+    actions {
+      base_blob {
+        tier_to_cool_after_days_since_creation_greater_than = var.storage_account_retention_hot_to_cool
+      }
+      snapshot {
+        tier_to_cold_after_days_since_creation_greater_than = var.storage_account_retention_hot_to_cool
+      }
+      version {
+        change_tier_to_cool_after_days_since_creation = var.storage_account_retention_hot_to_cool
       }
     }
   }

@@ -201,6 +201,12 @@ variable "storage_account_replication_type" {
   default     = "ZRS"
 }
 
+variable "storage_account_retention_hot_to_cool" {
+  description = "Specifies the retention period in days between moving data from hot to cool tier storage"
+  type        = number
+  default     = 3
+}
+
 # Backup configurations
 
 variable "backup_schedule" {
