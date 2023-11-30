@@ -4,7 +4,7 @@ locals {
   nat_zone = var.zones[0]
 }
 
-resource "azurerm_public_ip" "graphdb-nat-ip-address" {
+resource "azurerm_public_ip" "graphdb_nat_ip_address" {
   name                = "${var.resource_name_prefix}-nat-gateway"
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -28,12 +28,12 @@ resource "azurerm_nat_gateway" "graphdb" {
   tags = var.tags
 }
 
-resource "azurerm_nat_gateway_public_ip_association" "graphdb-nat" {
+resource "azurerm_nat_gateway_public_ip_association" "graphdb_nat" {
   nat_gateway_id       = azurerm_nat_gateway.graphdb.id
-  public_ip_address_id = azurerm_public_ip.graphdb-nat-ip-address.id
+  public_ip_address_id = azurerm_public_ip.graphdb_nat_ip_address.id
 }
 
-resource "azurerm_subnet_nat_gateway_association" "graphdb-nat" {
+resource "azurerm_subnet_nat_gateway_association" "graphdb_nat" {
   nat_gateway_id = azurerm_nat_gateway.graphdb.id
   subnet_id      = var.nat_subnet_id
 }

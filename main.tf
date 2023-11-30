@@ -30,7 +30,7 @@ resource "azurerm_resource_group" "graphdb" {
   tags     = local.tags
 }
 
-resource "azurerm_management_lock" "graphdb-rg-lock" {
+resource "azurerm_management_lock" "graphdb_rg_lock" {
   count      = var.lock_resources ? 1 : 0
   name       = "${var.resource_name_prefix}-rg"
   scope      = azurerm_resource_group.graphdb.id
@@ -46,7 +46,7 @@ resource "azurerm_virtual_network" "graphdb" {
   tags                = local.tags
 }
 
-resource "azurerm_subnet" "graphdb-gateway" {
+resource "azurerm_subnet" "graphdb_gateway" {
   name                 = "${var.resource_name_prefix}-gateway"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
@@ -54,7 +54,7 @@ resource "azurerm_subnet" "graphdb-gateway" {
   service_endpoints    = ["Microsoft.KeyVault"]
 }
 
-resource "azurerm_subnet" "graphdb-vmss" {
+resource "azurerm_subnet" "graphdb_vmss" {
   name                 = "${var.resource_name_prefix}-vmss"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
@@ -62,7 +62,7 @@ resource "azurerm_subnet" "graphdb-vmss" {
   service_endpoints    = ["Microsoft.KeyVault", "Microsoft.Storage"]
 }
 
-resource "azurerm_network_security_group" "graphdb-gateway" {
+resource "azurerm_network_security_group" "graphdb_gateway" {
   name                = "${var.resource_name_prefix}-gateway"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = var.location
@@ -96,21 +96,21 @@ resource "azurerm_network_security_group" "graphdb-gateway" {
   tags = var.tags
 }
 
-resource "azurerm_network_security_group" "graphdb-vmss" {
+resource "azurerm_network_security_group" "graphdb_vmss" {
   name                = "${var.resource_name_prefix}-vmss"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = var.location
   tags                = var.tags
 }
 
-resource "azurerm_subnet_network_security_group_association" "graphdb-gateway" {
-  network_security_group_id = azurerm_network_security_group.graphdb-gateway.id
-  subnet_id                 = azurerm_subnet.graphdb-gateway.id
+resource "azurerm_subnet_network_security_group_association" "graphdb_gateway" {
+  network_security_group_id = azurerm_network_security_group.graphdb_gateway.id
+  subnet_id                 = azurerm_subnet.graphdb_gateway.id
 }
 
-resource "azurerm_subnet_network_security_group_association" "graphdb-vmss" {
-  network_security_group_id = azurerm_network_security_group.graphdb-vmss.id
-  subnet_id                 = azurerm_subnet.graphdb-vmss.id
+resource "azurerm_subnet_network_security_group_association" "graphdb_vmss" {
+  network_security_group_id = azurerm_network_security_group.graphdb_vmss.id
+  subnet_id                 = azurerm_subnet.graphdb_vmss.id
 }
 
 # ------------------------------------------------------------
@@ -146,7 +146,7 @@ module "vault" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  nacl_subnet_ids = [azurerm_subnet.graphdb-gateway.id, azurerm_subnet.graphdb-vmss.id]
+  nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id, azurerm_subnet.graphdb_vmss.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
   key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
@@ -163,7 +163,7 @@ module "backup" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  nacl_subnet_ids = [azurerm_subnet.graphdb-vmss.id]
+  nacl_subnet_ids = [azurerm_subnet.graphdb_vmss.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
   storage_account_tier             = var.storage_account_tier
@@ -230,7 +230,7 @@ module "application_gateway" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  gateway_subnet_id                 = azurerm_subnet.graphdb-gateway.id
+  gateway_subnet_id                 = azurerm_subnet.graphdb_gateway.id
   gateway_public_ip_id              = module.address.public_ip_address_id
   gateway_identity_id               = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
@@ -275,7 +275,7 @@ module "nat" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  nat_subnet_id = azurerm_subnet.graphdb-vmss.id
+  nat_subnet_id = azurerm_subnet.graphdb_vmss.id
 
   tags = local.tags
 }
@@ -289,7 +289,7 @@ module "vmss" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  graphdb_subnet_id = azurerm_subnet.graphdb-vmss.id
+  graphdb_subnet_id = azurerm_subnet.graphdb_vmss.id
 
   identity_id                                  = module.identity.identity_id
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]

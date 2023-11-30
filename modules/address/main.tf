@@ -5,7 +5,7 @@ resource "random_string" "fqdn" {
   numeric = true
 }
 
-resource "azurerm_public_ip" "graphdb-public-ip-address" {
+resource "azurerm_public_ip" "graphdb_public_ip_address" {
   name                = "${var.resource_name_prefix}-public-address"
   resource_group_name = var.resource_group_name
   location            = var.location

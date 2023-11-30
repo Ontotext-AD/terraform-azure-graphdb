@@ -1,12 +1,12 @@
 # Assign the identity to have read access to the key vault
-resource "azurerm_role_assignment" "graphdb-vmss-key-vault-reader" {
+resource "azurerm_role_assignment" "graphdb_vmss_key_vault_reader" {
   principal_id         = var.identity_principal_id
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Reader"
 }
 
 # Assign the identity to be able to upload GraphDB backups in the storage BLOB
-resource "azurerm_role_assignment" "graphdb-backup" {
+resource "azurerm_role_assignment" "graphdb_backup" {
   principal_id         = var.identity_principal_id
   scope                = var.backups_storage_container_id
   role_definition_name = "Storage Blob Data Contributor"
@@ -36,7 +36,7 @@ resource "azurerm_role_definition" "managed_disk_manager" {
   ]
 }
 
-resource "azurerm_role_assignment" "rg-contributor-role" {
+resource "azurerm_role_assignment" "rg_contributor_role" {
   principal_id         = var.identity_principal_id
   scope                = var.resource_group_id
   role_definition_name = azurerm_role_definition.managed_disk_manager.name

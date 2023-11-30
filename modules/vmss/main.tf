@@ -66,7 +66,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   tags = var.tags
 }
 
-resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
+resource "azurerm_monitor_autoscale_setting" "graphdb_auto_scale_settings" {
   name                = "${var.resource_name_prefix}-vmss"
   location            = var.location
   resource_group_name = var.resource_group_name
