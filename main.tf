@@ -281,8 +281,8 @@ module "nat" {
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
-module "vm" {
-  source = "./modules/vm"
+module "vmss" {
+  source = "./modules/vmss"
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
