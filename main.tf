@@ -280,6 +280,27 @@ module "nat" {
   tags = local.tags
 }
 
+module "user_data" {
+  source = "./modules/user-data"
+
+  count = var.custom_graphdb_vm_user_data != null ? 0 : 1
+
+  graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
+
+  key_vault_name = module.vault.key_vault_name
+
+  disk_iops_read_write = var.disk_iops_read_write
+  disk_mbps_read_write = var.disk_mbps_read_write
+  disk_size_gb         = var.disk_size_gb
+
+  backup_storage_container_url = module.backup.storage_container_id
+  backup_schedule              = var.backup_schedule
+}
+
+locals {
+  user_data_script = var.custom_graphdb_vm_user_data != null ? var.custom_graphdb_vm_user_data : module.user_data[0].graphdb_vmss_user_data
+}
+
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "vmss" {
   source = "./modules/vmss"
@@ -294,23 +315,12 @@ module "vmss" {
   identity_id                                  = module.identity.identity_id
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
 
-  # Configurations for the user data script
-  graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
-  key_vault_name                = module.vault.key_vault_name
-
-  disk_iops_read_write = var.disk_iops_read_write
-  disk_mbps_read_write = var.disk_mbps_read_write
-  disk_size_gb         = var.disk_size_gb
-
   instance_type = var.instance_type
   image_id      = module.graphdb_image.image_id
   node_count    = var.node_count
   ssh_key       = var.ssh_key
 
-  custom_user_data = var.custom_graphdb_vm_user_data
-
-  backup_storage_container_url = module.backup.storage_container_id
-  backup_schedule              = var.backup_schedule
+  user_data_script = local.user_data_script
 
   tags = local.tags
 
