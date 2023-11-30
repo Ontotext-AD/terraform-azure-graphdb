@@ -28,11 +28,11 @@ ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name
 if [ -z "$ATTACHED_DISK" ]; then
 
   for i in $(seq 1 6); do
-  # Wait for existing disks in the VMSS which are unattached
-  existingUnattachedDisk=$(
-    az disk list --resource-group $RESOURCE_GROUP \
-      --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
-      --output tsv
+    # Wait for existing disks in the VMSS which are unattached
+    existingUnattachedDisk=$(
+      az disk list --resource-group $RESOURCE_GROUP \
+        --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+        --output tsv
     )
 
     if [ -z "$${existingUnattachedDisk:-}" ]; then
@@ -53,44 +53,38 @@ if [ -z "$ATTACHED_DISK" ]; then
     DISK_NAME="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
 
     az disk create --resource-group $RESOURCE_GROUP \
-     --name $DISK_NAME \
-     --size-gb $DISK_SIZE_GB \
-     --location $REGION_ID \
-     --sku PremiumV2_LRS \
-     --zone $ZONE_ID \
-     --os-type Linux \
-     --disk-iops-read-write $DISK_IOPS \
-     --disk-mbps-read-write $DISK_THROUGHPUT \
-     --tags createdBy=$INSTANCE_HOSTNAME \
-     --public-network-access Disabled \
-     --network-access-policy DenyAll
+      --name $DISK_NAME \
+      --size-gb $DISK_SIZE_GB \
+      --location $REGION_ID \
+      --sku PremiumV2_LRS \
+      --zone $ZONE_ID \
+      --os-type Linux \
+      --disk-iops-read-write $DISK_IOPS \
+      --disk-mbps-read-write $DISK_THROUGHPUT \
+      --tags createdBy=$INSTANCE_HOSTNAME \
+      --public-network-access Disabled \
+      --network-access-policy DenyAll
   fi
 
-  # Checks if a managed disk is attached to the instance
-  ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv)
-
-  if [ -z "$ATTACHED_DISK" ]; then
-      echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
-      # Try to attach an existing managed disk
-      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
-      echo "Attaching available disk $availableDisks."
-      # Set Internal Field Separator to newline to handle spaces in names
-      IFS=$'\n'
-      # Would iterate through all available disks and attempt to attach them
-      for availableDisk in $availableDisks; do
-        az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
-      done
-  fi
+  # Try to attach an existing managed disk
+  availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+  echo "Attaching available disk $availableDisks."
+  # Set Internal Field Separator to newline to handle spaces in names
+  IFS=$'\n'
+  # Would iterate through all available disks and attempt to attach them
+  for availableDisk in $availableDisks; do
+    az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
+  done
 fi
 # Gets device name based on LUN
 graphdb_device=$(lsscsi --scsi --size | awk '/\[1:.*:0:2\]/ {print $7}')
 
 # Check if the device is present after attaching the disk
 if [ -b "$graphdb_device" ]; then
-    echo "Device $graphdb_device is available."
+  echo "Device $graphdb_device is available."
 else
-    echo "Device $graphdb_device is not available. Something went wrong."
-    exit 1
+  echo "Device $graphdb_device is not available. Something went wrong."
+  exit 1
 fi
 
 # create a file system if there isn't any
@@ -107,7 +101,7 @@ if ! mount | grep -q "$graphdb_device"; then
 
   # Add an entry to the fstab file to automatically mount the disk
   if ! grep -q "$graphdb_device" /etc/fstab; then
-    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >> /etc/fstab
+    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >>/etc/fstab
   fi
 
   # Mount the disk
@@ -127,11 +121,11 @@ chown -R graphdb:graphdb /var/opt/graphdb
 # DNS hack
 # This provides stable network addresses for GDB instances in Azure VMSS
 #
-IP_ADDRESS=$(hostname -I | xargs)
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 for i in $(seq 1 6); do
-# Waits for DNS zone to be created and role assigned
-DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
+  # Waits for DNS zone to be created and role assigned
+  DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
   if [ -z "$${DNS_ZONE_NAME:-}" ]; then
     echo 'Zone not available yet'
     sleep 10
@@ -153,16 +147,16 @@ HIGHEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[2]}
 
 # Will ping a DNS record, if no response is returned, will update the DNS record with the IP of the instance
 ping_and_set_dns_record() {
-	local dns_record="$1"
-	echo "Pinging $dns_record"
-	if ping -c 3 "$dns_record"; then
-    	echo "Ping successful"
-	else
-	  echo "Ping failed for $dns_record"
-	  # Extracts the record name
-		RECORD_NAME=$(echo "$dns_record" | awk -F'.' '{print $1}')
-		az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
-	fi
+  local dns_record="$1"
+  echo "Pinging $dns_record"
+  if ping -c 5 "$dns_record"; then
+    echo "Ping successful"
+  else
+    echo "Ping failed for $dns_record"
+    # Extracts the record name
+    RECORD_NAME=$(echo "$dns_record" | awk -F'.' '{print $1}')
+    az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+  fi
 }
 
 # assign DNS record name based on instanceId
@@ -204,15 +198,14 @@ az keyvault secret download --vault-name ${key_vault_name} --name graphdb-licens
 graphdb_cluster_token=$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-cluster-token | jq -rj .value | base64 -d)
 
 # TODO: where is the vhost here?
-cat << EOF > /etc/graphdb/graphdb.properties
+cat <<EOF > /etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
 graphdb.external-url=http://$${node_dns}:7200/
 graphdb.rpc.address=$${node_dns}:7300
 EOF
 
-# TODO provide graphdb_external_address_fqdn
-cat << EOF > /etc/graphdb-cluster-proxy/graphdb.properties
+cat <<EOF > /etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
 graphdb.external-url=https://${graphdb_external_address_fqdn}
@@ -232,7 +225,7 @@ jvm_max_memory=$(echo "$total_memory_gb * 0.85" | bc | cut -d'.' -f1)
 
 mkdir -p /etc/systemd/system/graphdb.service.d/
 
-cat << EOF > /etc/systemd/system/graphdb.service.d/overrides.conf
+cat <<EOF > /etc/systemd/system/graphdb.service.d/overrides.conf
 [Service]
 Environment="GDB_HEAP_SIZE=$${jvm_max_memory}g"
 EOF
@@ -241,7 +234,7 @@ EOF
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"graphdb-properties"* ]]; then
   echo "Using graphdb.properties overrides"
-  az keyvault secret show --vault-name ${key_vault_name} --name graphdb-properties | jq -rj .value | base64 -d >> /etc/graphdb/graphdb.properties
+  az keyvault secret show --vault-name ${key_vault_name} --name graphdb-properties | jq -rj .value | base64 -d >>/etc/graphdb/graphdb.properties
 fi
 
 # Appends environment overrides to GDB_JAVA_OPTS
@@ -317,38 +310,68 @@ echo "Finished GraphDB instance configuration"
 #
 # Cluster creation
 #
+GRAPHDB_ADMIN_PASSWORD="$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
 
 check_gdb() {
   local gdb_address="$1:7200/protocol"
-  if curl -s --head --fail $gdb_address > /dev/null; then
-    return 0  # Success, endpoint is available
+  if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail $gdb_address >/dev/null; then
+    return 0 # Success, endpoint is available
   else
-    return 1  # Endpoint not available yet
+    return 1 # Endpoint not available yet
   fi
 }
 
+# Waits for 3 DNS records to be available
+wait_dns_records() {
+  ALL_FQDN_RECORDS=($(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv))
+  if [ "$${ALL_FQDN_RECORDS[@]}" -ne 3 ]; then
+    sleep 5
+    wait_dns_records
+  fi
+}
+
+wait_dns_records
+
 if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
-    echo $ALL_FQDN_RECORDS
-    echo $${ALL_FQDN_RECORDS[@]}
-    for record in "$${ALL_FQDN_RECORDS[@]}"; do
-      echo $record
-      # Removes the '.' at the end of the DNS address
-      cleanedAddress=$${record%?}
-      while ! check_gdb $cleanedAddress ; do
-          echo "Waiting for GDB $record to start"
-          sleep 5
-        done
+  for record in "$${ALL_FQDN_RECORDS[@]}"; do
+    echo $record
+    # Removes the '.' at the end of the DNS address
+    cleanedAddress=$${record%?}
+    while ! check_gdb $cleanedAddress; do
+      echo "Waiting for GDB $record to start"
+      sleep 5
     done
+  done
 
   echo "All GDB instances are available. Creating cluster"
-
-  is_cluster=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
+  # Checks if the cluster already exists
+  is_cluster=$(curl -s -o /dev/null -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
 
   if [ "$is_cluster" != 200 ]; then
-    curl -X POST -H 'Content-type: application/json' http://localhost:7200/rest/cluster/config -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
+    curl -X POST http://localhost:7200/rest/cluster/config \
+      -H 'Content-type: application/json' \
+      -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+      -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
   else
     echo "Cluster exists"
   fi
+fi
+
+#
+# Change admin user password and enable security
+#
+security_enabled=$(curl -s -X GET --header 'Accept: application/json' -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" 'http://localhost:7200/rest/security')
+
+# Check if GDB security is enabled
+if [[ $security_enabled == "true" ]]; then
+  echo "Security is enabled"
+else
+  # Set the admin password
+  curl --location --request PATCH 'http://localhost:7200/rest/security/users/admin' \
+    --header 'Content-Type: application/json' \
+    --data "{ \"password\": \"$${GRAPHDB_ADMIN_PASSWORD}\" }"
+  # Enable the security
+  curl -X POST --header 'Content-Type: application/json' --header 'Accept: */*' -d 'true' 'http://localhost:7200/rest/security'
 fi
 
 echo "Script completed."
