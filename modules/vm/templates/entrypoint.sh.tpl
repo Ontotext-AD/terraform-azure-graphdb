@@ -12,78 +12,79 @@ az login --identity
 
 # Find/create/attach volumes
 INSTANCE_HOSTNAME=\'$(hostname)\'
-SUBSCRIPTION_ID=$(az account show --query "id" --output tsv)
-RESOURSE_GROUP=$(az vmss list --query "[0].resourceGroup" --output tsv)
-VMSS_NAME=$(az vmss list --query "[0].name" --output tsv)
-INSTANCE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].instanceId" --output tsv)
-ZONE_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].zones" --output tsv)
-REGION_ID=$(az vmss list-instances --resource-group $RESOURSE_GROUP --name $VMSS_NAME --query "[?contains(osProfile.computerName, $${INSTANCE_HOSTNAME})].location" --output tsv)
+RESOURCE_GROUP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
+VMSS_NAME=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
+INSTANCE_ID=$(basename $(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
+ZONE_ID=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/zone?api-version=2021-01-01&format=text")
+REGION_ID=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-01-01&format=text")
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
-
 DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
+ATTACHED_DISK=$(az vmss list-instances --resource-group "$RESOURCE_GROUP" --name "$VMSS_NAME" --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv)
 
-# TODO Define the disk name based on the hostname ??
-diskName="Disk_$${VMSS_NAME}_$${INSTANCE_ID}"
+# Checks if a disk is attached (handles terraform apply updates to the userdata script)
+if [ -z "$ATTACHED_DISK" ]; then
 
-for i in $(seq 1 6); do
-# Wait for existing disks in the VMSS which are unattached
-existingUnattachedDisk=$(
-  az disk list --resource-group $RESOURSE_GROUP \
-    --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}')].{Name:name}" \
-    --output tsv
-  )
+  for i in $(seq 1 6); do
+    # Wait for existing disks in the VMSS which are unattached
+    existingUnattachedDisk=$(
+      az disk list --resource-group $RESOURCE_GROUP \
+        --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+        --output tsv
+    )
 
-  if [ -z "$${existingUnattachedDisk:-}" ]; then
-    echo 'Disk not yet available'
-    sleep 10
-  else
-    break
+    if [ -z "$${existingUnattachedDisk:-}" ]; then
+      echo 'Disk not yet available'
+      sleep 10
+    else
+      break
+    fi
+  done
+
+  if [ -z "$existingUnattachedDisk" ]; then
+    echo "Creating a new managed disk"
+    # Fetch the number of elements
+    DISKS_IN_ZONE=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+
+    # Increment the number for the new name
+    DISK_ORDER=$((DISKS_IN_ZONE + 1))
+    DISK_NAME="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
+
+    az disk create --resource-group $RESOURCE_GROUP \
+      --name $DISK_NAME \
+      --size-gb $DISK_SIZE_GB \
+      --location $REGION_ID \
+      --sku PremiumV2_LRS \
+      --zone $ZONE_ID \
+      --os-type Linux \
+      --disk-iops-read-write $DISK_IOPS \
+      --disk-mbps-read-write $DISK_THROUGHPUT \
+      --tags createdBy=$INSTANCE_HOSTNAME \
+      --public-network-access Disabled \
+      --network-access-policy DenyAll
   fi
-done
 
-if [ -z "$existingUnattachedDisk" ]; then
-  echo "Creating a new managed disk"
-  az disk create --resource-group $RESOURSE_GROUP \
-   --name $diskName \
-   --size-gb $DISK_SIZE_GB \
-   --location $REGION_ID \
-   --sku PremiumV2_LRS \
-   --zone $ZONE_ID \
-   --os-type Linux \
-   --disk-iops-read-write $DISK_IOPS \
-   --disk-mbps-read-write $DISK_THROUGHPUT \
-   --public-network-access Disabled \
-   --network-access-policy DenyAll
+  # Try to attach an existing managed disk
+  availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+  echo "Attaching available disk $availableDisks."
+  # Set Internal Field Separator to newline to handle spaces in names
+  IFS=$'\n'
+  # Would iterate through all available disks and attempt to attach them
+  for availableDisk in $availableDisks; do
+    az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
+  done
 fi
-
-# Checks if a managed disk is attached to the instance
-attachedDisk=$(az vmss list-instances --resource-group "$RESOURSE_GROUP" --name "$VMSS_NAME" --query "[?instanceId==\"$INSTANCE_ID\"].storageProfile.dataDisks[].name" --output tsv)
-
-if [ -z "$attachedDisk" ]; then
-    echo "No data disks attached for instance ID $INSTANCE_ID in VMSS $VMSS_NAME."
-    # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURSE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk_$${VMSS_NAME}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
-    echo "Attaching available disk $availableDisks."
-    # Set Internal Field Separator to newline to handle spaces in names
-    IFS=$'\n'
-    # Would iterate through all available disks and attempt to attach them
-    for availableDisk in $availableDisks; do
-      az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURSE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
-    done
-fi
-
 # Gets device name based on LUN
 graphdb_device=$(lsscsi --scsi --size | awk '/\[1:.*:0:2\]/ {print $7}')
 
 # Check if the device is present after attaching the disk
 if [ -b "$graphdb_device" ]; then
-    echo "Device $graphdb_device is available."
+  echo "Device $graphdb_device is available."
 else
-    echo "Device $graphdb_device is not available. Something went wrong."
-    exit 1
+  echo "Device $graphdb_device is not available. Something went wrong."
+  exit 1
 fi
 
 # create a file system if there isn't any
@@ -100,7 +101,7 @@ if ! mount | grep -q "$graphdb_device"; then
 
   # Add an entry to the fstab file to automatically mount the disk
   if ! grep -q "$graphdb_device" /etc/fstab; then
-    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >> /etc/fstab
+    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >>/etc/fstab
   fi
 
   # Mount the disk
@@ -118,10 +119,71 @@ chown -R graphdb:graphdb /var/opt/graphdb
 
 #
 # DNS hack
+# This provides stable network addresses for GDB instances in Azure VMSS
 #
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
-# TODO: Should be based on something stable, e.g. volume id
-node_dns=$(hostname)
+for i in $(seq 1 6); do
+  # Waits for DNS zone to be created and role assigned
+  DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
+  if [ -z "$${DNS_ZONE_NAME:-}" ]; then
+    echo 'Zone not available yet'
+    sleep 10
+  else
+    break
+  fi
+done
+
+# Get all FQDN records from the private DNS zone containing "node"
+ALL_FQDN_RECORDS=($(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv))
+# Get all instance IDs for a specific VMSS
+INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
+# Sort instance IDs
+SORTED_INSTANCE_IDs=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort))
+# Find the lowest, middle and highest instance IDs
+LOWEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[0]}
+MIDDLE_INSTANCE_ID=$${SORTED_INSTANCE_IDs[1]}
+HIGHEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[2]}
+
+# Will ping a DNS record, if no response is returned, will update the DNS record with the IP of the instance
+ping_and_set_dns_record() {
+  local dns_record="$1"
+  echo "Pinging $dns_record"
+  if ping -c 5 "$dns_record"; then
+    echo "Ping successful"
+  else
+    echo "Ping failed for $dns_record"
+    # Extracts the record name
+    RECORD_NAME=$(echo "$dns_record" | awk -F'.' '{print $1}')
+    az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+  fi
+}
+
+# assign DNS record name based on instanceId
+for i in "$${!SORTED_INSTANCE_IDs[@]}"; do
+  if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-1"
+  elif [ "$INSTANCE_ID" == "$${MIDDLE_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-2"
+  elif [ "$INSTANCE_ID" == "$${HIGHEST_INSTANCE_ID}" ]; then
+    RECORD_NAME="node-3"
+  fi
+  # Get the FQDN for the current instance
+  FQDN=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, '$RECORD_NAME')].fqdn" --output tsv)
+
+  if [ -z "$${FQDN:-}" ]; then
+    az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
+  else
+    for record in "$${ALL_FQDN_RECORDS[@]}"; do
+      ping_and_set_dns_record "$record"
+    done
+  fi
+
+  break
+done
+
+# Gets the full DNS record for the current instance
+node_dns=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
 #
 # GraphDB configuration overrides
@@ -136,14 +198,14 @@ az keyvault secret download --vault-name ${key_vault_name} --name graphdb-licens
 graphdb_cluster_token=$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-cluster-token | jq -rj .value | base64 -d)
 
 # TODO: where is the vhost here?
-cat << EOF > /etc/graphdb/graphdb.properties
+cat <<EOF > /etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
 graphdb.external-url=http://$${node_dns}:7200/
 graphdb.rpc.address=$${node_dns}:7300
 EOF
 
-cat << EOF > /etc/graphdb-cluster-proxy/graphdb.properties
+cat <<EOF > /etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
 graphdb.external-url=https://${graphdb_external_address_fqdn}
@@ -163,7 +225,7 @@ jvm_max_memory=$(echo "$total_memory_gb * 0.85" | bc | cut -d'.' -f1)
 
 mkdir -p /etc/systemd/system/graphdb.service.d/
 
-cat << EOF > /etc/systemd/system/graphdb.service.d/overrides.conf
+cat <<EOF > /etc/systemd/system/graphdb.service.d/overrides.conf
 [Service]
 Environment="GDB_HEAP_SIZE=$${jvm_max_memory}g"
 EOF
@@ -172,7 +234,7 @@ EOF
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"graphdb-properties"* ]]; then
   echo "Using graphdb.properties overrides"
-  az keyvault secret show --vault-name ${key_vault_name} --name graphdb-properties | jq -rj .value | base64 -d >> /etc/graphdb/graphdb.properties
+  az keyvault secret show --vault-name ${key_vault_name} --name graphdb-properties | jq -rj .value | base64 -d >>/etc/graphdb/graphdb.properties
 fi
 
 # Appends environment overrides to GDB_JAVA_OPTS
@@ -244,3 +306,72 @@ systemctl enable graphdb-cluster-proxy.service
 systemctl start graphdb-cluster-proxy.service
 
 echo "Finished GraphDB instance configuration"
+
+#
+# Cluster creation
+#
+GRAPHDB_ADMIN_PASSWORD="$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
+
+check_gdb() {
+  local gdb_address="$1:7200/protocol"
+  if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail $gdb_address >/dev/null; then
+    return 0 # Success, endpoint is available
+  else
+    return 1 # Endpoint not available yet
+  fi
+}
+
+# Waits for 3 DNS records to be available
+wait_dns_records() {
+  ALL_FQDN_RECORDS=($(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv))
+  if [ "$${ALL_FQDN_RECORDS[@]}" -ne 3 ]; then
+    sleep 5
+    wait_dns_records
+  fi
+}
+
+wait_dns_records
+
+if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
+  for record in "$${ALL_FQDN_RECORDS[@]}"; do
+    echo $record
+    # Removes the '.' at the end of the DNS address
+    cleanedAddress=$${record%?}
+    while ! check_gdb $cleanedAddress; do
+      echo "Waiting for GDB $record to start"
+      sleep 5
+    done
+  done
+
+  echo "All GDB instances are available. Creating cluster"
+  # Checks if the cluster already exists
+  is_cluster=$(curl -s -o /dev/null -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
+
+  if [ "$is_cluster" != 200 ]; then
+    curl -X POST http://localhost:7200/rest/cluster/config \
+      -H 'Content-type: application/json' \
+      -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+      -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
+  else
+    echo "Cluster exists"
+  fi
+fi
+
+#
+# Change admin user password and enable security
+#
+security_enabled=$(curl -s -X GET --header 'Accept: application/json' -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" 'http://localhost:7200/rest/security')
+
+# Check if GDB security is enabled
+if [[ $security_enabled == "true" ]]; then
+  echo "Security is enabled"
+else
+  # Set the admin password
+  curl --location --request PATCH 'http://localhost:7200/rest/security/users/admin' \
+    --header 'Content-Type: application/json' \
+    --data "{ \"password\": \"$${GRAPHDB_ADMIN_PASSWORD}\" }"
+  # Enable the security
+  curl -X POST --header 'Content-Type: application/json' --header 'Accept: */*' -d 'true' 'http://localhost:7200/rest/security'
+fi
+
+echo "Script completed."
