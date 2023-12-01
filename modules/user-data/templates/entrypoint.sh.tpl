@@ -331,24 +331,41 @@ if [ "\$NODE_STATE" != "LEADER" ]; then
 fi
 
 BACKUP_NAME="\$(date +'%Y-%m-%d_%H-%M-%S').tar"
-TEMP_BACKUP_DIR="/var/opt/graphdb/"
-BLOB_URL="${backup_storage_container_url}/\$${BACKUP_NAME}"
+max_retries=3
+retry_count=0
 
-function trigger_backup {
-  curl -X POST --output "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}" -H 'Content-Type: application/json' 'http://localhost:7200/rest/recovery/backup'
-  upload_to_azure_storage
-}
+while [ "\$retry_count" -lt "\$max_retries" ]; do
+  start_time=\$(date +%s)
 
-function upload_to_azure_storage {
-  az storage blob upload --file "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}" --blob-url "\$BLOB_URL" --auth-mode login --validate-content
-}
+  response_code=\$(curl -X POST --write-out %%{http_code} --silent --output /dev/null \
+    --header 'Content-Type: application/json' \
+    -u "admin:\$GRAPHDB_ADMIN_PASSWORD" \
+    --header 'Accept: application/json' \
+    -d "{\"bucketUri\": \"az://${backup_storage_container_name}/\$${BACKUP_NAME}?blob_storage_account=${backup_storage_account_name}\", \"backupOptions\": {\"backupSystemData\": true}}" \
+    'http://localhost:7200/rest/recovery/cloud-backup'
+  )
 
-trigger_backup
+  end_time=\$(date +%s)
+  elapsed_time=\$((end_time - start_time))
 
-# Delete local backup file after upload
-rm "\$${TEMP_BACKUP_DIR}\$${BACKUP_NAME}"
+  if [ "\$response_code" -eq 200 ]; then
+    echo "Backup and upload completed successfully in \$elapsed_time seconds."
+    break
+  else
+    echo "Failed to complete the backup and upload. HTTP Response Code: \$response_code"
+    echo "Request took: \$elapsed_time"
 
-echo "Backup and upload completed successfully."
+    if [ "\$retry_count" -eq "\$max_retries" ]; then
+      echo "Max retries reached. Backup could not be created. Exiting..."
+    else
+      echo "Retrying..."
+    fi
+
+    ((retry_count=retry_count + 1))
+    sleep 5
+  fi
+
+done
 
 EOF
 
