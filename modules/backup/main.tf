@@ -25,11 +25,14 @@ resource "azurerm_storage_account" "graphdb_backup" {
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  account_tier                    = var.storage_account_tier
-  account_replication_type        = var.storage_account_replication_type
-  enable_https_traffic_only       = true
-  allow_nested_items_to_be_public = false
-  min_tls_version                 = "TLS1_2"
+  account_kind                      = var.storage_account_kind
+  account_tier                      = var.storage_account_tier
+  account_replication_type          = var.storage_account_replication_type
+  enable_https_traffic_only         = true
+  allow_nested_items_to_be_public   = false
+  shared_access_key_enabled         = false
+  min_tls_version                   = "TLS1_2"
+  infrastructure_encryption_enabled = true
 
   network_rules {
     bypass                     = ["AzureServices"]

@@ -10,6 +10,8 @@ provider "azurerm" {
       purge_soft_delete_on_destroy = true
     }
   }
+  # Required when shared_access_key_enabled is false
+  storage_use_azuread = true
 }
 
 locals {
