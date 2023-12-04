@@ -298,7 +298,6 @@ module "user_data" {
   backup_storage_container_name = module.backup.storage_container_name
   backup_storage_account_name   = module.backup.storage_account_name
   backup_schedule               = var.backup_schedule
-
 }
 
 locals {
@@ -325,7 +324,6 @@ module "vmss" {
   ssh_key       = var.ssh_key
 
   user_data_script = local.user_data_script
-  custom_user_data = var.custom_graphdb_vm_user_data
 
   tags = local.tags
 

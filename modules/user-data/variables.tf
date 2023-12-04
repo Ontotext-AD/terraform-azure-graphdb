@@ -34,8 +34,13 @@ variable "disk_mbps_read_write" {
 
 # Backups
 
-variable "backup_storage_container_url" {
-  description = "URL to a storage container for uploading GraphDB backups"
+variable "backup_storage_account_name" {
+  description = "Storage account name for storing GraphDB backups"
+  type        = string
+}
+
+variable "backup_storage_container_name" {
+  description = "Name of the storage container for GraphDB backups"
   type        = string
 }
 

@@ -14,7 +14,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
 
   sku           = var.instance_type
   instances     = var.node_count
-  zones         = [1, 2]
+  zones         = var.zones
   zone_balance  = true
   upgrade_mode  = "Manual"
   overprovision = false
@@ -47,7 +47,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   admin_ssh_key {
-    public_key = file(var.ssh_key)
+    public_key = var.ssh_key
     username   = "graphdb"
   }
 
