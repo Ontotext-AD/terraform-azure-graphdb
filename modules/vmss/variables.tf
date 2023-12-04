@@ -41,24 +41,12 @@ variable "identity_id" {
   type        = string
 }
 
-variable "key_vault_name" {
-  description = "Name of a Key Vault containing GraphDB configurations"
-  type        = string
-}
-
 # Application Gateway
 
 variable "application_gateway_backend_address_pool_ids" {
   description = "Array of identifiers of load balancer backend pools for the GraphDB nodes"
   type        = list(string)
   default     = []
-}
-
-# GraphDB configurations
-
-variable "graphdb_external_address_fqdn" {
-  description = "External FQDN for GraphDB"
-  type        = string
 }
 
 # GraphDB VM
@@ -85,46 +73,13 @@ variable "ssh_key" {
   default     = null
 }
 
-variable "custom_user_data" {
-  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
+variable "user_data_script" {
+  description = "User data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
-  default     = null
 }
 
 variable "encryption_at_host" {
   description = "Enables encryption at rest on the VM host"
   type        = bool
   default     = true
-}
-
-# Managed Data Disks
-
-variable "disk_size_gb" {
-  description = "Size of the managed data disk which will be created"
-  type        = number
-  default     = null
-}
-
-variable "disk_iops_read_write" {
-  description = "Data disk IOPS"
-  type        = number
-  default     = null
-}
-
-variable "disk_mbps_read_write" {
-  description = "Data disk throughput"
-  type        = number
-  default     = null
-}
-
-# Backups
-
-variable "backup_storage_container_url" {
-  description = "URL to a storage container for uploading GraphDB backups"
-  type        = string
-}
-
-variable "backup_schedule" {
-  description = "Cron expression for the backup job."
-  type        = string
 }

@@ -1,15 +1,3 @@
-locals {
-  user_data_script = var.custom_user_data != null ? var.custom_user_data : templatefile("${path.module}/templates/entrypoint.sh.tpl", {
-    graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
-    key_vault_name : var.key_vault_name
-    disk_iops_read_write : var.disk_iops_read_write
-    disk_mbps_read_write : var.disk_mbps_read_write
-    disk_size_gb : var.disk_size_gb
-    backup_storage_container_url : var.backup_storage_container_url,
-    backup_schedule : var.backup_schedule
-  })
-}
-
 # Create virtual machine scale set
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   name                = var.resource_name_prefix
@@ -17,7 +5,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   location            = var.location
 
   source_image_id = var.image_id
-  user_data       = base64encode(local.user_data_script)
+  user_data       = base64encode(var.user_data_script)
 
   identity {
     type         = "UserAssigned"
@@ -66,7 +54,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   tags = var.tags
 }
 
-resource "azurerm_monitor_autoscale_setting" "graphdb-autoscale-settings" {
+resource "azurerm_monitor_autoscale_setting" "graphdb_auto_scale_settings" {
   name                = "${var.resource_name_prefix}-vmss"
   location            = var.location
   resource_group_name = var.resource_group_name

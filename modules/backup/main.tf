@@ -20,16 +20,19 @@ locals {
 }
 
 # Create an Azure Storage Account for backups
-resource "azurerm_storage_account" "graphdb-backup" {
+resource "azurerm_storage_account" "graphdb_backup" {
   name                = local.storage_account_name
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  account_tier                    = var.storage_account_tier
-  account_replication_type        = var.storage_account_replication_type
-  enable_https_traffic_only       = true
-  allow_nested_items_to_be_public = false
-  min_tls_version                 = "TLS1_2"
+  account_kind                      = var.storage_account_kind
+  account_tier                      = var.storage_account_tier
+  account_replication_type          = var.storage_account_replication_type
+  enable_https_traffic_only         = true
+  allow_nested_items_to_be_public   = false
+  shared_access_key_enabled         = false
+  min_tls_version                   = "TLS1_2"
+  infrastructure_encryption_enabled = true
 
   network_rules {
     bypass                     = ["AzureServices"]
@@ -42,14 +45,14 @@ resource "azurerm_storage_account" "graphdb-backup" {
 }
 
 # Create an Azure Storage container
-resource "azurerm_storage_container" "graphdb-backup" {
+resource "azurerm_storage_container" "graphdb_backup" {
   name                  = "${var.resource_name_prefix}-backup"
-  storage_account_name  = azurerm_storage_account.graphdb-backup.name
+  storage_account_name  = azurerm_storage_account.graphdb_backup.name
   container_access_type = "private"
 }
 
-resource "azurerm_storage_management_policy" "graphdb-backup-retention" {
-  storage_account_id = azurerm_storage_account.graphdb-backup.id
+resource "azurerm_storage_management_policy" "graphdb_backup_retention" {
+  storage_account_id = azurerm_storage_account.graphdb_backup.id
 
   rule {
     enabled = true

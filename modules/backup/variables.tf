@@ -37,6 +37,12 @@ variable "nacl_ip_rules" {
 
 # Storage specifics
 
+variable "storage_account_kind" {
+  description = "Specifies the type of the storage account."
+  type        = string
+  default     = "StorageV2"
+}
+
 variable "storage_account_tier" {
   description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
   type        = string

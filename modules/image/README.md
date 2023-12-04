@@ -1,1 +1,0 @@
-# GraphDB Image Module

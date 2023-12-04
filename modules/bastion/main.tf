@@ -1,11 +1,11 @@
-resource "azurerm_subnet" "graphdb-bastion" {
+resource "azurerm_subnet" "graphdb_bastion" {
   name                 = "AzureBastionSubnet"
   resource_group_name  = var.resource_group_name
   virtual_network_name = var.virtual_network_name
   address_prefixes     = var.bastion_subnet_address_prefix
 }
 
-resource "azurerm_network_security_group" "graphdb-bastion" {
+resource "azurerm_network_security_group" "graphdb_bastion" {
   name                = "${var.resource_name_prefix}-bastion"
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -73,12 +73,12 @@ resource "azurerm_network_security_group" "graphdb-bastion" {
   tags = var.tags
 }
 
-resource "azurerm_subnet_network_security_group_association" "graphdb-bastion" {
-  network_security_group_id = azurerm_network_security_group.graphdb-bastion.id
-  subnet_id                 = azurerm_subnet.graphdb-bastion.id
+resource "azurerm_subnet_network_security_group_association" "graphdb_bastion" {
+  network_security_group_id = azurerm_network_security_group.graphdb_bastion.id
+  subnet_id                 = azurerm_subnet.graphdb_bastion.id
 }
 
-resource "azurerm_public_ip" "graphdb-bastion" {
+resource "azurerm_public_ip" "graphdb_bastion" {
   name                = "${var.resource_name_prefix}_bastion_publicIP"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -98,8 +98,8 @@ resource "azurerm_bastion_host" "graphdb" {
 
   ip_configuration {
     name                 = "configuration"
-    subnet_id            = azurerm_subnet.graphdb-bastion.id
-    public_ip_address_id = azurerm_public_ip.graphdb-bastion.id
+    subnet_id            = azurerm_subnet.graphdb_bastion.id
+    public_ip_address_id = azurerm_public_ip.graphdb_bastion.id
   }
 
   tags = var.tags

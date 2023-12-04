@@ -1,1 +1,0 @@
-# GraphDB Application Gateway Module
