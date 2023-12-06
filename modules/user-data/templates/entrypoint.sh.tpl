@@ -47,7 +47,7 @@ disk_attach_create() {
     if [ -z "$existingUnattachedDisk" ]; then
       echo "Creating a new managed disk"
       # Fetch the number of elements
-      DISKS_IN_ZONE=$(az disk list --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+      DISKS_IN_ZONE=$(az disk list --resource-group $RESOURCE_GROUP --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
 
       # Increment the number for the new name
       DISK_ORDER=$((DISKS_IN_ZONE + 1))
@@ -91,6 +91,15 @@ disk_attach_create() {
 
     # Try to attach an existing managed disk
     availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+
+    # It's possible the created disk to be stolen by another VM starting at the same time in the same AZ
+    # That's why we retry if this occurs.
+    if [ -z "$availableDisks" ]; then
+      echo "Something went wrong, no available disks, Retrying..."
+      disk_attach_create
+      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    fi
+
     echo "Attaching available disk $availableDisks."
     # Set Internal Field Separator to newline to handle spaces in names
     IFS=$'\n'
@@ -111,9 +120,7 @@ if [ -b "$graphdb_device" ]; then
   echo "Device $graphdb_device is available."
 else
   echo "Device $graphdb_device is not available. Something went wrong."
-  # It's possible the created disk to be stolen by another VM starting at the same time in the same AZ
-  # That's why we retry if this occurs.
-  disk_attach_create
+  exit 1
 fi
 
 # create a file system if there isn't any
@@ -136,15 +143,12 @@ if ! mount | grep -q "$graphdb_device"; then
   # Mount the disk
   mount "$disk_mount_point"
   echo "The disk at $graphdb_device is now mounted at $disk_mount_point."
+  mkdir -p /var/opt/graphdb/node /var/opt/graphdb/cluster-proxy
+  # TODO research how to avoid using chown, as it would be a slow operation if data is present.
+  chown -R graphdb:graphdb /var/opt/graphdb
 else
   echo "The disk at $graphdb_device is already mounted."
 fi
-
-# Recreates folders if necessary and changes owner
-
-mkdir -p /var/opt/graphdb/node /var/opt/graphdb/cluster-proxy
-# TODO research how to avoid using chown, as it would be a slow operation if data is present.
-chown -R graphdb:graphdb /var/opt/graphdb
 
 #
 # DNS hack
@@ -164,7 +168,7 @@ for i in $(seq 1 6); do
 done
 
 # Get all FQDN records from the private DNS zone containing "node"
-ALL_FQDN_RECORDS=($(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv))
+readarray -t ALL_FQDN_RECORDS <<< "$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv)"
 # Get all instance IDs for a specific VMSS
 INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
 # Sort instance IDs
@@ -342,7 +346,7 @@ echo "Finished GraphDB instance configuration"
 GRAPHDB_ADMIN_PASSWORD="$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
 
 check_gdb() {
-  local gdb_address="$1:7200/protocol"
+  local gdb_address="$1:7200/rest/monitor/infrastructure"
   if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail $gdb_address >/dev/null; then
     return 0 # Success, endpoint is available
   else
@@ -361,18 +365,21 @@ wait_dns_records() {
 
 wait_dns_records
 
-if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
-  for record in "$${ALL_FQDN_RECORDS[@]}"; do
-    echo $record
-    # Removes the '.' at the end of the DNS address
-    cleanedAddress=$${record%?}
-    while ! check_gdb $cleanedAddress; do
-      echo "Waiting for GDB $record to start"
-      sleep 5
-    done
+# Check all instances are running
+for record in "$${ALL_FQDN_RECORDS[@]}"; do
+  echo $record
+  # Removes the '.' at the end of the DNS address
+  cleanedAddress=$${record%?}
+  while ! check_gdb $cleanedAddress; do
+    echo "Waiting for GDB $record to start"
+    sleep 5
   done
+done
 
-  echo "All GDB instances are available. Creating cluster"
+echo "All GDB instances are available. Creating cluster"
+
+if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
+
   # Checks if the cluster already exists
   is_cluster=$(curl -s -o /dev/null -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
 
