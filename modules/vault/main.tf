@@ -31,8 +31,6 @@ resource "azurerm_key_vault" "graphdb" {
     virtual_network_subnet_ids = var.nacl_subnet_ids
     ip_rules                   = var.nacl_ip_rules
   }
-
-  tags = var.tags
 }
 
 # TODO: This feels like a hack that could be avoided by using an authorized service principle or managed identity when deploying with TF

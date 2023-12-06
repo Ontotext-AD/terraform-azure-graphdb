@@ -10,12 +10,6 @@ variable "location" {
   type        = string
 }
 
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
 variable "resource_group_name" {
   description = "Name of the resource group where Bastion will be deployed."
   type        = string

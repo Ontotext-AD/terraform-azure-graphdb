@@ -2,8 +2,6 @@ resource "azurerm_user_assigned_identity" "graphdb_tls_certificate" {
   name                = "${var.resource_name_prefix}-tls"
   resource_group_name = var.resource_group_name
   location            = var.location
-
-  tags = var.tags
 }
 
 # Azure AG requires this role to the be assigned to the Key Vault directly
@@ -21,6 +19,4 @@ resource "azurerm_key_vault_certificate" "graphdb_tls_certificate" {
     contents = var.tls_certificate
     password = var.tls_certificate_password
   }
-
-  tags = var.tags
 }

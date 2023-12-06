@@ -1,19 +1,22 @@
+# COMMON RESOURCES AND NETWORKING -------------------------------
+
 locals {
   tags = merge({
     # Used to easily track all resource managed by Terraform
-    Deployment = var.resource_name_prefix
     Source     = "Terraform"
+    Deployment = var.resource_name_prefix
   }, var.tags)
 }
-
-# COMMON NETWORKING -------------------------------------------
-
-# TODO: To be moved in another module ?
 
 resource "azurerm_resource_group" "graphdb" {
   name     = var.resource_name_prefix
   location = var.location
   tags     = local.tags
+
+  lifecycle {
+    # Ignore remote changes to the resource group's tags
+    ignore_changes = [tags]
+  }
 }
 
 resource "azurerm_management_lock" "graphdb_rg_lock" {
@@ -29,7 +32,6 @@ resource "azurerm_virtual_network" "graphdb" {
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = azurerm_resource_group.graphdb.location
   address_space       = var.virtual_network_address_space
-  tags                = local.tags
 }
 
 resource "azurerm_subnet" "graphdb_gateway" {
@@ -78,15 +80,12 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
     destination_address_prefixes = var.app_gateway_subnet_address_prefix
     destination_port_ranges      = [80, 443]
   }
-
-  tags = var.tags
 }
 
 resource "azurerm_network_security_group" "graphdb_vmss" {
   name                = "${var.resource_name_prefix}-vmss"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = var.location
-  tags                = var.tags
 }
 
 resource "azurerm_subnet_network_security_group_association" "graphdb_gateway" {
@@ -99,7 +98,7 @@ resource "azurerm_subnet_network_security_group_association" "graphdb_vmss" {
   subnet_id                 = azurerm_subnet.graphdb_vmss.id
 }
 
-# ------------------------------------------------------------
+# SUB MODULES ------------------------------------------------------------
 
 # Creates a public IP address with assigned FQDN from the regional Azure DNS
 module "address" {
@@ -109,8 +108,6 @@ module "address" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
-
-  tags = local.tags
 }
 
 # Creates a user assigned identity which will be provided to GraphDB VMs.
@@ -120,8 +117,6 @@ module "identity" {
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
-
-  tags = local.tags
 }
 
 # Creates Key Vault for secure storage of GraphDB configurations and secrets
@@ -137,8 +132,6 @@ module "vault" {
 
   key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
   key_vault_retention_days          = var.key_vault_retention_days
-
-  tags = local.tags
 }
 
 # Creates a storage account for storing GraphDB backups
@@ -154,8 +147,6 @@ module "backup" {
 
   storage_account_tier             = var.storage_account_tier
   storage_account_replication_type = var.storage_account_replication_type
-
-  tags = local.tags
 }
 
 # Creates and assigns required roles to the identity and services
@@ -184,8 +175,6 @@ module "configuration" {
   graphdb_properties_path = var.graphdb_properties_path
   graphdb_java_options    = var.graphdb_java_options
 
-  tags = local.tags
-
   # Wait for role assignments
   depends_on = [module.vault]
 }
@@ -201,8 +190,6 @@ module "tls" {
   key_vault_id             = module.vault.key_vault_id
   tls_certificate          = filebase64(var.tls_certificate_path)
   tls_certificate_password = var.tls_certificate_password
-
-  tags = local.tags
 
   # Wait for role assignments
   depends_on = [module.vault]
@@ -220,8 +207,6 @@ module "application_gateway" {
   gateway_public_ip_id              = module.address.public_ip_address_id
   gateway_identity_id               = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
-
-  tags = local.tags
 
   # Wait for role assignments
   depends_on = [module.tls]
@@ -248,8 +233,6 @@ module "bastion" {
   virtual_network_name          = azurerm_virtual_network.graphdb.name
   bastion_subnet_address_prefix = var.bastion_subnet_address_prefix
   bastion_allowed_cidr_blocks   = var.management_cidr_blocks
-
-  tags = local.tags
 }
 
 # Creates a NAT gateway associated with GraphDB's subnet
@@ -262,8 +245,6 @@ module "nat" {
   zones                = var.zones
 
   nat_subnet_id = azurerm_subnet.graphdb_vmss.id
-
-  tags = local.tags
 }
 
 module "user_data" {
@@ -308,8 +289,6 @@ module "vmss" {
 
   user_data_script = local.user_data_script
 
-  tags = local.tags
-
   # Wait for configurations to be created in the key vault and roles to be assigned
   depends_on = [module.configuration, module.roles, module.dns]
 }
@@ -320,8 +299,6 @@ module "dns" {
   resource_name_prefix = var.resource_name_prefix
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_id   = azurerm_virtual_network.graphdb.id
-
-  tags = local.tags
 
   depends_on = [
     module.identity

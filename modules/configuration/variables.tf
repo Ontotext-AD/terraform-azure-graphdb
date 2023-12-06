@@ -1,11 +1,3 @@
-# General configurations
-
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
 # Security dependencies
 
 variable "identity_principal_id" {

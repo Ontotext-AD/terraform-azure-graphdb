@@ -40,8 +40,6 @@ resource "azurerm_storage_account" "graphdb_backup" {
     virtual_network_subnet_ids = var.nacl_subnet_ids
     ip_rules                   = var.nacl_ip_rules
   }
-
-  tags = var.tags
 }
 
 # Create an Azure Storage container

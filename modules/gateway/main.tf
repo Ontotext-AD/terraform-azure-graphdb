@@ -141,6 +141,4 @@ resource "azurerm_application_gateway" "graphdb" {
     backend_address_pool_name  = local.gateway_backend_address_pool_name
     backend_http_settings_name = local.gateway_backend_http_settings_name
   }
-
-  tags = var.tags
 }

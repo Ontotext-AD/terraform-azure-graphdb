@@ -69,8 +69,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     public_key = var.ssh_key
     username   = "graphdb"
   }
-
-  tags = var.tags
 }
 
 resource "azurerm_monitor_autoscale_setting" "graphdb_auto_scale_settings" {
@@ -89,6 +87,4 @@ resource "azurerm_monitor_autoscale_setting" "graphdb_auto_scale_settings" {
       minimum = var.node_count
     }
   }
-
-  tags = var.tags
 }

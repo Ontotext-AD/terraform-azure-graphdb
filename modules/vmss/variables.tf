@@ -16,12 +16,6 @@ variable "zones" {
   default     = [1, 2, 3]
 }
 
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
 variable "resource_group_name" {
   description = "Name of the resource group where GraphDB will be deployed."
   type        = string

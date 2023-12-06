@@ -69,8 +69,6 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
     destination_address_prefix = "AzureCloud"
     destination_port_range     = 443
   }
-
-  tags = var.tags
 }
 
 resource "azurerm_subnet_network_security_group_association" "graphdb_bastion" {
@@ -84,7 +82,6 @@ resource "azurerm_public_ip" "graphdb_bastion" {
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = var.tags
 }
 
 resource "azurerm_bastion_host" "graphdb" {
@@ -101,6 +98,4 @@ resource "azurerm_bastion_host" "graphdb" {
     subnet_id            = azurerm_subnet.graphdb_bastion.id
     public_ip_address_id = azurerm_public_ip.graphdb_bastion.id
   }
-
-  tags = var.tags
 }

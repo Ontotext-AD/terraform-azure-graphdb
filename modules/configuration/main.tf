@@ -20,8 +20,6 @@ resource "azurerm_key_vault_secret" "graphdb_license" {
   name         = var.graphdb_license_secret_name
   value        = filebase64(var.graphdb_license_path)
   content_type = "text/plain"
-
-  tags = var.tags
 }
 
 resource "azurerm_key_vault_secret" "graphdb_cluster_token" {
@@ -30,8 +28,6 @@ resource "azurerm_key_vault_secret" "graphdb_cluster_token" {
   name         = var.graphdb_cluster_token_name
   value        = base64encode(local.graphdb_cluster_token)
   content_type = "text/plain"
-
-  tags = var.tags
 }
 
 resource "azurerm_key_vault_secret" "graphdb_password" {
@@ -40,8 +36,6 @@ resource "azurerm_key_vault_secret" "graphdb_password" {
   name         = var.graphdb_password_secret_name
   value        = base64encode(local.graphdb_password)
   content_type = "text/plain"
-
-  tags = var.tags
 }
 
 resource "azurerm_key_vault_secret" "graphdb_properties" {
@@ -52,8 +46,6 @@ resource "azurerm_key_vault_secret" "graphdb_properties" {
   name         = var.graphdb_properties_secret_name
   value        = filebase64(var.graphdb_properties_path)
   content_type = "text/plain"
-
-  tags = var.tags
 }
 
 resource "azurerm_key_vault_secret" "graphdb_java_options" {
@@ -64,8 +56,6 @@ resource "azurerm_key_vault_secret" "graphdb_java_options" {
   name         = var.graphdb_java_options_secret_name
   value        = base64encode(var.graphdb_java_options)
   content_type = "text/plain"
-
-  tags = var.tags
 }
 
 resource "azurerm_role_assignment" "graphdb_license_secret_reader" {
