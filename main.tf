@@ -69,16 +69,29 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
   }
 
   security_rule {
-    name                         = "AllowInternetInbound"
-    description                  = "Allows inbound internet traffic to the gateway subnet."
-    priority                     = 1000
+    name                         = "AllowInternetInboundHttp"
+    description                  = "Allows HTTP inbound internet traffic to the gateway subnet."
+    priority                     = 200
     direction                    = "Inbound"
     access                       = "Allow"
     protocol                     = "Tcp"
     source_address_prefix        = "Internet"
     source_port_range            = "*"
     destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_ranges      = [80, 443]
+    destination_port_range      = 80
+  }
+
+  security_rule {
+    name                         = "AllowInternetInboundHttps"
+    description                  = "Allows HTTPS inbound internet traffic to the gateway subnet."
+    priority                     = 210
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_address_prefix        = "Internet"
+    source_port_range            = "*"
+    destination_address_prefixes = var.app_gateway_subnet_address_prefix
+    destination_port_range      = 443
   }
 }
 
