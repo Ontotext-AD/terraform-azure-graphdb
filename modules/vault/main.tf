@@ -33,9 +33,10 @@ resource "azurerm_key_vault" "graphdb" {
   }
 }
 
-# TODO: This feels like a hack that could be avoided by using an authorized service principle or managed identity when deploying with TF
 # Add vault data permissions to the current client that is executing this Terraform script
 resource "azurerm_role_assignment" "graphdb_key_vault_manager" {
+  count = var.assign_administrator_role ? 1 : 0
+
   principal_id         = data.azurerm_client_config.current.object_id
   scope                = azurerm_key_vault.graphdb.id
   role_definition_name = "Key Vault Administrator"

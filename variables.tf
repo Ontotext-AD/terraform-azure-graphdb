@@ -84,6 +84,37 @@ variable "key_vault_retention_days" {
   description = "Retention period in days during which soft deleted secrets are kept"
   type        = number
   default     = 30
+  validation {
+    condition     = var.key_vault_retention_days >= 7 && var.key_vault_retention_days <= 90
+    error_message = "Key Vault soft delete retention days must be between 7 and 90 (inclusive)"
+  }
+}
+
+# App Configuration
+
+# Enable only for production
+variable "app_config_enable_purge_protection" {
+  description = "Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed."
+  type        = bool
+  default     = false
+}
+
+variable "app_config_retention_days" {
+  description = "Retention period in days during which soft deleted keys are kept"
+  type        = number
+  default     = 7
+  validation {
+    condition     = var.app_config_retention_days >= 1 && var.app_config_retention_days <= 7
+    error_message = "App Configuration soft delete retention days must be between 1 and 7 (inclusive)"
+  }
+}
+
+# Role Assignments
+
+variable "assign_data_owner_roles" {
+  description = "Enables the assignment of data owner or administrator roles for the current user in services requiring such role for inserting data during Terraform apply, i.e. KeyVault and AppConfig."
+  type        = bool
+  default     = true
 }
 
 # GraphDB

@@ -41,5 +41,13 @@ variable "key_vault_enable_purge_protection" {
 variable "key_vault_retention_days" {
   description = "Retention period in days during which soft deleted secrets are kept"
   type        = number
-  default     = 30
+  default     = 7
+}
+
+# Role assigment
+
+variable "assign_administrator_role" {
+  description = "Assign 'Key Vault Administrator' role to the current client. Needed in order to create secrets."
+  type        = bool
+  default     = true
 }

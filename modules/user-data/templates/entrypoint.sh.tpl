@@ -245,13 +245,13 @@ echo "#   GraphDB configuration overrides   #"
 echo "#######################################"
 
 echo "Getting secrets"
-secrets=$(az keyvault secret list --vault-name ${key_vault_name} --output json | jq .[].name)
+secrets=$(az appconfig kv list --name ${app_config_name} --auth-mode login | jq .[].key)
 
 # Get the license
-az keyvault secret download --vault-name ${key_vault_name} --name graphdb-license --file /etc/graphdb/graphdb.license --encoding base64
+az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-license | jq -r .value | base64 -d > /etc/graphdb/graphdb.license
 
 # Get the cluster token
-graphdb_cluster_token=$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-cluster-token | jq -rj .value | base64 -d)
+graphdb_cluster_token=$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-cluster-token | jq -r .value | base64 -d)
 
 echo "Writing override files"
 # TODO: where is the vhost here?
@@ -289,13 +289,13 @@ EOF
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"graphdb-properties"* ]]; then
   echo "Using graphdb.properties overrides"
-  az keyvault secret show --vault-name ${key_vault_name} --name graphdb-properties | jq -rj .value | base64 -d >>/etc/graphdb/graphdb.properties
+  az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-properties | jq -r .value | base64 -d >> /etc/graphdb/graphdb.properties
 fi
 
 # Appends environment overrides to GDB_JAVA_OPTS
 if [[ $secrets == *"graphdb-java-options"* ]]; then
   echo "Using GDB_JAVA_OPTS overrides"
-  extra_graphdb_java_options=$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-java-options | jq -rj .value | base64 -d)
+  extra_graphdb_java_options=$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-java-options | jq -r .value | base64 -d)
   (
     source /etc/graphdb/graphdb.env
     echo "GDB_JAVA_OPTS=$GDB_JAVA_OPTS $extra_graphdb_java_options" >> /etc/graphdb/graphdb.env
@@ -318,7 +318,7 @@ az login --identity
 RESOURCE_GROUP="\$(az vmss list --query "[0].resourceGroup" --output tsv)"
 
 # TODO change secret name when exists
-GRAPHDB_ADMIN_PASSWORD="\$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
+GRAPHDB_ADMIN_PASSWORD="\$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 NODE_STATE="\$(curl --silent --fail --user "admin:\$GRAPHDB_ADMIN_PASSWORD" localhost:7200/rest/cluster/node/status | jq -r .nodeState)"
 
 if [ "\$NODE_STATE" != "LEADER" ]; then
@@ -377,7 +377,7 @@ echo "#    Beginning cluster setup     #"
 echo "##################################"
 
 echo "Getting GDB password"
-GRAPHDB_ADMIN_PASSWORD="$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
+GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 
 check_gdb() {
   if [ -z "$1" ]; then

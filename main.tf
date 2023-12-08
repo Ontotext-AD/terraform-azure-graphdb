@@ -78,7 +78,7 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
     source_address_prefix        = "Internet"
     source_port_range            = "*"
     destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range      = 80
+    destination_port_range       = 80
   }
 
   security_rule {
@@ -91,7 +91,7 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
     source_address_prefix        = "Internet"
     source_port_range            = "*"
     destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range      = 443
+    destination_port_range       = 443
   }
 }
 
@@ -140,11 +140,13 @@ module "vault" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id, azurerm_subnet.graphdb_vmss.id]
+  nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
   key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
   key_vault_retention_days          = var.key_vault_retention_days
+
+  assign_administrator_role = var.assign_data_owner_roles
 }
 
 # Creates a storage account for storing GraphDB backups
@@ -162,6 +164,16 @@ module "backup" {
   storage_account_replication_type = var.storage_account_replication_type
 }
 
+module "dns" {
+  source = "./modules/dns"
+
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  virtual_network_id   = azurerm_virtual_network.graphdb.id
+
+  depends_on = [module.identity]
+}
+
 # Creates and assigns required roles to the identity and services
 module "roles" {
   source = "./modules/roles"
@@ -171,16 +183,29 @@ module "roles" {
 
   identity_principal_id        = module.identity.identity_principal_id
   key_vault_id                 = module.vault.key_vault_id
+  app_configuration_id         = module.appconfig.app_configuration_id
   backups_storage_container_id = module.backup.storage_account_id
   private_dns_zone             = module.dns.private_dns_zone_id
+}
+
+module "appconfig" {
+  source = "./modules/appconfig"
+
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.graphdb.name
+
+  app_config_enable_purge_protection = var.app_config_enable_purge_protection
+  app_config_retention_days          = var.app_config_retention_days
+
+  assign_owner_role = var.assign_data_owner_roles
 }
 
 # Managed GraphDB configurations in the Key Vault
 module "configuration" {
   source = "./modules/configuration"
 
-  key_vault_id          = module.vault.key_vault_id
-  identity_principal_id = module.identity.identity_principal_id
+  app_configuration_id = module.appconfig.app_configuration_id
 
   graphdb_password        = var.graphdb_password
   graphdb_license_path    = var.graphdb_license_path
@@ -189,7 +214,7 @@ module "configuration" {
   graphdb_java_options    = var.graphdb_java_options
 
   # Wait for role assignments
-  depends_on = [module.vault]
+  depends_on = [module.appconfig]
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity
@@ -267,7 +292,7 @@ module "user_data" {
 
   graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
 
-  key_vault_name = module.vault.key_vault_name
+  app_configuration_name = module.appconfig.app_configuration_name
 
   disk_iops_read_write = var.disk_iops_read_write
   disk_mbps_read_write = var.disk_mbps_read_write
@@ -304,16 +329,4 @@ module "vmss" {
 
   # Wait for configurations to be created in the key vault and roles to be assigned
   depends_on = [module.configuration, module.roles, module.dns]
-}
-
-module "dns" {
-  source = "./modules/dns"
-
-  resource_name_prefix = var.resource_name_prefix
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  virtual_network_id   = azurerm_virtual_network.graphdb.id
-
-  depends_on = [
-    module.identity
-  ]
 }

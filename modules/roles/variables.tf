@@ -24,6 +24,13 @@ variable "key_vault_id" {
   type        = string
 }
 
+# App Configuration
+
+variable "app_configuration_id" {
+  description = "Identifier of the App Configuration store for GraphDB"
+  type        = string
+}
+
 # Backups storage
 
 variable "backups_storage_container_id" {
