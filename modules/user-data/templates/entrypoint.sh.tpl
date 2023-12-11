@@ -395,11 +395,13 @@ wait_dns_records() {
   if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne 3 ]; then
     sleep 5
     wait_dns_records
+  else
+    echo "Three DNS records are available"
   fi
 }
 
 wait_dns_records
-
+echo "Available FQDN records:"
 # Check all instances are running
 for record in "$${ALL_FQDN_RECORDS[@]}"; do
   echo $record
