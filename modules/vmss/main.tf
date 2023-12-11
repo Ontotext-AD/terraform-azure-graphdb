@@ -24,6 +24,25 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   disable_password_authentication = true
   encryption_at_host_enabled      = var.encryption_at_host
 
+  extension {
+    name                       = "ConsulHealthExtension"
+    publisher                  = "Microsoft.ManagedServices"
+    type                       = "ApplicationHealthLinux"
+    type_handler_version       = "1.0"
+    auto_upgrade_minor_version = false
+
+    settings = jsonencode({
+      protocol    = "http"
+      port        = 7200
+      requestPath = "/rest/cluster/node/status"
+    })
+  }
+
+  automatic_instance_repair {
+    enabled      = true
+    grace_period = "PT10M"
+  }
+
   scale_in {
     # In case of re-balancing, remove the newest VM which might have not been IN-SYNC yet with the cluster
     rule = "NewestVM"
