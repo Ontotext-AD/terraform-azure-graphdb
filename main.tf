@@ -201,8 +201,8 @@ module "appconfig" {
 }
 
 # Managed GraphDB configurations in the Key Vault
-module "configuration" {
-  source = "./modules/configuration"
+module "configurations" {
+  source = "./modules/configurations"
 
   app_configuration_id = module.appconfig.app_configuration_id
 
@@ -328,5 +328,5 @@ module "vmss" {
   user_data_script = local.user_data_script
 
   # Wait for configurations to be created in the key vault and roles to be assigned
-  depends_on = [module.configuration, module.roles]
+  depends_on = [module.configurations, module.roles]
 }
