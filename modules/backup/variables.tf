@@ -10,12 +10,6 @@ variable "location" {
   type        = string
 }
 
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
 variable "resource_group_name" {
   description = "Specifies the name of the Azure resource group in which the Azure Storage Account will be created"
   type        = string

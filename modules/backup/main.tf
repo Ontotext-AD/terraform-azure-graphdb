@@ -15,7 +15,7 @@ locals {
   # Trim down to 18 characters to allow the random suffix of 6
   trimmed = lower(substr(local.sanitized, 0, 18))
 
-  # Create storage account name with unique suffix
+  # Create storage account name with unique suffix and a maximum of 24 characters
   storage_account_name = "${local.trimmed}${random_string.storage_account_name_suffix.result}"
 }
 
@@ -40,8 +40,6 @@ resource "azurerm_storage_account" "graphdb_backup" {
     virtual_network_subnet_ids = var.nacl_subnet_ids
     ip_rules                   = var.nacl_ip_rules
   }
-
-  tags = var.tags
 }
 
 # Create an Azure Storage container

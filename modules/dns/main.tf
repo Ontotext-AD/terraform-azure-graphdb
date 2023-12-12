@@ -1,8 +1,6 @@
 resource "azurerm_private_dns_zone" "graphdb" {
   name                = "${var.resource_name_prefix}.dns.zone"
   resource_group_name = var.resource_group_name
-
-  tags = var.tags
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "zone_link" {
@@ -11,6 +9,4 @@ resource "azurerm_private_dns_zone_virtual_network_link" "zone_link" {
   virtual_network_id  = var.virtual_network_id
 
   private_dns_zone_name = azurerm_private_dns_zone.graphdb.name
-
-  tags = var.tags
 }

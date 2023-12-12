@@ -1,20 +1,7 @@
-# General configurations
+# App Configuration
 
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
-# Security dependencies
-
-variable "identity_principal_id" {
-  description = "Principal identifier of a user assigned identity for assigning permissions"
-  type        = string
-}
-
-variable "key_vault_id" {
-  description = "Identifier of a Key Vault for storing GraphDB configurations"
+variable "app_configuration_id" {
+  description = "Identifier of the App Configuration store for GraphDB"
   type        = string
 }
 

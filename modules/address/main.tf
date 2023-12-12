@@ -17,6 +17,4 @@ resource "azurerm_public_ip" "graphdb_public_ip_address" {
   # TODO: idle_timeout_in_minutes is between 4 and 30 minutes, gotta test if this affects our data loading
 
   domain_name_label = "${var.resource_name_prefix}-${random_string.fqdn.result}"
-
-  tags = var.tags
 }

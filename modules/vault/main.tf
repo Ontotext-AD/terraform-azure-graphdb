@@ -2,7 +2,7 @@ data "azurerm_client_config" "current" {
 }
 
 resource "random_string" "vault_name_suffix" {
-  length  = 10
+  length  = 6
   lower   = true
   numeric = false
   special = false
@@ -10,7 +10,8 @@ resource "random_string" "vault_name_suffix" {
 }
 
 locals {
-  vault_name = "${var.resource_name_prefix}-${random_string.vault_name_suffix.result}"
+  # Trim down to 16 characters and append the suffix to a maximum of 23 characters.
+  vault_name = "${substr(var.resource_name_prefix, 0, 16)}-${random_string.vault_name_suffix.result}"
 }
 
 resource "azurerm_key_vault" "graphdb" {
@@ -30,13 +31,12 @@ resource "azurerm_key_vault" "graphdb" {
     virtual_network_subnet_ids = var.nacl_subnet_ids
     ip_rules                   = var.nacl_ip_rules
   }
-
-  tags = var.tags
 }
 
-# TODO: This feels like a hack that could be avoided by using an authorized service principle or managed identity when deploying with TF
 # Add vault data permissions to the current client that is executing this Terraform script
 resource "azurerm_role_assignment" "graphdb_key_vault_manager" {
+  count = var.assign_administrator_role ? 1 : 0
+
   principal_id         = data.azurerm_client_config.current.object_id
   scope                = azurerm_key_vault.graphdb.id
   role_definition_name = "Key Vault Administrator"

@@ -12,8 +12,6 @@ resource "azurerm_public_ip" "graphdb_nat_ip_address" {
   sku               = "Standard"
   allocation_method = "Static"
   zones             = [local.nat_zone]
-
-  tags = var.tags
 }
 
 resource "azurerm_nat_gateway" "graphdb" {
@@ -24,8 +22,6 @@ resource "azurerm_nat_gateway" "graphdb" {
   sku_name                = "Standard"
   zones                   = [local.nat_zone]
   idle_timeout_in_minutes = 10 # TODO: 120 is the max in the portal, gotta test with long running request
-
-  tags = var.tags
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "graphdb_nat" {

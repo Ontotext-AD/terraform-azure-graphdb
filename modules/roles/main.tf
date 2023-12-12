@@ -5,6 +5,20 @@ resource "azurerm_role_assignment" "graphdb_vmss_key_vault_reader" {
   role_definition_name = "Key Vault Reader"
 }
 
+# Assign the identity to have read access to the app configuration
+resource "azurerm_role_assignment" "graphdb_vmss_app_config_reader" {
+  principal_id         = var.identity_principal_id
+  scope                = var.app_configuration_id
+  role_definition_name = "Reader"
+}
+
+# Assign the identity to have read access to the app configuration keys
+resource "azurerm_role_assignment" "graphdb_vmss_app_config_data_reader" {
+  principal_id         = var.identity_principal_id
+  scope                = var.app_configuration_id
+  role_definition_name = "App Configuration Data Reader"
+}
+
 # Assign the identity to be able to upload GraphDB backups in the storage BLOB
 resource "azurerm_role_assignment" "graphdb_backup" {
   principal_id         = var.identity_principal_id

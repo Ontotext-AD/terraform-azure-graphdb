@@ -10,12 +10,6 @@ variable "virtual_network_id" {
   type        = string
 }
 
-variable "tags" {
-  description = "Common resource tags."
-  type        = map(string)
-  default     = {}
-}
-
 variable "resource_group_name" {
   description = "Resource group name where the DNS zone will be created"
   type        = string

@@ -1,7 +1,7 @@
-# Key Vault
+# App Configuration
 
-variable "key_vault_name" {
-  description = "Name of a Key Vault containing GraphDB configurations"
+variable "app_configuration_name" {
+  description = "Name of the App Configuration store for GraphDB"
   type        = string
 }
 
