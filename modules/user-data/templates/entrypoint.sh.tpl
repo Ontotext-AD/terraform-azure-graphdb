@@ -227,6 +227,8 @@ for i in "$${!SORTED_INSTANCE_IDs[@]}"; do
   FQDN=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, '$RECORD_NAME')].fqdn" --output tsv)
 
   if [ -z "$${FQDN:-}" ]; then
+    # Have to first create and then add, see https://github.com/Azure/azure-cli/issues/27374
+    az network private-dns record-set a create --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME
     az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
   else
     for record in "$${ALL_FQDN_RECORDS[@]}"; do
