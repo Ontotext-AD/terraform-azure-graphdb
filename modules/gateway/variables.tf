@@ -10,6 +10,12 @@ variable "location" {
   type        = string
 }
 
+variable "zones" {
+  description = "Availability zones for the public IP address."
+  type        = list(number)
+  default     = [1, 2, 3]
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group where GraphDB will be deployed."
   type        = string
@@ -19,11 +25,6 @@ variable "resource_group_name" {
 
 variable "gateway_subnet_id" {
   description = "Subnet identifier where the Application Gateway will be deployed"
-  type        = string
-}
-
-variable "gateway_public_ip_id" {
-  description = "Identifier of the public IP address to be used by the Application Gateway"
   type        = string
 }
 

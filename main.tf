@@ -113,25 +113,6 @@ resource "azurerm_subnet_network_security_group_association" "graphdb_vmss" {
 
 # SUB MODULES ------------------------------------------------------------
 
-# Creates a public IP address with assigned FQDN from the regional Azure DNS
-module "address" {
-  source = "./modules/address"
-
-  resource_name_prefix = var.resource_name_prefix
-  location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  zones                = var.zones
-}
-
-# Creates a user assigned identity which will be provided to GraphDB VMs.
-module "identity" {
-  source = "./modules/identity"
-
-  resource_name_prefix = var.resource_name_prefix
-  location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
-}
-
 # Creates Key Vault for secure storage of GraphDB configurations and secrets
 module "vault" {
   source = "./modules/vault"
@@ -150,7 +131,7 @@ module "vault" {
   storage_account_id        = module.backup.storage_account_id
 }
 
-# Creates a storage account for storing GraphDB backups
+# Creates a Storage Account for storing GraphDB backups
 module "backup" {
   source = "./modules/backup"
 
@@ -165,6 +146,7 @@ module "backup" {
   storage_account_replication_type = var.storage_account_replication_type
 }
 
+# Creates a Private DNS zone for GraphDB internal cluster communication
 module "dns" {
   source = "./modules/dns"
 
@@ -173,20 +155,7 @@ module "dns" {
   virtual_network_id   = azurerm_virtual_network.graphdb.id
 }
 
-# Creates and assigns required roles to the identity and services
-module "roles" {
-  source = "./modules/roles"
-
-  resource_name_prefix = var.resource_name_prefix
-  resource_group_id    = azurerm_resource_group.graphdb.id
-
-  identity_principal_id        = module.identity.identity_principal_id
-  key_vault_id                 = module.vault.key_vault_id
-  app_configuration_id         = module.appconfig.app_configuration_id
-  backups_storage_container_id = module.backup.storage_account_id
-  private_dns_zone             = module.dns.private_dns_zone_id
-}
-
+# Creates an App Configuration store for managing GraphDB specific configurations
 module "appconfig" {
   source = "./modules/appconfig"
 
@@ -200,7 +169,7 @@ module "appconfig" {
   assign_owner_role = var.assign_data_owner_roles
 }
 
-# Managed GraphDB configurations in the Key Vault
+# Creates GraphDB configuration key values in the App Configuration store
 module "configurations" {
   source = "./modules/configurations"
 
@@ -232,16 +201,16 @@ module "tls" {
   depends_on = [module.vault]
 }
 
-# Creates a public application gateway for forwarding internet traffic to the GraphDB proxies
+# Creates a public IP address and an Application Gateway for forwarding internet traffic to the GraphDB proxies/instances
 module "application_gateway" {
   source = "./modules/gateway"
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
+  zones                = var.zones
 
-  gateway_subnet_id    = azurerm_subnet.graphdb_gateway.id
-  gateway_public_ip_id = module.address.public_ip_address_id
+  gateway_subnet_id = azurerm_subnet.graphdb_gateway.id
 
   gateway_tls_identity_id           = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
@@ -258,7 +227,7 @@ module "graphdb_image" {
   graphdb_image_id = var.graphdb_image_id
 }
 
-# Creates a bastion host for secure remote connections
+# Creates an Azure Bastion host for secure remote connections
 module "bastion" {
   count = var.deploy_bastion ? 1 : 0
 
@@ -285,12 +254,13 @@ module "nat" {
   nat_subnet_id = azurerm_subnet.graphdb_vmss.id
 }
 
+# Prepares a user data script for GraphDB VMSS
 module "user_data" {
   source = "./modules/user-data"
 
   count = var.custom_graphdb_vm_user_data != null ? 0 : 1
 
-  graphdb_external_address_fqdn = module.address.public_ip_address_fqdn
+  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
 
   app_configuration_name = module.appconfig.app_configuration_name
 
@@ -312,13 +282,17 @@ module "vmss" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
+  resource_group_id    = azurerm_resource_group.graphdb.id
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  graphdb_subnet_id = azurerm_subnet.graphdb_vmss.id
-
-  identity_id                                  = module.identity.identity_id
+  graphdb_subnet_id                            = azurerm_subnet.graphdb_vmss.id
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
+
+  key_vault_id                 = module.vault.key_vault_id
+  app_configuration_id         = module.appconfig.app_configuration_id
+  backups_storage_container_id = module.backup.storage_account_id
+  private_dns_zone             = module.dns.private_dns_zone_id
 
   instance_type = var.instance_type
   image_id      = module.graphdb_image.image_id
@@ -327,6 +301,6 @@ module "vmss" {
 
   user_data_script = local.user_data_script
 
-  # Wait for configurations to be created in the key vault and roles to be assigned
-  depends_on = [module.configurations, module.roles]
+  # Wait for the configurations to be created in the App Configuration store
+  depends_on = [module.configurations]
 }
