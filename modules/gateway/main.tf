@@ -6,7 +6,7 @@ resource "random_string" "fqdn" {
 }
 
 resource "azurerm_public_ip" "graphdb_public_ip_address" {
-  name                = "${var.resource_name_prefix}-public-address"
+  name                = "pip-${var.resource_name_prefix}-app-gateway"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -33,7 +33,7 @@ locals {
 }
 
 resource "azurerm_application_gateway" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "agw-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
   location            = var.location
 

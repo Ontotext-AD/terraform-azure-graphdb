@@ -6,7 +6,7 @@ resource "azurerm_subnet" "graphdb_bastion" {
 }
 
 resource "azurerm_network_security_group" "graphdb_bastion" {
-  name                = "${var.resource_name_prefix}-bastion"
+  name                = "nsg-${var.resource_name_prefix}-bastion"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -77,7 +77,7 @@ resource "azurerm_subnet_network_security_group_association" "graphdb_bastion" {
 }
 
 resource "azurerm_public_ip" "graphdb_bastion" {
-  name                = "${var.resource_name_prefix}_bastion_publicIP"
+  name                = "pip-${var.resource_name_prefix}-bastion"
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
@@ -85,7 +85,7 @@ resource "azurerm_public_ip" "graphdb_bastion" {
 }
 
 resource "azurerm_bastion_host" "graphdb" {
-  name                = "${var.resource_name_prefix}_bastion"
+  name                = "bas-${var.resource_name_prefix}"
   location            = var.location
   resource_group_name = var.resource_group_name
 

@@ -8,7 +8,7 @@ resource "random_string" "app_config_name_prefix" {
 
 locals {
   # Creates an unique app configuration name to max of 50 characters
-  app_configuration_name = "${substr(var.resource_name_prefix, 0, 43)}-${random_string.app_config_name_prefix.result}"
+  app_configuration_name = "appcs-${substr(var.resource_name_prefix, 0, 37)}-${random_string.app_config_name_prefix.result}"
 }
 
 resource "azurerm_app_configuration" "graphdb" {

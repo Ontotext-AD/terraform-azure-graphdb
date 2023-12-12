@@ -9,7 +9,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "graphdb" {
-  name     = var.resource_name_prefix
+  name     = "rg-${var.resource_name_prefix}"
   location = var.location
   tags     = local.tags
 
@@ -28,14 +28,14 @@ resource "azurerm_management_lock" "graphdb_rg_lock" {
 }
 
 resource "azurerm_virtual_network" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "vnet-${var.resource_name_prefix}"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = azurerm_resource_group.graphdb.location
   address_space       = var.virtual_network_address_space
 }
 
 resource "azurerm_subnet" "graphdb_gateway" {
-  name                 = "${var.resource_name_prefix}-gateway"
+  name                 = "snet-${var.resource_name_prefix}-gateway"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.app_gateway_subnet_address_prefix
@@ -43,7 +43,7 @@ resource "azurerm_subnet" "graphdb_gateway" {
 }
 
 resource "azurerm_subnet" "graphdb_vmss" {
-  name                 = "${var.resource_name_prefix}-vmss"
+  name                 = "snet-${var.resource_name_prefix}-vmss"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
   address_prefixes     = var.graphdb_subnet_address_prefix
@@ -51,7 +51,7 @@ resource "azurerm_subnet" "graphdb_vmss" {
 }
 
 resource "azurerm_network_security_group" "graphdb_gateway" {
-  name                = "${var.resource_name_prefix}-gateway"
+  name                = "nsg-${var.resource_name_prefix}-gateway"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = var.location
 
@@ -96,7 +96,7 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
 }
 
 resource "azurerm_network_security_group" "graphdb_vmss" {
-  name                = "${var.resource_name_prefix}-vmss"
+  name                = "nsg-${var.resource_name_prefix}-vmss"
   resource_group_name = azurerm_resource_group.graphdb.name
   location            = var.location
 }

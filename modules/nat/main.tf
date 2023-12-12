@@ -5,7 +5,7 @@ locals {
 }
 
 resource "azurerm_public_ip" "graphdb_nat_ip_address" {
-  name                = "${var.resource_name_prefix}-nat-gateway"
+  name                = "pip-${var.resource_name_prefix}-nat-gateway"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -15,7 +15,7 @@ resource "azurerm_public_ip" "graphdb_nat_ip_address" {
 }
 
 resource "azurerm_nat_gateway" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "ng-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
   location            = var.location
 

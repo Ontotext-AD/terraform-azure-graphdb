@@ -45,7 +45,7 @@ resource "azurerm_role_assignment" "graphdb_vmss_private_dns_contributor" {
 # VMSS
 
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "vmss-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
   location            = var.location
 
