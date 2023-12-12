@@ -376,15 +376,21 @@ echo "##################################"
 echo "#    Beginning cluster setup     #"
 echo "##################################"
 
+echo "Getting GDB password"
 GRAPHDB_ADMIN_PASSWORD="$(az keyvault secret show --vault-name ${key_vault_name} --name graphdb-password --query "value" --output tsv)"
 
 check_gdb() {
+  if [ -z "$1" ]; then
+    echo "Error: IP address or hostname is not provided."
+    return 1
+  fi
+
   local gdb_address="$1:7200/rest/monitor/infrastructure"
-  if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail $gdb_address >/dev/null; then
-    echo  "Success, GraphDB node is available"
+  if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail "$gdb_address" >/dev/null; then
+    echo  "Success, GraphDB node $gdb_address is available"
     return 0
   else
-    echo "GraphDB node is not available yet"
+    echo "GraphDB node $gdb_address is not available yet"
     return 1
   fi
 }
@@ -395,26 +401,34 @@ wait_dns_records() {
   if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne 3 ]; then
     sleep 5
     wait_dns_records
+  else
+    echo "Private DNS zone record count is $${ALL_FQDN_RECORDS_COUNT}"
   fi
 }
 
 wait_dns_records
 
+readarray -t ALL_DNS_RECORDS <<< "$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv)"
 # Check all instances are running
-for record in "$${ALL_FQDN_RECORDS[@]}"; do
-  echo $record
+for record in "$${ALL_DNS_RECORDS[@]}"; do
+  echo "Pinging $record"
   # Removes the '.' at the end of the DNS address
   cleanedAddress=$${record%?}
-  while ! check_gdb $cleanedAddress; do
-    echo "Waiting for GDB $record to start"
-    sleep $RETRY_DELAY
-  done
+  # Check if cleanedAddress is non-empty before calling check_gdb
+  if [ -n "$cleanedAddress" ]; then
+    while ! check_gdb "$cleanedAddress"; do
+      echo "Waiting for GDB $cleanedAddress to start"
+      sleep "$RETRY_DELAY"
+    done
+  else
+    echo "Error: cleanedAddress is empty."
+  fi
 done
 
 echo "All GDB instances are available. Creating cluster"
 
+#  Only the instance with lowest ID would attempt to create the cluster
 if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
-
 
   for ((i = 1; i <= $MAX_RETRIES; i++)); do
     IS_CLUSTER=$(curl -s -o /dev/null -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" -w "%%{http_code}" http://localhost:7200/rest/monitor/cluster)
@@ -423,7 +437,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       echo "Retrying ($i/$MAX_RETRIES) after $RETRY_DELAY seconds..."
       sleep $RETRY_DELAY
     elif [ "$IS_CLUSTER" == 503 ]; then
-      curl -X POST http://localhost:7200/rest/cluster/config \
+      curl -X POST -s http://localhost:7200/rest/cluster/config \
         -H 'Content-type: application/json' \
         -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
         -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
@@ -447,11 +461,23 @@ if [[ $is_security_enabled == "true" ]]; then
   echo "Security is enabled"
 else
   # Set the admin password
-  curl --location --request PATCH 'http://localhost:7200/rest/security/users/admin' \
+  SET_PASSWORD=$(curl --location -s -w "%%{http_code}" --request PATCH 'http://localhost:7200/rest/security/users/admin' \
     --header 'Content-Type: application/json' \
     --data "{ \"password\": \"$${GRAPHDB_ADMIN_PASSWORD}\" }"
+    )
+  if [[ "$SET_PASSWORD" == 200 ]]; then
+    echo "Set GraphDB password successfully"
+  else
+    echo "Failed setting GraphDB password. Please check the logs"
+  fi
+
   # Enable the security
-  curl -X POST --header 'Content-Type: application/json' --header 'Accept: */*' -d 'true' 'http://localhost:7200/rest/security'
+  ENABLED_SECURITY=$(curl -X POST -s -w "%%{http_code}" --header 'Content-Type: application/json' --header 'Accept: */*' -d 'true' 'http://localhost:7200/rest/security')
+  if [[ "$ENABLED_SECURITY" == 200 ]]; then
+    echo "Enabled GraphDB security successfully"
+  else
+    echo "Failed enabling GraphDB security. Please check the logs"
+  fi
 fi
 
 echo "###########################"
