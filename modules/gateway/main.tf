@@ -33,7 +33,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.gateway_identity_id]
+    identity_ids = [var.gateway_tls_identity_id]
   }
 
   ssl_certificate {

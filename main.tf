@@ -240,9 +240,10 @@ module "application_gateway" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  gateway_subnet_id                 = azurerm_subnet.graphdb_gateway.id
-  gateway_public_ip_id              = module.address.public_ip_address_id
-  gateway_identity_id               = module.tls.tls_identity_id
+  gateway_subnet_id    = azurerm_subnet.graphdb_gateway.id
+  gateway_public_ip_id = module.address.public_ip_address_id
+
+  gateway_tls_identity_id           = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
 
   # Wait for role assignments

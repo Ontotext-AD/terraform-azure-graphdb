@@ -110,7 +110,7 @@ variable "gateway_tls_certificate_secret_id" {
   type        = string
 }
 
-variable "gateway_identity_id" {
+variable "gateway_tls_identity_id" {
   description = "Identifier of a user assigned identity having access to the TLS certificate in the Key Vault"
   type        = string
 }
