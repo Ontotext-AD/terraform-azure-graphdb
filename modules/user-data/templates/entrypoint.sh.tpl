@@ -20,6 +20,7 @@ VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/c
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 ZONE_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/zone?api-version=2021-01-01&format=text")
 REGION_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-01-01&format=text")
+RESOURCE_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text")
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
 DISK_IOPS=${disk_iops_read_write}
@@ -363,7 +364,33 @@ echo 'fs.file-max = 262144' | tee -a /etc/sysctl.conf
 
 sysctl -p
 
-# TODO: Monitoring/instrumenting
+echo "#########################"
+echo "#    Setup Telegraf     #"
+echo "#########################"
+
+echo "Getting GDB password"
+GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+
+# Installs Telegraf
+curl -s https://repos.influxdata.com/influxdata-archive.key > influxdata-archive.key
+echo '943666881a1b8d9b849b74caebf02d3465d6beb716510d86a39f6c8e8dac7515 influxdata-archive.key' | sha256sum -c && cat influxdata-archive.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive.gpg > /dev/null
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
+apt-get update && apt-get install telegraf
+
+# Overrides the config file
+cat <<-EOF > /etc/telegraf/telegraf.conf
+  [[inputs.prometheus]]
+    urls = ["http://localhost:7200/rest/monitor/infrastructure", "http://localhost:7200/rest/monitor/structures"]
+    username = "admin"
+    password = "$${GRAPHDB_ADMIN_PASSWORD}"
+
+  [[outputs.azure_monitor]]
+    namespace_prefix = "Telegraf/"
+    region = "$REGION_ID"
+    resource_id = "$RESOURCE_ID"
+EOF
+
+systemctl restart telegraf
 
 echo "###########################"
 echo "#    Starting GraphDB     #"
@@ -377,9 +404,6 @@ systemctl start graphdb-cluster-proxy.service
 echo "##################################"
 echo "#    Beginning cluster setup     #"
 echo "##################################"
-
-echo "Getting GDB password"
-GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 
 check_gdb() {
   if [ -z "$1" ]; then
@@ -485,4 +509,3 @@ fi
 echo "###########################"
 echo "#    Script completed     #"
 echo "###########################"
-

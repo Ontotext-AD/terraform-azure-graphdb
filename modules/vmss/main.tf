@@ -73,7 +73,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   admin_ssh_key {
-    public_key = file(var.ssh_key)
+    public_key = var.ssh_key
     username   = "graphdb"
   }
 }

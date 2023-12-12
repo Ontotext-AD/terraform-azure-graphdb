@@ -147,7 +147,7 @@ module "vault" {
   key_vault_retention_days          = var.key_vault_retention_days
 
   assign_administrator_role = var.assign_data_owner_roles
-  storage_account_id = module.backup.storage_account_id
+  storage_account_id        = module.backup.storage_account_id
 }
 
 # Creates a storage account for storing GraphDB backups
