@@ -171,8 +171,6 @@ module "dns" {
   resource_name_prefix = var.resource_name_prefix
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_id   = azurerm_virtual_network.graphdb.id
-
-  depends_on = [module.identity]
 }
 
 # Creates and assigns required roles to the identity and services
@@ -329,5 +327,5 @@ module "vmss" {
   user_data_script = local.user_data_script
 
   # Wait for configurations to be created in the key vault and roles to be assigned
-  depends_on = [module.configuration, module.roles, module.dns]
+  depends_on = [module.configuration, module.roles]
 }
