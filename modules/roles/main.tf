@@ -12,7 +12,7 @@ resource "azurerm_role_assignment" "graphdb_backup" {
   role_definition_name = "Storage Blob Data Contributor"
 }
 
-resource "azurerm_role_assignment" "rg_contributor_role" {
+resource "azurerm_role_assignment" "vm_contributor_role" {
   principal_id         = var.identity_principal_id
   scope                = var.resource_group_id
   role_definition_name = "Virtual Machine Contributor"
