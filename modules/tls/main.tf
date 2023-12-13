@@ -1,5 +1,5 @@
 resource "azurerm_user_assigned_identity" "graphdb_tls_certificate" {
-  name                = "${var.resource_name_prefix}-tls"
+  name                = "id-${var.resource_name_prefix}-tls"
   resource_group_name = var.resource_group_name
   location            = var.location
 }

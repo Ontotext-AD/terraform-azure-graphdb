@@ -10,8 +10,8 @@ resource "random_string" "vault_name_suffix" {
 }
 
 locals {
-  # Trim down to 16 characters and append the suffix to a maximum of 23 characters.
-  vault_name = "${substr(var.resource_name_prefix, 0, 16)}-${random_string.vault_name_suffix.result}"
+  # Trim down to 13 characters and append the prefix and suffix to a maximum of 23 characters.
+  vault_name = "kv-${substr(var.resource_name_prefix, 0, 13)}-${random_string.vault_name_suffix.result}"
 }
 
 resource "azurerm_key_vault" "graphdb" {

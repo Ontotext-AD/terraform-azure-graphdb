@@ -13,7 +13,7 @@ locals {
   sanitized = replace(var.resource_name_prefix, "/[^a-zA-Z0-9]/", "")
 
   # Trim down to 18 characters to allow the random suffix of 6
-  trimmed = lower(substr(local.sanitized, 0, 18))
+  trimmed = lower(substr("st${local.sanitized}", 0, 18))
 
   # Create storage account name with unique suffix and a maximum of 24 characters
   storage_account_name = "${local.trimmed}${random_string.storage_account_name_suffix.result}"

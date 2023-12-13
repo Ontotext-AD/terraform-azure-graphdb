@@ -1,3 +1,21 @@
+resource "random_string" "fqdn" {
+  length  = 6
+  special = false
+  upper   = false
+  numeric = true
+}
+
+resource "azurerm_public_ip" "graphdb_public_ip_address" {
+  name                = "pip-${var.resource_name_prefix}-app-gateway"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  sku               = "Standard"
+  allocation_method = "Static"
+  zones             = var.zones
+  domain_name_label = "${var.resource_name_prefix}-${random_string.fqdn.result}"
+}
+
 locals {
   gateway_ip_configuration_name           = "${var.resource_name_prefix}-gateway-ip"
   gateway_frontend_http_port_name         = "${var.resource_name_prefix}-gateway-http"
@@ -15,7 +33,7 @@ locals {
 }
 
 resource "azurerm_application_gateway" "graphdb" {
-  name                = var.resource_name_prefix
+  name                = "agw-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -33,7 +51,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.gateway_identity_id]
+    identity_ids = [var.gateway_tls_identity_id]
   }
 
   ssl_certificate {
@@ -65,7 +83,7 @@ resource "azurerm_application_gateway" "graphdb" {
 
   frontend_ip_configuration {
     name                 = local.gateway_frontend_ip_configuration_name
-    public_ip_address_id = var.gateway_public_ip_id
+    public_ip_address_id = azurerm_public_ip.graphdb_public_ip_address.id
   }
 
   backend_address_pool {

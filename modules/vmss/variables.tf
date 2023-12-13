@@ -16,6 +16,11 @@ variable "zones" {
   default     = [1, 2, 3]
 }
 
+variable "resource_group_id" {
+  description = "Identifier of the resource group where GraphDB will be deployed."
+  type        = string
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group where GraphDB will be deployed."
   type        = string
@@ -28,19 +33,40 @@ variable "graphdb_subnet_id" {
   type        = string
 }
 
-# Security
-
-variable "identity_id" {
-  description = "Identifier of a user assigned identity with permissions"
-  type        = string
-}
-
 # Application Gateway
 
 variable "application_gateway_backend_address_pool_ids" {
   description = "Array of identifiers of load balancer backend pools for the GraphDB nodes"
   type        = list(string)
   default     = []
+}
+
+# Key Vault
+
+variable "key_vault_id" {
+  description = "Identifier of a Key Vault for storing GraphDB configurations"
+  type        = string
+}
+
+# App Configuration
+
+variable "app_configuration_id" {
+  description = "Identifier of the App Configuration store for GraphDB"
+  type        = string
+}
+
+# Backups storage
+
+variable "backups_storage_container_id" {
+  description = "Identifier of the storage container for GraphDB backups"
+  type        = string
+}
+
+# DNS
+
+variable "private_dns_zone" {
+  description = "Identifier of a Private DNS zone"
+  type        = string
 }
 
 # GraphDB VM
