@@ -9,29 +9,39 @@ on:
 jobs:
   analyze:
     name: Analyze the Terraform scripts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
     permissions:
       actions: read
       contents: read
       security-events: write
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v3
+      - id: clone_repository
+        name: Clone repository
+        # actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - name: Setup Terraform CLI
-        uses: hashicorp/setup-terraform@v2
+      - id: setup_terraform
+        name: Setup Terraform CLI
+        # hashicorp/setup-terraform@v3.0.0
+        uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36
 
-      - name: Run Terraform init
+      - id: run_terraform_init
+        name: Run Terraform init
         run: terraform init
 
-      - name: Run Terraform format check
+      - id: run_terraform_fmt
+        name: Run Terraform format check
         run: terraform fmt -check -recursive
 
-      - name: Run Terraform validate check
+      - id: run_terraform_validate
+        name: Run Terraform validate check
         run: terraform validate
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - id: run_trivy_config
+        name: Run Trivy vulnerability scanner
+        # aquasecurity/trivy-action@v0.16.0
+        uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601
         with:
           scan-type: config
           trivy-config: trivy.yaml
@@ -39,8 +49,10 @@ jobs:
           format: sarif
           output: trivy.sarif
 
-      - name: Upload Trivy SARIF results
-        uses: github/codeql-action/upload-sarif@v2
+      - id: run_sarif_upload
+        name: Upload Trivy SARIF results
+        # github/codeql-action/upload-sarif@v2.22.9
+        uses: github/codeql-action/upload-sarif@382a50a0284c0de445104889a9d6003acb4b3c1d
         timeout-minutes: 1
         with:
           sarif_file: trivy.sarif
