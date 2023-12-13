@@ -240,5 +240,5 @@ variable "deploy_bastion" {
 variable "bastion_subnet_address_prefix" {
   description = "Bastion subnet address prefix"
   type        = list(string)
-  default     = ["10.0.3.0/27"]
+  default     = ["10.0.3.0/26"]
 }
