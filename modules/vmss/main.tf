@@ -38,6 +38,13 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     })
   }
 
+  extension {
+    name                 = "AzureMonitorLinuxAgent"
+    publisher            = "Microsoft.Azure.Monitor"
+    type                 = "AzureMonitorLinuxAgent"
+    type_handler_version = "1.0"
+  }
+
   automatic_instance_repair {
     enabled      = true
     grace_period = "PT10M"

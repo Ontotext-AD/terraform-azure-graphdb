@@ -51,3 +51,10 @@ variable "assign_administrator_role" {
   type        = bool
   default     = true
 }
+
+# Storage account
+
+variable "storage_account_id" {
+  description = "Storage account ID used for saving key vault diagnostics"
+  type        = string
+}
