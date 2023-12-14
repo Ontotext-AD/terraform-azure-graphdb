@@ -140,8 +140,9 @@ echo "##########################################"
 if [ -b "$graphdb_device" ]; then
   echo "Device $graphdb_device is available."
 else
-  echo "Device $graphdb_device is not available. Something went wrong."
-  exit 1
+  echo "Device $graphdb_device is not available. Something went wrong. \n Retrying disk creation ..."
+  # If for any reason the disk is not available this will reattempt to create and attach it.
+  disk_attach_create 0
 fi
 
 # Create a file system if there isn't any
