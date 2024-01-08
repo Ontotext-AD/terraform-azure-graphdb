@@ -464,10 +464,13 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       echo "Retrying ($i/$MAX_RETRIES) after $RETRY_DELAY seconds..."
       sleep $RETRY_DELAY
     elif [ "$IS_CLUSTER" == 503 ]; then
-      curl -X POST -s http://localhost:7200/rest/cluster/config \
+      CLUSTER_CREATED=$(curl -X POST -s http://localhost:7200/rest/cluster/config \
+        -w "%%{http_code}" \
         -H 'Content-type: application/json' \
         -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
         -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
+      )
+      [ "$CLUSTER_CREATED" == 200 ] && { echo "GraphDB cluster successfully created!"; break; }
     elif [ "$IS_CLUSTER" == 200 ]; then
       echo "Cluster exists"
       break
