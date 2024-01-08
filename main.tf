@@ -142,8 +142,9 @@ module "backup" {
   nacl_subnet_ids = [azurerm_subnet.graphdb_vmss.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
-  storage_account_tier             = var.storage_account_tier
-  storage_account_replication_type = var.storage_account_replication_type
+  storage_account_tier                  = var.storage_account_tier
+  storage_account_replication_type      = var.storage_account_replication_type
+  storage_account_retention_hot_to_cool = var.storage_account_retention_hot_to_cool
 }
 
 # Creates a Private DNS zone for GraphDB internal cluster communication
