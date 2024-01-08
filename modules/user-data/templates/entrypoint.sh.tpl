@@ -203,15 +203,22 @@ HIGHEST_INSTANCE_ID=$${SORTED_INSTANCE_IDs[2]}
 
 # Pings a DNS record, if no response is returned, will update the DNS record with the IP of the current instance
 ping_and_set_dns_record() {
-  local dns_record="$1"
-  echo "Pinging $dns_record"
-  if ping -c 5 "$dns_record"; then
-    echo "Ping successful"
+  local DNS_RECORD="$1"
+  # Checks if a record with the current instance IP is present
+  IP_RECORD_PRESENT=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?aRecords[?ipv4Address=='$IP_ADDRESS'].ipv4Address].name" --output tsv)
+  # If no record is present for the current IP check which node is missing and assign the IP to it.
+  if [ -z "$IP_RECORD_PRESENT" ]; then
+    echo "Pinging $DNS_RECORD"
+      if ping -c 5 "$DNS_RECORD"; then
+        echo "Ping successful"
+      else
+        echo "Ping failed for $DNS_RECORD"
+        # Extracts the record name
+        RECORD_NAME=$(echo "$DNS_RECORD" | awk -F'.' '{print $1}')
+        az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+      fi
   else
-    echo "Ping failed for $dns_record"
-    # Extracts the record name
-    RECORD_NAME=$(echo "$dns_record" | awk -F'.' '{print $1}')
-    az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+    echo "Record for this IP is present in the Private DNS"
   fi
 }
 
@@ -234,6 +241,7 @@ for i in "$${!SORTED_INSTANCE_IDs[@]}"; do
     az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
   else
     for record in "$${ALL_FQDN_RECORDS[@]}"; do
+      echo "Checking DNS record $record"
       ping_and_set_dns_record "$record"
     done
   fi
