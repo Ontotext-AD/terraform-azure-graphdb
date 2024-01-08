@@ -220,14 +220,6 @@ module "application_gateway" {
   depends_on = [module.tls]
 }
 
-# Module for resolving the GraphDB shared image ID
-module "graphdb_image" {
-  source = "./modules/image"
-
-  graphdb_version  = var.graphdb_version
-  graphdb_image_id = var.graphdb_image_id
-}
-
 # Creates an Azure Bastion host for secure remote connections
 module "bastion" {
   count = var.deploy_bastion ? 1 : 0
@@ -274,7 +266,9 @@ module "user_data" {
 }
 
 locals {
-  user_data_script = var.custom_graphdb_vm_user_data != null ? var.custom_graphdb_vm_user_data : module.user_data[0].graphdb_vmss_user_data
+  user_data_script         = var.custom_graphdb_vm_user_data != null ? var.custom_graphdb_vm_user_data : module.user_data[0].graphdb_vmss_user_data
+  graphdb_gallery_image_id = "/communityGalleries/${var.graphdb_image_gallery}/images/${var.graphdb_version}-${var.graphdb_image_architecture}/versions/${var.graphdb_image_version}"
+  graphdb_image_id         = var.graphdb_image_id != null ? var.graphdb_image_id : local.graphdb_gallery_image_id
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
@@ -296,7 +290,7 @@ module "vmss" {
   private_dns_zone             = module.dns.private_dns_zone_id
 
   instance_type = var.instance_type
-  image_id      = module.graphdb_image.image_id
+  image_id      = local.graphdb_image_id
   node_count    = var.node_count
   ssh_key       = var.ssh_key
 
