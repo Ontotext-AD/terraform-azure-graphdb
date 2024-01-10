@@ -25,14 +25,8 @@ resource "azurerm_app_configuration" "graphdb" {
   soft_delete_retention_days = var.app_config_retention_days
 }
 
-data "azurerm_client_config" "current" {
-}
-
-# Assigns Data Owner to the current user executing the data scripts. Needed in order to be able to create configuration keys later.
 resource "azurerm_role_assignment" "app_config_data_owner" {
-  count = var.assign_owner_role ? 1 : 0
-
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = var.admin_security_principle_id
   scope                = azurerm_app_configuration.graphdb.id
   role_definition_name = "App Configuration Data Owner"
 }

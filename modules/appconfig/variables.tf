@@ -32,8 +32,8 @@ variable "app_config_retention_days" {
 
 # Role assigment
 
-variable "assign_owner_role" {
-  description = "Assign 'App Configuration Data Owner' role to the current client. Needed in order to create keys."
-  type        = bool
-  default     = true
+variable "admin_security_principle_id" {
+  description = "UUID of a user or service principle that will become App Configuration data owner"
+  type        = string
+  default     = null
 }
