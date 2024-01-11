@@ -72,54 +72,7 @@ Additional steps include
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
 
-## Configurations
-
-The module support different variables that customize the deployment. Inside [variables.tf](variables.tf) you can see all the supported
-options.
-
 <!-- BEGIN_TF_DOCS -->
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a | yes |
-| location | Azure geographical location where resources will be deployed | `string` | n/a | yes |
-| zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
-| tags | Common resource tags. | `map(string)` | `{}` | no |
-| lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
-| virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
-| app\_gateway\_subnet\_address\_prefix | Subnet address prefix CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
-| graphdb\_subnet\_address\_prefix | Subnet address prefix CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
-| management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
-| tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
-| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| key\_vault\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
-| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| app\_config\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
-| admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version to deploy. | `string` | `"10.5.0"` | no |
-| graphdb\_image\_gallery | Identifier of the public compute image gallery from which GraphDB VM images can be pulled. | `string` | `"GraphDB-02faf3ce-79ed-4676-ab69-0e422bbd9ee1"` | no |
-| graphdb\_image\_version | Version of the GraphDB VM image to deploy. | `string` | `"latest"` | no |
-| graphdb\_image\_architecture | Architecture of the GraphDB VM image. | `string` | `"x86_64"` | no |
-| graphdb\_image\_id | Full image identifier to use for running GraphDB VM instances. If left unspecified, Terraform will use the image from our public Compute Gallery. | `string` | `null` | no |
-| graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
-| graphdb\_cluster\_token | Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared. | `string` | `null` | no |
-| graphdb\_password | Secret token used to access GraphDB cluster. | `string` | `null` | no |
-| graphdb\_properties\_path | Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM. | `string` | `null` | no |
-| graphdb\_java\_options | GraphDB options to pass to GraphDB with GRAPHDB\_JAVA\_OPTS environment variable. | `string` | `null` | no |
-| node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
-| instance\_type | Azure instance type | `string` | n/a | yes |
-| ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
-| custom\_graphdb\_vm\_user\_data | Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding. | `string` | `null` | no |
-| storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
-| storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
-| storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
-| backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
-| disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
-| disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
-| disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
-| deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
-| bastion\_subnet\_address\_prefix | Bastion subnet address prefix | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
