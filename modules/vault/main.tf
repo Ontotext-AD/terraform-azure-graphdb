@@ -33,11 +33,8 @@ resource "azurerm_key_vault" "graphdb" {
   }
 }
 
-# Add vault data permissions to the current client that is executing this Terraform script
 resource "azurerm_role_assignment" "graphdb_key_vault_manager" {
-  count = var.assign_administrator_role ? 1 : 0
-
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = var.admin_security_principle_id
   scope                = azurerm_key_vault.graphdb.id
   role_definition_name = "Key Vault Administrator"
 }

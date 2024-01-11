@@ -96,7 +96,7 @@ options.
 | key\_vault\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
 | app\_config\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
-| assign\_data\_owner\_roles | Enables the assignment of data owner or administrator roles for the current user in services requiring such role for inserting data during Terraform apply, i.e. KeyVault and AppConfig. | `bool` | `true` | no |
+| admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
 | graphdb\_version | GraphDB version to deploy. | `string` | `"10.5.0"` | no |
 | graphdb\_image\_gallery | Identifier of the public compute image gallery from which GraphDB VM images can be pulled. | `string` | `"GraphDB-02faf3ce-79ed-4676-ab69-0e422bbd9ee1"` | no |
 | graphdb\_image\_version | Version of the GraphDB VM image to deploy. | `string` | `"latest"` | no |

@@ -111,10 +111,10 @@ variable "app_config_retention_days" {
 
 # Role Assignments
 
-variable "assign_data_owner_roles" {
-  description = "Enables the assignment of data owner or administrator roles for the current user in services requiring such role for inserting data during Terraform apply, i.e. KeyVault and AppConfig."
-  type        = bool
-  default     = true
+variable "admin_security_principle_id" {
+  description = "UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used."
+  type        = string
+  default     = null
 }
 
 # GraphDB VM image configuration

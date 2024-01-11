@@ -1,11 +1,14 @@
 # COMMON RESOURCES AND NETWORKING -------------------------------
 
+data "azurerm_client_config" "current" {}
+
 locals {
   tags = merge({
     # Used to easily track all resource managed by Terraform
     Source     = "Terraform"
     Deployment = var.resource_name_prefix
   }, var.tags)
+  admin_security_principle_id = var.admin_security_principle_id != null ? var.admin_security_principle_id : data.azurerm_client_config.current.object_id
 }
 
 resource "azurerm_resource_group" "graphdb" {
@@ -127,8 +130,8 @@ module "vault" {
   key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
   key_vault_retention_days          = var.key_vault_retention_days
 
-  assign_administrator_role = var.assign_data_owner_roles
-  storage_account_id        = module.backup.storage_account_id
+  admin_security_principle_id = local.admin_security_principle_id
+  storage_account_id          = module.backup.storage_account_id
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -167,7 +170,7 @@ module "appconfig" {
   app_config_enable_purge_protection = var.app_config_enable_purge_protection
   app_config_retention_days          = var.app_config_retention_days
 
-  assign_owner_role = var.assign_data_owner_roles
+  admin_security_principle_id = local.admin_security_principle_id
 }
 
 # Creates GraphDB configuration key values in the App Configuration store

@@ -46,10 +46,10 @@ variable "key_vault_retention_days" {
 
 # Role assigment
 
-variable "assign_administrator_role" {
-  description = "Assign 'Key Vault Administrator' role to the current client. Needed in order to create secrets."
-  type        = bool
-  default     = true
+variable "admin_security_principle_id" {
+  description = "UUID of a user or service principle that will become Key Vault administrator"
+  type        = string
+  default     = null
 }
 
 # Storage account
