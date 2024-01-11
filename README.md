@@ -72,12 +72,8 @@ Additional steps include
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
 
-## Configurations
-
-The module support different variables that customize the deployment. Inside [variables.tf](variables.tf) you can see all the supported
-options.
-
 <!-- BEGIN_TF_DOCS -->
+## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
