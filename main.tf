@@ -303,3 +303,13 @@ module "vmss" {
   # Wait for the configurations to be created in the App Configuration store
   depends_on = [module.configurations]
 }
+
+module "monitoring" {
+  count = var.deploy_monitoring ? 1 : 0
+
+  source = "./modules/monitoring"
+
+  resource_group_name = azurerm_resource_group.graphdb.name
+  location            = var.location
+  vmss_resource_id    = module.vmss.vmss_resource_id
+}

@@ -116,6 +116,7 @@ Additional steps include
 | disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefix | Bastion subnet address prefix | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
+| deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
