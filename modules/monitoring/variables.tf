@@ -57,6 +57,6 @@ variable "main_log_table_totalRetentionInDays" {
 
 variable "custom_table_plan" {
   description = "Table plan for the main log table: possible options are Analytics and Basic"
-  type = string
-  default = "Analytics" # var.custom_table_plan
+  type        = string
+  default     = "Analytics" # var.custom_table_plan
 }

@@ -76,7 +76,8 @@ resource "azurerm_monitor_data_collection_rule" "data_collection_rule" {
     performance_counter {
       streams                       = ["Microsoft-InsightsMetrics"]
       sampling_frequency_in_seconds = var.performance_counter_sampling_frequency_in_seconds
-      counter_specifiers            = [
+
+      counter_specifiers = [
         "\\VmInsights\\DetailedMetrics"
       ]
       name = "VMInsightsPerfCounters"
@@ -86,7 +87,8 @@ resource "azurerm_monitor_data_collection_rule" "data_collection_rule" {
     performance_counter {
       streams                       = ["Microsoft-Perf", "Microsoft-InsightsMetrics"]
       sampling_frequency_in_seconds = var.performance_counter_sampling_frequency_in_seconds
-      counter_specifiers            = [
+
+      counter_specifiers = [
         "Processor(*)\\% Processor Time",
         "Processor(*)\\% Idle Time",
         "Processor(*)\\% User Time",
@@ -160,7 +162,8 @@ resource "azapi_resource" "main_gdb_log_table" {
   name      = local.gdb_main_log_table_name
   parent_id = azurerm_log_analytics_workspace.log_analytics_workspace.id
   type      = "Microsoft.OperationalInsights/workspaces/tables@2022-10-01"
-  body      = jsonencode(
+
+  body = jsonencode(
     {
       "properties" : {
         "schema" : {

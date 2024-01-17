@@ -15,5 +15,5 @@ output "graphdb_vmss_identity_principal_id" {
 
 output "vmss_resource_id" {
   description = "Identifier of the created VMSS resource"
-  value = azurerm_linux_virtual_machine_scale_set.graphdb.id
+  value       = azurerm_linux_virtual_machine_scale_set.graphdb.id
 }
