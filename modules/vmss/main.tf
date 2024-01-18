@@ -109,6 +109,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
       primary                                      = true
       subnet_id                                    = var.graphdb_subnet_id
       application_gateway_backend_address_pool_ids = var.application_gateway_backend_address_pool_ids
+      application_security_group_ids               = var.application_security_group_ids
     }
   }
 

@@ -17,7 +17,7 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
   # INBOUND
 
   security_rule {
-    name                       = "AllowHTTPSInternetInbound"
+    name                       = "AllowHTTPSInternetInBound"
     description                = "Allows specified CIDRs to access the Bastion subnet"
     priority                   = 100
     direction                  = "Inbound"
@@ -30,7 +30,7 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
   }
 
   security_rule {
-    name                       = "AllowGatewayManagerInbound"
+    name                       = "AllowGatewayManagerInBound"
     description                = "Allows Gateway Manager to perform system operations"
     priority                   = 110
     direction                  = "Inbound"
@@ -42,10 +42,49 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
     destination_port_range     = 443
   }
 
+  security_rule {
+    name                       = "AllowLoadBalancerInBound"
+    description                = "Allows Azure Load Balancer health proves"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_address_prefix      = "AzureLoadBalancer"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = 443
+  }
+
+  security_rule {
+    name                       = "AllowBastionHostCommunication"
+    description                = "Allows Azure Bastion data plane communication"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_address_prefix      = "VirtualNetwork"
+    source_port_range          = "*"
+    destination_address_prefix = "VirtualNetwork"
+    destination_port_ranges    = [8080, 5701]
+  }
+
+  security_rule {
+    name                       = "DenyInBound"
+    description                = "Denies any other inbound traffic"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = "*"
+  }
+
   # OUTBOUND
 
   security_rule {
-    name                       = "AllowSSHOutbound"
+    name                       = "AllowSSHOutBound"
     description                = "Allows outbound SSH/RDP connections"
     priority                   = 100
     direction                  = "Outbound"
@@ -58,7 +97,7 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
   }
 
   security_rule {
-    name                       = "AllowAzureCloudOutbound"
+    name                       = "AllowAzureCloudOutBound"
     description                = "Allows outbound connections to Azure Cloud services"
     priority                   = 110
     direction                  = "Outbound"
@@ -68,6 +107,45 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
     source_port_range          = "*"
     destination_address_prefix = "AzureCloud"
     destination_port_range     = 443
+  }
+
+  security_rule {
+    name                       = "AllowBastionCommunication"
+    description                = "Allows Azure Bastion data plane communication"
+    priority                   = 120
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_address_prefix      = "VirtualNetwork"
+    source_port_range          = "*"
+    destination_address_prefix = "VirtualNetwork"
+    destination_port_ranges    = [8080, 5701]
+  }
+
+  security_rule {
+    name                       = "AllowHttpOutBound"
+    description                = "Allows Azure Bastion specifics"
+    priority                   = 130
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "Internet"
+    destination_port_range     = 80
+  }
+
+  security_rule {
+    name                       = "DenyOutBound"
+    description                = "Denies any outbound traffic"
+    priority                   = 4096
+    direction                  = "Outbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = "*"
   }
 }
 

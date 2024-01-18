@@ -33,6 +33,12 @@ variable "graphdb_subnet_id" {
   type        = string
 }
 
+variable "application_security_group_ids" {
+  description = "Identifiers of application security groups to be applied to the GraphDB VMSS instances"
+  type        = list(string)
+  default     = []
+}
+
 # Application Gateway
 
 variable "application_gateway_backend_address_pool_ids" {
