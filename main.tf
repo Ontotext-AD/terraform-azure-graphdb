@@ -313,3 +313,13 @@ module "monitoring" {
   location            = var.location
   vmss_resource_id    = module.vmss.vmss_resource_id
 }
+module "alerts" {
+  count = var.deploy_monitoring ? 1 : 0
+
+  source = "./modules/alerts"
+
+  resource_group_name        = azurerm_resource_group.graphdb.name
+  location                   = var.location
+  vmss_resource_id           = module.vmss.vmss_resource_id
+  log_analytics_workspace_id = module.monitoring[0].log_analytics_workspace_id
+}
