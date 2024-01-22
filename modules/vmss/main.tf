@@ -1,7 +1,7 @@
 locals {
   lun_map = [
     for i, zone in var.zones : {
-      datadisk_name = "Disk-${var.resource_group_name}-${zone}-1"
+      datadisk_name = "disk-${var.resource_group_name}-${zone}-1"
       zone          = zone
     }
   ]

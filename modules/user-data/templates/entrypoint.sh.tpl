@@ -52,7 +52,7 @@ disk_attach_create() {
       # Wait for existing disks in the VMSS which are unattached
       existingUnattachedDisk=$(
         az disk list --resource-group $RESOURCE_GROUP \
-          --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+          --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
           --output tsv
       )
 
@@ -74,7 +74,7 @@ disk_attach_create() {
 
       while [ $COUNTER -le $MAX_RETRIES ]; do
         # Construct the disk name
-        DISK_NAME="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
+        DISK_NAME="disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
 
         # Attempt to create the disk
         az disk create --resource-group $RESOURCE_GROUP \
@@ -107,14 +107,14 @@ disk_attach_create() {
     fi
 
     # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
 
     # It's possible the created disk to be stolen by another VM starting at the same time in the same AZ
     # That's why we retry if this occurs.
     if [ -z "$availableDisks" ]; then
       echo "Something went wrong, no available disks, Retrying..."
       disk_attach_create 0
-      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
     fi
 
     echo "Attaching available disk $availableDisks."
