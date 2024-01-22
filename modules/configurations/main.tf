@@ -5,7 +5,7 @@ resource "random_password" "graphdb_cluster_token" {
 }
 
 resource "random_password" "graphdb_password" {
-  count  = var.graphdb_cluster_token != null ? 0 : 1
+  count  = var.graphdb_password != null ? 0 : 1
   length = 8
 }
 
