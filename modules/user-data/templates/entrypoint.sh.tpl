@@ -23,6 +23,9 @@ REGION_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/c
 RESOURCE_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text")
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
+DISK_STORAGE_TYPE=${disk_storage_account_type}
+DISK_NETWORK_ACCESS_POLICY=${disk_network_access_policy}
+DISK_PUBLIC_ACCESS_POLICY=${disk_public_network_access}
 DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
@@ -78,14 +81,13 @@ disk_attach_create() {
           --name $DISK_NAME \
           --size-gb $DISK_SIZE_GB \
           --location $REGION_ID \
-          --sku PremiumV2_LRS \
+          --sku $DISK_STORAGE_TYPE \
           --zone $ZONE_ID \
-          --os-type Linux \
           --disk-iops-read-write $DISK_IOPS \
           --disk-mbps-read-write $DISK_THROUGHPUT \
           --tags createdBy=$INSTANCE_HOSTNAME \
-          --public-network-access Disabled \
-          --network-access-policy DenyAll
+          --public-network-access $DISK_PUBLIC_ACCESS_POLICY \
+          --network-access-policy $DISK_NETWORK_ACCESS_POLICY
 
         # Check the exit status of the last command
         if [ $? -eq 0 ]; then
