@@ -233,7 +233,30 @@ variable "backup_schedule" {
   default     = "0 0 * * *"
 }
 
-# Data disks
+# Bastion
+
+variable "deploy_bastion" {
+  description = "Deploy bastion module"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_address_prefix" {
+  description = "Bastion subnet address prefix"
+  type        = list(string)
+  default     = ["10.0.3.0/26"]
+}
+
+# Monitoring
+
+variable "deploy_monitoring" {
+  description = "Deploy monitoring module"
+  type        = bool
+  default     = false
+}
+
+# Managed disks
+
 
 variable "disk_size_gb" {
   description = "Size of the managed data disk which will be created"
@@ -253,24 +276,20 @@ variable "disk_mbps_read_write" {
   default     = 250
 }
 
-# Bastion
-
-variable "deploy_bastion" {
-  description = "Deploy bastion module"
-  type        = bool
-  default     = false
+variable "disk_storage_account_type" {
+  description = "Storage account type for the data disks"
+  type        = string
+  default     = "PremiumV2_LRS"
 }
 
-variable "bastion_subnet_address_prefix" {
-  description = "Bastion subnet address prefix"
-  type        = list(string)
-  default     = ["10.0.3.0/26"]
+variable "disk_network_access_policy" {
+  description = "Network accesss policy for the managed disks"
+  type        = string
+  default     = "DenyAll"
 }
 
-# Monitoring
-
-variable "deploy_monitoring" {
-  description = "Deploy monitoring module"
+variable "disk_public_network_access" {
+  description = "Public network access enabled for the managed disks"
   type        = bool
   default     = false
 }

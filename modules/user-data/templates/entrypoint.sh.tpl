@@ -23,6 +23,9 @@ REGION_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/c
 RESOURCE_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text")
 # Do NOT change the LUN. Based on this we find and mount the disk in the VM
 LUN=2
+DISK_STORAGE_TYPE=${disk_storage_account_type}
+DISK_NETWORK_ACCESS_POLICY=${disk_network_access_policy}
+DISK_PUBLIC_ACCESS_POLICY=${disk_public_network_access}
 DISK_IOPS=${disk_iops_read_write}
 DISK_THROUGHPUT=${disk_mbps_read_write}
 DISK_SIZE_GB=${disk_size_gb}
@@ -49,7 +52,7 @@ disk_attach_create() {
       # Wait for existing disks in the VMSS which are unattached
       existingUnattachedDisk=$(
         az disk list --resource-group $RESOURCE_GROUP \
-          --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+          --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
           --output tsv
       )
 
@@ -71,21 +74,20 @@ disk_attach_create() {
 
       while [ $COUNTER -le $MAX_RETRIES ]; do
         # Construct the disk name
-        DISK_NAME="Disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
+        DISK_NAME="disk-$${RESOURCE_GROUP}-$${ZONE_ID}-$${DISK_ORDER}"
 
         # Attempt to create the disk
         az disk create --resource-group $RESOURCE_GROUP \
           --name $DISK_NAME \
           --size-gb $DISK_SIZE_GB \
           --location $REGION_ID \
-          --sku PremiumV2_LRS \
+          --sku $DISK_STORAGE_TYPE \
           --zone $ZONE_ID \
-          --os-type Linux \
           --disk-iops-read-write $DISK_IOPS \
           --disk-mbps-read-write $DISK_THROUGHPUT \
           --tags createdBy=$INSTANCE_HOSTNAME \
-          --public-network-access Disabled \
-          --network-access-policy DenyAll
+          --public-network-access $DISK_PUBLIC_ACCESS_POLICY \
+          --network-access-policy $DISK_NETWORK_ACCESS_POLICY
 
         # Check the exit status of the last command
         if [ $? -eq 0 ]; then
@@ -105,14 +107,14 @@ disk_attach_create() {
     fi
 
     # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
 
     # It's possible the created disk to be stolen by another VM starting at the same time in the same AZ
     # That's why we retry if this occurs.
     if [ -z "$availableDisks" ]; then
       echo "Something went wrong, no available disks, Retrying..."
       disk_attach_create 0
-      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'Disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_GROUP}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
     fi
 
     echo "Attaching available disk $availableDisks."

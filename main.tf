@@ -415,9 +415,12 @@ module "user_data" {
 
   app_configuration_name = module.appconfig.app_configuration_name
 
-  disk_iops_read_write = var.disk_iops_read_write
-  disk_mbps_read_write = var.disk_mbps_read_write
-  disk_size_gb         = var.disk_size_gb
+  disk_iops_read_write       = var.disk_iops_read_write
+  disk_mbps_read_write       = var.disk_mbps_read_write
+  disk_size_gb               = var.disk_size_gb
+  disk_network_access_policy = var.disk_network_access_policy
+  disk_public_network_access = var.disk_public_network_access
+  disk_storage_account_type  = var.disk_storage_account_type
 
   backup_storage_container_name = module.backup.storage_container_name
   backup_storage_account_name   = module.backup.storage_account_name
@@ -455,6 +458,13 @@ module "vmss" {
   ssh_key       = var.ssh_key
 
   user_data_script = local.user_data_script
+
+  disk_iops_read_write       = var.disk_iops_read_write
+  disk_mbps_read_write       = var.disk_mbps_read_write
+  disk_size_gb               = var.disk_size_gb
+  disk_network_access_policy = var.disk_network_access_policy
+  disk_public_network_access = var.disk_public_network_access
+  disk_storage_account_type  = var.disk_storage_account_type
 
   # Wait for the configurations to be created in the App Configuration store
   depends_on = [module.configurations]
