@@ -111,12 +111,15 @@ Additional steps include
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
 | storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
-| disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
-| disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
-| disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefix | Bastion subnet address prefix | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
 | deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
+| disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
+| disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
+| disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
+| disk\_storage\_account\_type | Storage account type for the data disks | `string` | `"PremiumV2_LRS"` | no |
+| disk\_network\_access\_policy | Network accesss policy for the managed disks | `string` | `"DenyAll"` | no |
+| disk\_public\_network\_access | Public network access enabled for the managed disks | `bool` | `false` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
