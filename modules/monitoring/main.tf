@@ -1,9 +1,3 @@
-locals {
-  gdb_main_log_table_name        = "gdb_main_log_CL"
-  log_analytics_destination_name = "gdb-destination-log"
-  performance_counter_name       = "gdb-perfcounter"
-}
-
 resource "azurerm_log_analytics_workspace" "log_analytics_workspace" {
   name                = "log-${var.resource_group_name}"
   location            = var.location
@@ -12,179 +6,229 @@ resource "azurerm_log_analytics_workspace" "log_analytics_workspace" {
   retention_in_days   = var.workspace_retention_in_days
 }
 
-resource "azurerm_monitor_data_collection_endpoint" "data_collection_endpoint" {
-  name                          = "dce-${var.resource_group_name}"
-  resource_group_name           = var.resource_group_name
-  location                      = var.location
-  kind                          = var.data_collection_kind
-  public_network_access_enabled = var.dce_public_network_access_enabled
-  description                   = "monitor_data_collection_endpoint ${var.resource_group_name}"
+resource "azurerm_application_insights" "graphdb_insights" {
+  name                   = "appi-${var.resource_group_name}"
+  location               = var.location
+  resource_group_name    = var.resource_group_name
+  application_type       = var.appi_application_type
+  retention_in_days      = var.appi_retention_in_days
+  workspace_id           = azurerm_log_analytics_workspace.log_analytics_workspace.id
+  internet_query_enabled = var.appi_internet_query_enabled
 }
 
-resource "azurerm_monitor_data_collection_rule_association" "DCE_association" {
-  target_resource_id          = var.vmss_resource_id
-  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.data_collection_endpoint.id
-  description                 = "Associates DCE to the VMSS"
-}
+resource "azurerm_monitor_action_group" "notification_group" {
+  name                = "ag-${var.resource_group_name}-notifications"
+  resource_group_name = var.resource_group_name
+  short_name          = "Notification"
 
-resource "azurerm_monitor_data_collection_rule" "data_collection_rule" {
-  name                        = "dcr-${var.resource_group_name}"
-  resource_group_name         = var.resource_group_name
-  location                    = var.location
-  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.data_collection_endpoint.id
-  kind                        = var.data_collection_kind
-
-  destinations {
-    log_analytics {
-      workspace_resource_id = azurerm_log_analytics_workspace.log_analytics_workspace.id
-      name                  = local.log_analytics_destination_name
-    }
+  arm_role_receiver {
+    name                    = "owner notifications"
+    role_id                 = var.ag_arm_role_receiver_role_id
+    use_common_alert_schema = true
   }
 
-  data_flow {
-    streams      = ["Microsoft-Syslog", "Microsoft-Perf", "Microsoft-InsightsMetrics"]
-    destinations = [local.log_analytics_destination_name]
-  }
-
-  data_flow {
-    streams       = ["Custom-${azapi_resource.main_gdb_log_table.name}"]
-    destinations  = [local.log_analytics_destination_name]
-    output_stream = "Custom-${azapi_resource.main_gdb_log_table.name}"
-    transform_kql = "source"
-  }
-
-  data_sources {
-    syslog {
-      facility_names = ["*"]
-      log_levels     = ["*"]
-      name           = "gdb-datasource-syslog"
-      streams        = ["Microsoft-Syslog"]
-    }
-
-    log_file {
-      name          = local.gdb_main_log_table_name
-      format        = "text"
-      streams       = ["Custom-${azapi_resource.main_gdb_log_table.name}"]
-      file_patterns = ["/var/opt/graphdb/node/logs/main.log"]
-      settings {
-        text {
-          record_start_timestamp_format = "ISO 8601"
-        }
-      }
-    }
-
-    performance_counter {
-      streams                       = ["Microsoft-InsightsMetrics"]
-      sampling_frequency_in_seconds = var.performance_counter_sampling_frequency_in_seconds
-
-      counter_specifiers = [
-        "\\VmInsights\\DetailedMetrics"
-      ]
-      name = "VMInsightsPerfCounters"
-    }
-
-    # TODO Review and remove unneeded specifiers
-    performance_counter {
-      streams                       = ["Microsoft-Perf", "Microsoft-InsightsMetrics"]
-      sampling_frequency_in_seconds = var.performance_counter_sampling_frequency_in_seconds
-
-      counter_specifiers = [
-        "Processor(*)\\% Processor Time",
-        "Processor(*)\\% Idle Time",
-        "Processor(*)\\% User Time",
-        "Processor(*)\\% Nice Time",
-        "Processor(*)\\% Privileged Time",
-        "Processor(*)\\% IO Wait Time",
-        "Processor(*)\\% Interrupt Time",
-        "Processor(*)\\% DPC Time",
-        "Memory(*)\\Available MBytes Memory",
-        "Memory(*)\\% Available Memory",
-        "Memory(*)\\Used Memory MBytes",
-        "Memory(*)\\% Used Memory",
-        "Memory(*)\\Pages/sec",
-        "Memory(*)\\Page Reads/sec",
-        "Memory(*)\\Page Writes/sec",
-        "Memory(*)\\Available MBytes Swap",
-        "Memory(*)\\% Available Swap Space",
-        "Memory(*)\\Used MBytes Swap Space",
-        "Memory(*)\\% Used Swap Space",
-        "Process(*)\\Pct User Time",
-        "Process(*)\\Pct Privileged Time",
-        "Process(*)\\Used Memory",
-        "Process(*)\\Virtual Shared Memory",
-        "Logical Disk(*)\\% Free Space",
-        "Logical Disk(*)\\% Used Space",
-        "Logical Disk(*)\\Logical Disk Bytes/sec",
-        "Logical Disk(*)\\Disk Read Bytes/sec",
-        "Logical Disk(*)\\Disk Write Bytes/sec",
-        "Logical Disk(*)\\Disk Transfers/sec",
-        "Logical Disk(*)\\Disk Reads/sec",
-        "Logical Disk(*)\\Disk Writes/sec",
-        "Network(*)\\Total Bytes Transmitted",
-        "Network(*)\\Total Bytes Received",
-        "Network(*)\\Total Bytes",
-        "Network(*)\\Total Packets Transmitted",
-        "Network(*)\\Total Packets Received",
-        "Network(*)\\Total Rx Errors",
-        "Network(*)\\Total Tx Errors",
-        "Network(*)\\Total Collisions",
-        "System(*)\\Uptime",
-        "System(*)\\Users",
-        "System(*)\\Unique Users",
-        "System(*)\\CPUs"
-      ]
-      name = local.performance_counter_name
-    }
-  }
-
-  stream_declaration {
-    stream_name = "Custom-${azapi_resource.main_gdb_log_table.name}"
-    column {
-      name = "TimeGenerated"
-      type = "datetime"
-    }
-    column {
-      name = "RawData"
-      type = "string"
+  dynamic "azure_app_push_receiver" {
+    for_each = var.ag_push_notification_accounts
+    content {
+      name          = "push notification ${azure_app_push_receiver.value}"
+      email_address = azure_app_push_receiver.value
     }
   }
 }
 
-resource "azurerm_monitor_data_collection_rule_association" "DCR_association" {
-  name                    = "dcra-${var.resource_group_name}"
-  target_resource_id      = var.vmss_resource_id
-  data_collection_rule_id = azurerm_monitor_data_collection_rule.data_collection_rule.id
-  description             = "Associates DCR to the VMSS"
+# Role assignments
+# This is required for the smart detection action group.
+resource "azurerm_role_assignment" "monitoring_reader" {
+  principal_id = var.monitor_reader_principal_id
+  # TODO test this out, not sure if this is the proper scope
+  scope                = azurerm_application_insights.graphdb_insights.id
+  role_definition_name = "Monitoring Reader"
 }
 
-# We need to use the azapi as terraform does not have a resource to create tables.
-resource "azapi_resource" "main_gdb_log_table" {
-  name      = local.gdb_main_log_table_name
-  parent_id = azurerm_log_analytics_workspace.log_analytics_workspace.id
-  type      = "Microsoft.OperationalInsights/workspaces/tables@2022-10-01"
+# Smart detection rules
 
-  body = jsonencode(
-    {
-      "properties" : {
-        "schema" : {
-          "name" : local.gdb_main_log_table_name,
-          "columns" : [
-            {
-              "name" : "TimeGenerated",
-              "type" : "datetime",
-              "description" : "The time at which the data was generated"
-            },
-            {
-              "name" : "RawData",
-              "type" : "string"
-              "description" : "Raw GraphDB log data"
-            }
-          ]
-        },
-        "retentionInDays" : var.main_log_table_retentionInDays,
-        "totalRetentionInDays" : var.main_log_table_totalRetentionInDays,
-        "plan" : var.custom_table_plan
-      }
+resource "azurerm_application_insights_smart_detection_rule" "slow_server_response_time" {
+  name                    = "Slow server response time"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "degradation_server_response_time" {
+  name                    = "Degradation in server response time"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "rise_exception_volume" {
+  name                    = "Abnormal rise in exception volume"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "memory_leak_detection" {
+  name                    = "Potential memory leak detected"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "security_issue_detection" {
+  name                    = "Potential security issue detected"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "rise_daily_data_volume" {
+  name                    = "Abnormal rise in daily data volume"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = var.enable_smart_detection_rules
+}
+
+# Disabling unneeded rules
+resource "azurerm_application_insights_smart_detection_rule" "slow_page_load" {
+  name                    = "Slow page load time"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = false
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "long_dependency_duration" {
+  name                    = "Long dependency duration"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = false
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "dependency_duration_degradation" {
+  name                    = "Degradation in dependency duration"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = false
+}
+
+resource "azurerm_application_insights_smart_detection_rule" "trace_severity_ratio_degradation" {
+  name                    = "Degradation in trace severity ratio"
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  enabled                 = false
+}
+
+# Availability tests
+resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
+  enabled = var.web_test_availability_enabled
+
+  name                    = "at-${var.resource_group_name}-cluster-health"
+  resource_group_name     = var.resource_group_name
+  location                = var.location
+  application_insights_id = azurerm_application_insights.graphdb_insights.id
+  geo_locations           = var.web_test_geo_locations
+  frequency               = var.web_test_frequency
+  timeout                 = var.web_test_timeout
+
+  request {
+    url = "https://${var.web_test_availability_request_url}/rest/cluster/node/status"
+  }
+
+  validation_rules {
+    expected_status_code = var.web_test_availability_expected_status_code
+    ssl_check_enabled    = var.web_test_ssl_check_enabled
+
+    content {
+      content_match      = var.web_test_availability_content_match
+      pass_if_text_found = true
+      ignore_case        = true
     }
-  )
+  }
+}
+
+# Alerts
+resource "azurerm_monitor_metric_alert" "availability_alert" {
+  enabled = var.web_test_availability_enabled
+
+  name                = "al-${var.resource_group_name}-availability"
+  resource_group_name = var.resource_group_name
+  scopes              = [azurerm_application_insights.graphdb_insights.id]
+  description         = "Alarm will trigger if availability goes beneath 100"
+  severity            = 0
+
+  frequency                = "PT1M"
+  window_size              = "PT5M"
+  target_resource_location = var.location
+  target_resource_type     = "microsoft.insights/components"
+  auto_mitigate            = true
+
+  criteria {
+    metric_namespace = "microsoft.insights/components"
+    metric_name      = "availabilityResults/availabilityPercentage"
+    aggregation      = "Average"
+    operator         = "LessThan"
+    threshold        = 100
+  }
+  action {
+    action_group_id = azurerm_monitor_action_group.notification_group.id
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "low_memory_warning" {
+  enabled = var.enable_alerts
+
+  name                     = "al-${var.resource_group_name}-low-memory"
+  resource_group_name      = var.resource_group_name
+  scopes                   = [azurerm_application_insights.graphdb_insights.id]
+  description              = "Alarm will trigger if available memory drops below 4GB"
+  severity                 = 2
+  frequency                = "PT1M"
+  window_size              = "PT5M"
+  target_resource_location = var.location
+  target_resource_type     = "microsoft.insights/components"
+  auto_mitigate            = true
+
+  criteria {
+    metric_namespace = "microsoft.insights/components"
+    metric_name      = "% Of Max Heap Memory Used"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = var.al_low_memory_warning_threshold
+
+    dimension {
+      name     = "cloud/roleInstance"
+      operator = "Include"
+      values   = ["*"]
+    }
+  }
+  action {
+    action_group_id = azurerm_monitor_action_group.notification_group.id
+  }
+}
+
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "replication-warning" {
+  enabled = var.enable_alerts
+
+  name                = "al-${var.resource_group_name}-replication-warning"
+  description         = "Alert will be triggered if snapshot replication is detected"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  auto_mitigation_enabled          = true
+  workspace_alerts_storage_enabled = false
+  evaluation_frequency             = "PT10M"
+  window_duration                  = "PT10M"
+  scopes                           = [azurerm_application_insights.graphdb_insights.id]
+  severity                         = 1
+
+  criteria {
+    query = <<-QUERY
+      traces
+        | where message has "Attempting to recover through snapshot replication"
+      QUERY
+
+    time_aggregation_method = "Count"
+    threshold               = 1
+    operator                = "GreaterThanOrEqual"
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  skip_query_validation = true
+  action {
+    action_groups = [azurerm_monitor_action_group.notification_group.id]
+  }
 }

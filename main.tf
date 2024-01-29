@@ -425,6 +425,7 @@ module "user_data" {
   backup_storage_container_name = module.backup.storage_container_name
   backup_storage_account_name   = module.backup.storage_account_name
   backup_schedule               = var.backup_schedule
+  appi_connection_string        = module.monitoring[0].appi_connection_string
 }
 
 locals {
@@ -475,7 +476,9 @@ module "monitoring" {
 
   source = "./modules/monitoring"
 
-  resource_group_name = azurerm_resource_group.graphdb.name
-  location            = var.location
-  vmss_resource_id    = module.vmss.vmss_resource_id
+  resource_group_name               = azurerm_resource_group.graphdb.name
+  location                          = var.location
+  web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
+  web_test_geo_locations            = var.web_test_geo_locations
+  monitor_reader_principal_id       = var.monitor_reader_principal_id
 }

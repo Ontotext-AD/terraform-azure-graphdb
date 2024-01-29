@@ -25,6 +25,6 @@ graphdb_password="\$(az appconfig kv show --name ${app_config_name} --auth-mode 
 EOF
 
 chmod +x /usr/bin/run_backup.sh
-echo "${backup_schedule}" /usr/bin/run_backup.sh > /etc/cron.d/graphdb_backup
+echo "${backup_schedule}" graphdb /usr/bin/run_backup.sh > /etc/cron.d/graphdb_backup
 
 echo "Cron job created"
