@@ -59,7 +59,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   location            = var.location
 
   source_image_id = var.image_id
-  user_data       = base64encode(var.user_data_script)
+  user_data       = var.user_data_script
 
   identity {
     type         = "UserAssigned"
