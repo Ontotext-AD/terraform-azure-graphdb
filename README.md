@@ -67,12 +67,19 @@ See https://github.com/hashicorp/terraform-aws-consul
 You then need to authenticate in your subscription with Azure CLI,
 see [Authenticating using the Azure CLI](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli) for more details.
 
-Additional steps include
+Additional steps include:
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
 - Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
   you are planning on using Private Link
+
+The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace. 
+This requires you to accept the terms which can be accomplished with Azure CLI:
+
+```bash
+az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
+```
 
 <!-- BEGIN_TF_DOCS -->
 ## Inputs

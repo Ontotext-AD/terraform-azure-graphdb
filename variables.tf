@@ -173,31 +173,19 @@ variable "admin_security_principle_id" {
 # GraphDB VM image configuration
 
 variable "graphdb_version" {
-  description = "GraphDB version to deploy."
+  description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.5.0"
+  default     = "10.6.0"
 }
 
-variable "graphdb_image_gallery" {
-  description = "Identifier of the public compute image gallery from which GraphDB VM images can be pulled."
+variable "graphdb_sku" {
+  description = "GraphDB SKU from the marketplace offer"
   type        = string
-  default     = "GraphDB-02faf3ce-79ed-4676-ab69-0e422bbd9ee1"
-}
-
-variable "graphdb_image_version" {
-  description = "Version of the GraphDB VM image to deploy."
-  type        = string
-  default     = "latest"
-}
-
-variable "graphdb_image_architecture" {
-  description = "Architecture of the GraphDB VM image."
-  type        = string
-  default     = "x86_64"
+  default     = "graphdb-byol"
 }
 
 variable "graphdb_image_id" {
-  description = "Full image identifier to use for running GraphDB VM instances. If left unspecified, Terraform will use the image from our public Compute Gallery."
+  description = "GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer"
   type        = string
   default     = null
 }
