@@ -41,14 +41,14 @@ variable "virtual_network_address_space" {
   default     = ["10.0.0.0/16"]
 }
 
-variable "app_gateway_subnet_address_prefix" {
-  description = "Subnet address prefix CIDRs where the application gateway will reside."
+variable "gateway_subnet_address_prefixes" {
+  description = "Subnet address prefixes CIDRs where the application gateway will reside."
   type        = list(string)
   default     = ["10.0.1.0/24"]
 }
 
-variable "graphdb_subnet_address_prefix" {
-  description = "Subnet address prefix CIDRs where GraphDB VMs will reside."
+variable "graphdb_subnet_address_prefixes" {
+  description = "Subnet address prefixes CIDRs where GraphDB VMs will reside."
   type        = list(string)
   default     = ["10.0.2.0/24"]
 }
@@ -62,6 +62,33 @@ variable "gateway_private_link_subnet_address_prefixes" {
 variable "management_cidr_blocks" {
   description = "CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault."
   type        = list(string)
+}
+
+# Inbound/Outbound network security rules
+# Note that these should be taken into considerations when gateway_enable_private_access=true
+
+variable "inbound_allowed_address_prefix" {
+  description = "Source address prefix allowed for connecting to the application gateway"
+  type        = string
+  default     = "Internet"
+}
+
+variable "inbound_allowed_address_prefixes" {
+  description = "Source address prefixes allowed for connecting to the application gateway. Overrides inbound_allowed_address_prefix"
+  type        = list(string)
+  default     = []
+}
+
+variable "outbound_allowed_address_prefix" {
+  description = "Destination address prefix allowed for outbound traffic from GraphDB"
+  type        = string
+  default     = "Internet"
+}
+
+variable "outbound_allowed_address_prefixes" {
+  description = "Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound_allowed_address_prefix"
+  type        = list(string)
+  default     = []
 }
 
 # Application Gateway & Private Link Configurations
@@ -186,12 +213,14 @@ variable "graphdb_cluster_token" {
   description = "Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared."
   type        = string
   default     = null
+  sensitive   = true
 }
 
 variable "graphdb_password" {
   description = "Secret token used to access GraphDB cluster."
   type        = string
   default     = null
+  sensitive   = true
 }
 
 variable "graphdb_properties_path" {
@@ -221,12 +250,6 @@ variable "instance_type" {
 
 variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
-  type        = string
-  default     = null
-}
-
-variable "custom_graphdb_vm_user_data" {
-  description = "Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding."
   type        = string
   default     = null
 }
@@ -267,8 +290,8 @@ variable "deploy_bastion" {
   default     = false
 }
 
-variable "bastion_subnet_address_prefix" {
-  description = "Bastion subnet address prefix"
+variable "bastion_subnet_address_prefixes" {
+  description = "Bastion subnet address prefixes"
   type        = list(string)
   default     = ["10.0.3.0/26"]
 }

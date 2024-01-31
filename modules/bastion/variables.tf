@@ -22,13 +22,13 @@ variable "virtual_network_name" {
   type        = string
 }
 
-variable "bastion_subnet_address_prefix" {
-  description = "Bastion subnet address prefix"
+variable "bastion_subnet_address_prefixes" {
+  description = "Bastion subnet address prefixes"
   type        = list(string)
   default     = ["10.0.3.0/27"]
 }
 
-variable "bastion_allowed_cidr_blocks" {
-  description = "CIDR blocks allowed for connecting to Bastion"
+variable "bastion_allowed_inbound_address_prefixes" {
+  description = "Address prefixes blocks allowed for inbound connections to Bastion"
   type        = list(string)
 }

@@ -23,14 +23,30 @@ variable "resource_group_name" {
 
 # Networking
 
-variable "gateway_subnet_id" {
-  description = "Subnet identifier where the Application Gateway will be deployed"
+variable "virtual_network_name" {
+  description = "Virtual network where Bastion will be deployed"
   type        = string
 }
 
-variable "gateway_subnet_address_prefix" {
-  description = "Address prefix of the subnet where the Application Gateway will be deployed"
+variable "gateway_subnet_id" {
+  description = "Subnet identifier where the application gateway will reside"
   type        = string
+}
+
+variable "gateway_subnet_address_prefixes" {
+  description = "Subnet address prefix CIDRs where the application gateway will reside"
+  type        = list(string)
+}
+
+variable "gateway_allowed_address_prefix" {
+  description = "Address prefix allowed for connecting to the application gateway"
+  type        = string
+}
+
+variable "gateway_allowed_address_prefixes" {
+  description = "Address prefixes allowed for connecting to the application gateway"
+  type        = list(string)
+  default     = []
 }
 
 # Application gateway specific configurations
@@ -117,11 +133,11 @@ variable "gateway_probe_threshold" {
 # TLS certificate
 
 variable "gateway_tls_certificate_secret_id" {
-  description = "Secret identifier of the TLS certificate in the Key Vault."
+  description = "Secret identifier of a TLS certificate from a Key Vault."
   type        = string
 }
 
-variable "gateway_tls_identity_id" {
+variable "gateway_tls_certificate_identity_id" {
   description = "Identifier of a user assigned identity having access to the TLS certificate in the Key Vault"
   type        = string
 }
@@ -133,8 +149,14 @@ variable "gateway_enable_private_link_service" {
   type        = bool
 }
 
-variable "gateway_private_link_subnet_id" {
-  description = "Identifier of a subnet where the Private Link will be deployed, if enabled"
+variable "gateway_private_link_subnet_address_prefixes" {
+  description = "Subnet address prefixes where the Application Gateway Private Link will reside, if enabled"
+  type        = list(string)
+  default     = []
+}
+
+variable "gateway_private_link_service_network_policies_enabled" {
+  description = "Enable or disable private link service network policies"
   type        = string
-  default     = null
+  default     = false
 }

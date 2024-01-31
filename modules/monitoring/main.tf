@@ -157,11 +157,12 @@ resource "azurerm_monitor_metric_alert" "availability_alert" {
   auto_mitigate            = true
 
   criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "availabilityResults/availabilityPercentage"
-    aggregation      = "Average"
-    operator         = "LessThan"
-    threshold        = 100
+    metric_namespace       = "microsoft.insights/components"
+    metric_name            = "availabilityResults/availabilityPercentage"
+    aggregation            = "Average"
+    operator               = "LessThan"
+    threshold              = 100
+    skip_metric_validation = true
   }
   action {
     action_group_id = azurerm_monitor_action_group.notification_group.id
@@ -183,11 +184,12 @@ resource "azurerm_monitor_metric_alert" "low_memory_warning" {
   auto_mitigate            = true
 
   criteria {
-    metric_namespace = "Azure.ApplicationInsights"
-    metric_name      = "% Of Max Heap Memory Used"
-    aggregation      = "Average"
-    operator         = "GreaterThan"
-    threshold        = var.al_low_memory_warning_threshold
+    metric_namespace       = "Azure.ApplicationInsights"
+    metric_name            = "% Of Max Heap Memory Used"
+    aggregation            = "Average"
+    operator               = "GreaterThan"
+    threshold              = var.al_low_memory_warning_threshold
+    skip_metric_validation = true
   }
   action {
     action_group_id = azurerm_monitor_action_group.notification_group.id
