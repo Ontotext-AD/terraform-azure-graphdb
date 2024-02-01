@@ -305,6 +305,7 @@ variable "web_test_geo_locations" {
   #Valid options for geo locations https://docs.microsoft.com/azure/azure-monitor/app/monitor-web-app-availability#location-population-tags
   description = "A list of geo locations the test will be executed from"
   type        = list(string)
+  default     = ["us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr"]
 }
 
 variable "monitor_reader_principal_id" {
