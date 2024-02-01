@@ -60,3 +60,9 @@ variable "backup_schedule" {
   description = "Cron expression for the backup job."
   type        = string
 }
+
+# Application Insights
+variable "appi_connection_string" {
+  description = "Connection string for Application Insights"
+  type        = string
+}

@@ -293,3 +293,22 @@ variable "disk_public_network_access" {
   type        = bool
   default     = false
 }
+
+variable "alerts_email_recipients" {
+  description = "List of e-mail recipients for alerts"
+  type        = list(string)
+  default     = []
+}
+
+variable "web_test_geo_locations" {
+  # Note that Azure recommends to have at least 5 regions to execute the test from
+  #Valid options for geo locations https://docs.microsoft.com/azure/azure-monitor/app/monitor-web-app-availability#location-population-tags
+  description = "A list of geo locations the test will be executed from"
+  type        = list(string)
+  default     = ["us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr"]
+}
+
+variable "monitor_reader_principal_id" {
+  description = "Principal(Object) ID of a user/group which would receive notifications from alerts"
+  type        = string
+}

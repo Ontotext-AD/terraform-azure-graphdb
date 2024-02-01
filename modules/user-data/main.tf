@@ -13,6 +13,7 @@ data "cloudinit_config" "entrypoint" {
       EOF
   }
 
+  # 01 Disk setup
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/01_disk_management.sh.tpl", {
@@ -25,11 +26,13 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
+  # 02 DNS setup
   part {
     content_type = "text/x-shellscript"
     content      = templatefile("${path.module}/templates/02_dns_provisioning.sh.tpl", {})
   }
 
+  # 03 GDB config overrides
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/03_gdb_conf_overrides.sh.tpl", {
@@ -38,6 +41,7 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
+  # 04 Backup script configuration
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/04_gdb_backup_conf.sh.tpl", {
@@ -48,6 +52,7 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
+  # 05 Telegraf configuration
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/05_telegraf_conf.sh.tpl", {
@@ -55,9 +60,18 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
+  # 06 Application Insights configuration
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/06_cluster_setup.sh.tpl", {
+    content = templatefile("${path.module}/templates/06_application_insights_config.sh.tpl", {
+      appi_connection_string : var.appi_connection_string
+    })
+  }
+
+  # 07 Cluster setup
+  part {
+    content_type = "text/x-shellscript"
+    content = templatefile("${path.module}/templates/07_cluster_setup.sh.tpl", {
       app_config_name : var.app_configuration_name
     })
   }
