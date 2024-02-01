@@ -120,6 +120,9 @@ Additional steps include
 | disk\_storage\_account\_type | Storage account type for the data disks | `string` | `"PremiumV2_LRS"` | no |
 | disk\_network\_access\_policy | Network accesss policy for the managed disks | `string` | `"DenyAll"` | no |
 | disk\_public\_network\_access | Public network access enabled for the managed disks | `bool` | `false` | no |
+| alerts\_email\_recipients | List of e-mail recipients for alerts | `list(string)` | `[]` | no |
+| web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts | `string` | n/a | yes |
 <!-- END_TF_DOCS -->
 
 ## Usage
