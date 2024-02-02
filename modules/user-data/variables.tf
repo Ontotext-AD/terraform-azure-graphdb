@@ -66,3 +66,33 @@ variable "appi_connection_string" {
   description = "Connection string for Application Insights"
   type        = string
 }
+
+variable "appi_sampling_percentage" {
+  description = "Sampling percentage for Application Insights"
+  type        = number
+  default     = 100
+}
+
+variable "appi_logging_level" {
+  description = "Logging level configuration for the Application Insights"
+  type        = string
+  default     = "WARN"
+}
+
+variable "appi_dependency_sampling_override" {
+  description = "Override value for Application Insights dependency sampling percentage"
+  type        = number
+  default     = 0
+}
+
+variable "appi_grpc_sampling_override" {
+  description = "Override value for Application Insights grpc communication sampling percentage"
+  type        = number
+  default     = 0
+}
+
+variable "appi_repositories_requests_sampling" {
+  description = "Override value for GraphDB requests to /repositories sampling percentage"
+  type        = number
+  default     = 50
+}

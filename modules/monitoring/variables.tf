@@ -8,22 +8,40 @@ variable "resource_group_name" {
   type        = string
 }
 
-variable "workspace_retention_in_days" {
+variable "la_workspace_retention_in_days" {
   description = "The workspace data retention in days. Possible values are either 7 (Free Tier only) or range between 30 and 730."
   type        = number
-  default     = 30
 }
 
-variable "workspace_sku" {
+variable "la_workspace_sku" {
   description = "Specifies the SKU of the Log Analytics Workspace. Possible values are Free, PerNode, Premium, Standard, Standalone, Unlimited, CapacityReservation, and PerGB2018 (new SKU as of 2018-04-03). Defaults to PerGB2018."
   type        = string
-  default     = "PerGB2018"
+}
+
+variable "la_workspace_daily_quota_gb" {
+  description = "The log analytics workspace daily quota for ingestion in GB. "
+  type        = number
+  default     = 1
 }
 
 variable "appi_retention_in_days" {
   description = "Specifies the retention period in days."
   type        = number
-  default     = 30
+}
+
+variable "appi_daily_data_cap_in_gb" {
+  description = "Specifies the Application Insights component daily data volume cap in GB."
+  type        = number
+}
+
+variable "appi_daily_data_cap_notifications_disabled" {
+  description = "Specifies if a notification email will be send when the daily data volume cap is met."
+  type        = bool
+}
+
+variable "appi_disable_ip_masking" {
+  description = "By default the real client IP is masked as 0.0.0.0 in the logs. Use this argument to disable masking and log the real client IP"
+  type        = bool
 }
 
 variable "appi_internet_query_enabled" {
@@ -38,7 +56,7 @@ variable "appi_application_type" {
   default     = "java"
 }
 
-variable "web_test_availability_enabled" {
+variable "appi_web_test_availability_enabled" {
   description = "Should the availability web test be enabled"
   type        = bool
   default     = true

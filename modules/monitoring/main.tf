@@ -2,18 +2,22 @@ resource "azurerm_log_analytics_workspace" "log_analytics_workspace" {
   name                = "log-${var.resource_group_name}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  sku                 = var.workspace_sku
-  retention_in_days   = var.workspace_retention_in_days
+  sku                 = var.la_workspace_sku
+  retention_in_days   = var.la_workspace_retention_in_days
+  daily_quota_gb      = var.la_workspace_daily_quota_gb
 }
 
 resource "azurerm_application_insights" "graphdb_insights" {
-  name                   = "appi-${var.resource_group_name}"
-  location               = var.location
-  resource_group_name    = var.resource_group_name
-  application_type       = var.appi_application_type
-  retention_in_days      = var.appi_retention_in_days
-  workspace_id           = azurerm_log_analytics_workspace.log_analytics_workspace.id
-  internet_query_enabled = var.appi_internet_query_enabled
+  name                                  = "appi-${var.resource_group_name}"
+  location                              = var.location
+  resource_group_name                   = var.resource_group_name
+  application_type                      = var.appi_application_type
+  retention_in_days                     = var.appi_retention_in_days
+  workspace_id                          = azurerm_log_analytics_workspace.log_analytics_workspace.id
+  internet_query_enabled                = var.appi_internet_query_enabled
+  daily_data_cap_in_gb                  = var.appi_daily_data_cap_in_gb
+  daily_data_cap_notifications_disabled = var.appi_daily_data_cap_notifications_disabled
+  disable_ip_masking                    = var.appi_disable_ip_masking
 }
 
 resource "azurerm_monitor_action_group" "notification_group" {
@@ -110,7 +114,7 @@ resource "azurerm_application_insights_smart_detection_rule" "trace_severity_rat
 
 # Availability tests
 resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
-  enabled = var.web_test_availability_enabled
+  enabled = var.appi_web_test_availability_enabled
 
   name                    = "at-${var.resource_group_name}-cluster-health"
   resource_group_name     = var.resource_group_name
@@ -138,7 +142,7 @@ resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
 
 # Alerts
 resource "azurerm_monitor_metric_alert" "availability_alert" {
-  enabled = var.web_test_availability_enabled
+  enabled = var.appi_web_test_availability_enabled
 
   name                = "al-${var.resource_group_name}-availability"
   resource_group_name = var.resource_group_name
@@ -170,7 +174,7 @@ resource "azurerm_monitor_metric_alert" "low_memory_warning" {
   name                     = "al-${var.resource_group_name}-low-memory"
   resource_group_name      = var.resource_group_name
   scopes                   = [azurerm_application_insights.graphdb_insights.id]
-  description              = "Alarm will trigger if available memory drops below 4GB"
+  description              = "Alarm will trigger if Max Heap Memory Used is over the threshold"
   severity                 = 2
   frequency                = "PT1M"
   window_size              = "PT5M"
@@ -179,17 +183,11 @@ resource "azurerm_monitor_metric_alert" "low_memory_warning" {
   auto_mitigate            = true
 
   criteria {
-    metric_namespace = "microsoft.insights/components"
+    metric_namespace = "Azure.ApplicationInsights"
     metric_name      = "% Of Max Heap Memory Used"
     aggregation      = "Average"
     operator         = "GreaterThan"
     threshold        = var.al_low_memory_warning_threshold
-
-    dimension {
-      name     = "cloud/roleInstance"
-      operator = "Include"
-      values   = ["*"]
-    }
   }
   action {
     action_group_id = azurerm_monitor_action_group.notification_group.id
