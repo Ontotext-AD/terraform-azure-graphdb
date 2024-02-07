@@ -120,9 +120,16 @@ Additional steps include
 | disk\_storage\_account\_type | Storage account type for the data disks | `string` | `"PremiumV2_LRS"` | no |
 | disk\_network\_access\_policy | Network accesss policy for the managed disks | `string` | `"DenyAll"` | no |
 | disk\_public\_network\_access | Public network access enabled for the managed disks | `bool` | `false` | no |
-| alerts\_email\_recipients | List of e-mail recipients for alerts | `list(string)` | `[]` | no |
+| la\_workspace\_retention\_in\_days | The workspace data retention in days. Possible values are either 7 (Free Tier only) or range between 30 and 730. | `number` | `30` | no |
+| la\_workspace\_sku | Specifies the SKU of the Log Analytics Workspace. Possible values are Free, PerNode, Premium, Standard, Standalone, Unlimited, CapacityReservation, and PerGB2018 (new SKU as of 2018-04-03). Defaults to PerGB2018. | `string` | `"PerGB2018"` | no |
+| appi\_retention\_in\_days | Specifies the retention period in days. | `number` | `30` | no |
+| appi\_daily\_data\_cap\_in\_gb | Specifies the Application Insights component daily data volume cap in GB. | `number` | `1` | no |
+| appi\_daily\_data\_cap\_notifications\_disabled | Specifies if a notification email will be send when the daily data volume cap is met. | `bool` | `false` | no |
+| appi\_disable\_ip\_masking | By default the real client IP is masked as 0.0.0.0 in the logs. Use this argument to disable masking and log the real client IP | `bool` | `true` | no |
+| appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true` | no |
+| web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false` | no |
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
-| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts | `string` | n/a | yes |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | n/a | yes |
 <!-- END_TF_DOCS -->
 
 ## Usage

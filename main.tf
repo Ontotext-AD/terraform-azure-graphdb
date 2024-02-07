@@ -476,9 +476,16 @@ module "monitoring" {
 
   source = "./modules/monitoring"
 
-  resource_group_name               = azurerm_resource_group.graphdb.name
-  location                          = var.location
-  web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
-  web_test_geo_locations            = var.web_test_geo_locations
-  monitor_reader_principal_id       = var.monitor_reader_principal_id
+  resource_group_name                        = azurerm_resource_group.graphdb.name
+  location                                   = var.location
+  web_test_availability_request_url          = module.application_gateway.public_ip_address_fqdn
+  web_test_geo_locations                     = var.web_test_geo_locations
+  monitor_reader_principal_id                = var.monitor_reader_principal_id
+  appi_disable_ip_masking                    = var.appi_disable_ip_masking
+  appi_web_test_availability_enabled         = var.appi_web_test_availability_enabled
+  appi_daily_data_cap_notifications_disabled = var.appi_daily_data_cap_notifications_disabled
+  appi_daily_data_cap_in_gb                  = var.appi_daily_data_cap_in_gb
+  appi_retention_in_days                     = var.appi_retention_in_days
+  la_workspace_sku                           = var.la_workspace_sku
+  la_workspace_retention_in_days             = var.la_workspace_retention_in_days
 }

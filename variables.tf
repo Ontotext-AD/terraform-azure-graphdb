@@ -294,21 +294,65 @@ variable "disk_public_network_access" {
   default     = false
 }
 
-variable "alerts_email_recipients" {
-  description = "List of e-mail recipients for alerts"
-  type        = list(string)
-  default     = []
+# APPI related variables
+
+variable "la_workspace_retention_in_days" {
+  description = "The workspace data retention in days. Possible values are either 7 (Free Tier only) or range between 30 and 730."
+  type        = number
+  default     = 30
+}
+
+variable "la_workspace_sku" {
+  description = "Specifies the SKU of the Log Analytics Workspace. Possible values are Free, PerNode, Premium, Standard, Standalone, Unlimited, CapacityReservation, and PerGB2018 (new SKU as of 2018-04-03). Defaults to PerGB2018."
+  type        = string
+  default     = "PerGB2018"
+}
+
+variable "appi_retention_in_days" {
+  description = "Specifies the retention period in days."
+  type        = number
+  default     = 30
+}
+
+variable "appi_daily_data_cap_in_gb" {
+  description = "Specifies the Application Insights component daily data volume cap in GB."
+  type        = number
+  default     = 1
+}
+
+variable "appi_daily_data_cap_notifications_disabled" {
+  description = "Specifies if a notification email will be send when the daily data volume cap is met."
+  type        = bool
+  default     = false
+}
+
+variable "appi_disable_ip_masking" {
+  description = "By default the real client IP is masked as 0.0.0.0 in the logs. Use this argument to disable masking and log the real client IP"
+  type        = bool
+  default     = true
+}
+
+variable "appi_web_test_availability_enabled" {
+  description = "Should the availability web test be enabled"
+  type        = bool
+  default     = true
+}
+
+
+# TODO change to true if prod deployment
+variable "web_test_ssl_check_enabled" {
+  description = "Should the SSL check be enabled?"
+  type        = bool
+  default     = false
 }
 
 variable "web_test_geo_locations" {
-  # Note that Azure recommends to have at least 5 regions to execute the test from
-  #Valid options for geo locations https://docs.microsoft.com/azure/azure-monitor/app/monitor-web-app-availability#location-population-tags
   description = "A list of geo locations the test will be executed from"
   type        = list(string)
   default     = ["us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr"]
 }
 
 variable "monitor_reader_principal_id" {
-  description = "Principal(Object) ID of a user/group which would receive notifications from alerts"
+  description = "Principal(Object) ID of a user/group which would receive notifications from alerts."
   type        = string
 }

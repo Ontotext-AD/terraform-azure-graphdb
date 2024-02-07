@@ -65,6 +65,11 @@ data "cloudinit_config" "entrypoint" {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/06_application_insights_config.sh.tpl", {
       appi_connection_string : var.appi_connection_string
+      appi_sampling_percentage : var.appi_sampling_percentage
+      appi_logging_level : var.appi_logging_level
+      appi_dependency_sampling_override : var.appi_dependency_sampling_override
+      appi_grpc_sampling_override : var.appi_grpc_sampling_override
+      appi_repositories_requests_sampling : var.appi_repositories_requests_sampling
     })
   }
 
