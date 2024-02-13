@@ -53,9 +53,35 @@ variable "graphdb_subnet_address_prefix" {
   default     = ["10.0.2.0/24"]
 }
 
+variable "gateway_private_link_subnet_address_prefixes" {
+  description = "Subnet address prefixes where the Application Gateway Private Link will reside, if enabled"
+  type        = list(string)
+  default     = ["10.0.5.0/24"]
+}
+
 variable "management_cidr_blocks" {
   description = "CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault."
   type        = list(string)
+}
+
+# Application Gateway & Private Link Configurations
+
+variable "gateway_enable_private_access" {
+  description = "Enable or disable private access to the application gateway"
+  type        = bool
+  default     = false
+}
+
+variable "gateway_enable_private_link_service" {
+  description = "Set to true to enable Private Link service, false to disable it."
+  type        = bool
+  default     = false
+}
+
+variable "gateway_private_link_service_network_policies_enabled" {
+  description = "Enable or disable private link service network policies"
+  type        = string
+  default     = false
 }
 
 # TLS
@@ -337,7 +363,6 @@ variable "appi_web_test_availability_enabled" {
   type        = bool
   default     = true
 }
-
 
 # TODO change to true if prod deployment
 variable "web_test_ssl_check_enabled" {

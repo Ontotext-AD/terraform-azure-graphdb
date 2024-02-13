@@ -28,7 +28,17 @@ variable "gateway_subnet_id" {
   type        = string
 }
 
+variable "gateway_subnet_address_prefix" {
+  description = "Address prefix of the subnet where the Application Gateway will be deployed"
+  type        = string
+}
+
 # Application gateway specific configurations
+
+variable "gateway_enable_private_access" {
+  description = "Enable or disable private access to the application gateway"
+  type        = bool
+}
 
 variable "gateway_min_capacity" {
   description = "Minimum capacity for the Application Gateway autoscaling"
@@ -114,4 +124,17 @@ variable "gateway_tls_certificate_secret_id" {
 variable "gateway_tls_identity_id" {
   description = "Identifier of a user assigned identity having access to the TLS certificate in the Key Vault"
   type        = string
+}
+
+# Private Link
+
+variable "gateway_enable_private_link_service" {
+  description = "Set to true to enable Private Link service, false to disable"
+  type        = bool
+}
+
+variable "gateway_private_link_subnet_id" {
+  description = "Identifier of a subnet where the Private Link will be deployed, if enabled"
+  type        = string
+  default     = null
 }

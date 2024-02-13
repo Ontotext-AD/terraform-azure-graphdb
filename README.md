@@ -71,6 +71,8 @@ Additional steps include
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
+- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
+  you are planning on using Private Link
 
 <!-- BEGIN_TF_DOCS -->
 ## Inputs
@@ -193,6 +195,18 @@ Instead of generating a random administrator password, you can provide one with:
 ```hcl
 graphdb_password = "s3cr37P@$w0rD"
 ```
+
+**Private Gateway with Private Link**
+
+To enable the Private Link service on a private Application Gateway, you need to enable the following flags:
+
+```hcl
+gateway_enable_private_access       = true
+gateway_enable_private_link_service = true
+```
+
+See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
+for further information on configuring and using Application Gateway Private Link.
 
 <!---
 TODO Add more examples
