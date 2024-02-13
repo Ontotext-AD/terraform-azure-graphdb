@@ -8,7 +8,7 @@ resource "azurerm_log_analytics_workspace" "log_analytics_workspace" {
 }
 
 resource "azurerm_application_insights" "graphdb_insights" {
-  name                                  = "appi-${var.resource_group_name}"
+  name                                  = "appi-${var.resource_name_prefix}"
   location                              = var.location
   resource_group_name                   = var.resource_group_name
   application_type                      = var.appi_application_type
@@ -21,7 +21,7 @@ resource "azurerm_application_insights" "graphdb_insights" {
 }
 
 resource "azurerm_monitor_action_group" "notification_group" {
-  name                = "ag-${var.resource_group_name}-notifications"
+  name                = "ag-${var.resource_name_prefix}-notifications"
   resource_group_name = var.resource_group_name
   short_name          = "Notification"
 
@@ -116,7 +116,7 @@ resource "azurerm_application_insights_smart_detection_rule" "trace_severity_rat
 resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
   enabled = var.appi_web_test_availability_enabled
 
-  name                    = "at-${var.resource_group_name}-cluster-health"
+  name                    = "at-${var.resource_name_prefix}-cluster-health"
   resource_group_name     = var.resource_group_name
   location                = var.location
   application_insights_id = azurerm_application_insights.graphdb_insights.id
@@ -144,7 +144,7 @@ resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
 resource "azurerm_monitor_metric_alert" "availability_alert" {
   enabled = var.appi_web_test_availability_enabled
 
-  name                = "al-${var.resource_group_name}-availability"
+  name                = "al-${var.resource_name_prefix}-availability"
   resource_group_name = var.resource_group_name
   scopes              = [azurerm_application_insights.graphdb_insights.id]
   description         = "Alarm will trigger if availability goes beneath 100"
@@ -172,7 +172,7 @@ resource "azurerm_monitor_metric_alert" "availability_alert" {
 resource "azurerm_monitor_metric_alert" "low_memory_warning" {
   enabled = var.enable_alerts
 
-  name                     = "al-${var.resource_group_name}-low-memory"
+  name                     = "al-${var.resource_name_prefix}-low-memory"
   resource_group_name      = var.resource_group_name
   scopes                   = [azurerm_application_insights.graphdb_insights.id]
   description              = "Alarm will trigger if Max Heap Memory Used is over the threshold"
@@ -199,7 +199,7 @@ resource "azurerm_monitor_metric_alert" "low_memory_warning" {
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "replication-warning" {
   enabled = var.enable_alerts
 
-  name                = "al-${var.resource_group_name}-replication-warning"
+  name                = "al-${var.resource_name_prefix}-replication-warning"
   description         = "Alert will be triggered if snapshot replication is detected"
   resource_group_name = var.resource_group_name
   location            = var.location

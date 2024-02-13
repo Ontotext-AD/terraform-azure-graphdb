@@ -21,6 +21,7 @@ data "cloudinit_config" "entrypoint" {
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/01_disk_management.sh.tpl", {
+      resource_name_prefix : var.resource_name_prefix
       disk_storage_account_type : var.disk_storage_account_type
       disk_iops_read_write : var.disk_iops_read_write
       disk_mbps_read_write : var.disk_mbps_read_write

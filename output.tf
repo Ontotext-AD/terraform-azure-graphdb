@@ -1,6 +1,6 @@
-output "public_address_fqdn" {
-  description = "External FQDN address for GraphDB"
-  value       = module.application_gateway.public_ip_address_fqdn
+output "public_address" {
+  description = "Public address for GraphDB"
+  value       = "https://${module.application_gateway.public_ip_address_fqdn}"
 }
 
 output "public_ip_address" {
