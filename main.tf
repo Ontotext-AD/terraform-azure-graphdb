@@ -53,6 +53,16 @@ resource "azurerm_subnet" "graphdb_vmss" {
   service_endpoints    = ["Microsoft.KeyVault", "Microsoft.Storage"]
 }
 
+resource "azurerm_subnet" "graphdb_private_link_subnet" {
+  count = var.gateway_enable_private_link_service ? 1 : 0
+
+  name                                          = "snet-${var.resource_name_prefix}-private-link"
+  resource_group_name                           = azurerm_resource_group.graphdb.name
+  virtual_network_name                          = azurerm_virtual_network.graphdb.name
+  address_prefixes                              = var.gateway_private_link_subnet_address_prefixes
+  private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
+}
+
 resource "azurerm_application_security_group" "graphdb_vmss" {
   name                = "asg-${var.resource_name_prefix}-vmss"
   location            = var.location
@@ -90,30 +100,72 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
     destination_port_range       = "*"
   }
 
-  security_rule {
-    name                         = "AllowInternetInBoundHttp"
-    description                  = "Allows HTTP inbound internet traffic to the gateway subnet"
-    priority                     = 200
-    direction                    = "Inbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_address_prefix        = "Internet"
-    source_port_range            = "*"
-    destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range       = 80
+  dynamic "security_rule" {
+    for_each = var.gateway_enable_private_link_service ? [] : [1]
+
+    content {
+      name                         = "AllowInternetInBoundHttp"
+      description                  = "Allows HTTP inbound internet traffic to the gateway subnet"
+      priority                     = 200
+      direction                    = "Inbound"
+      access                       = "Allow"
+      protocol                     = "Tcp"
+      source_address_prefix        = "Internet"
+      source_port_range            = "*"
+      destination_address_prefixes = var.app_gateway_subnet_address_prefix
+      destination_port_range       = 80
+    }
   }
 
-  security_rule {
-    name                         = "AllowInternetInBoundHttps"
-    description                  = "Allows HTTPS inbound internet traffic to the gateway subnet"
-    priority                     = 210
-    direction                    = "Inbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_address_prefix        = "Internet"
-    source_port_range            = "*"
-    destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range       = 443
+  dynamic "security_rule" {
+    for_each = var.gateway_enable_private_link_service ? [] : [1]
+
+    content {
+      name                         = "AllowInternetInBoundHttps"
+      description                  = "Allows HTTPS inbound internet traffic to the gateway subnet"
+      priority                     = 210
+      direction                    = "Inbound"
+      access                       = "Allow"
+      protocol                     = "Tcp"
+      source_address_prefix        = "Internet"
+      source_port_range            = "*"
+      destination_address_prefixes = var.app_gateway_subnet_address_prefix
+      destination_port_range       = 443
+    }
+  }
+
+  dynamic "security_rule" {
+    for_each = var.gateway_enable_private_link_service ? [1] : []
+
+    content {
+      name                         = "AllowPrivateLinkInBoundHttp"
+      description                  = "Allows HTTP inbound traffic from the private link subnet to the private frontend ip"
+      priority                     = 300
+      direction                    = "Inbound"
+      access                       = "Allow"
+      protocol                     = "Tcp"
+      source_address_prefixes      = var.gateway_private_link_subnet_address_prefixes
+      source_port_range            = "*"
+      destination_address_prefixes = var.app_gateway_subnet_address_prefix
+      destination_port_range       = 80
+    }
+  }
+
+  dynamic "security_rule" {
+    for_each = var.gateway_enable_private_link_service ? [1] : []
+
+    content {
+      name                         = "AllowPrivateLinkInBoundHttps"
+      description                  = "Allows HTTPS inbound traffic from the private link subnet to the private frontend ip"
+      priority                     = 310
+      direction                    = "Inbound"
+      access                       = "Allow"
+      protocol                     = "Tcp"
+      source_address_prefixes      = var.gateway_private_link_subnet_address_prefixes
+      source_port_range            = "*"
+      destination_address_prefixes = var.app_gateway_subnet_address_prefix
+      destination_port_range       = 443
+    }
   }
 
   security_rule {
@@ -369,10 +421,19 @@ module "application_gateway" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  gateway_subnet_id = azurerm_subnet.graphdb_gateway.id
+  gateway_subnet_id             = azurerm_subnet.graphdb_gateway.id
+  gateway_subnet_address_prefix = azurerm_subnet.graphdb_gateway.address_prefixes[0]
 
+  # Public / Private toggle
+  gateway_enable_private_access = var.gateway_enable_private_access
+
+  # TLS
   gateway_tls_identity_id           = module.tls.tls_identity_id
   gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
+
+  # Private Link
+  gateway_enable_private_link_service = var.gateway_enable_private_link_service
+  gateway_private_link_subnet_id      = length(azurerm_subnet.graphdb_private_link_subnet) > 0 ? azurerm_subnet.graphdb_private_link_subnet[0].id : null
 
   # Wait for role assignments
   depends_on = [module.tls]

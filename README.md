@@ -71,6 +71,8 @@ Additional steps include
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
+- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
+  you are planning on using Private Link
 
 <!-- BEGIN_TF_DOCS -->
 ## Inputs
@@ -85,7 +87,11 @@ Additional steps include
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
 | app\_gateway\_subnet\_address\_prefix | Subnet address prefix CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
 | graphdb\_subnet\_address\_prefix | Subnet address prefix CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
+| gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
+| gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
+| gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
 | key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
@@ -193,6 +199,18 @@ Instead of generating a random administrator password, you can provide one with:
 ```hcl
 graphdb_password = "s3cr37P@$w0rD"
 ```
+
+**Private Gateway with Private Link**
+
+To enable the Private Link service on a private Application Gateway, you need to enable the following flags:
+
+```hcl
+gateway_enable_private_access       = true
+gateway_enable_private_link_service = true
+```
+
+See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
+for further information on configuring and using Application Gateway Private Link.
 
 <!---
 TODO Add more examples
