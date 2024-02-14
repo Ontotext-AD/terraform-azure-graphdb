@@ -85,10 +85,14 @@ Additional steps include
 | tags | Common resource tags. | `map(string)` | `{}` | no |
 | lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
-| app\_gateway\_subnet\_address\_prefix | Subnet address prefix CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
-| graphdb\_subnet\_address\_prefix | Subnet address prefix CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
+| gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
+| graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
 | gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
+| inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
+| inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
+| outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |
+| outbound\_allowed\_address\_prefixes | Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
@@ -112,13 +116,12 @@ Additional steps include
 | node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
-| custom\_graphdb\_vm\_user\_data | Custom user data script used during the cloud init phase in the GraphDB VMs. Should be in base64 encoding. | `string` | `null` | no |
 | storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
 | storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
-| bastion\_subnet\_address\_prefix | Bastion subnet address prefix | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
+| bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
 | deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
