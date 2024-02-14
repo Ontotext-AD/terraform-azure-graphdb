@@ -392,3 +392,8 @@ variable "monitor_reader_principal_id" {
   description = "Principal(Object) ID of a user/group which would receive notifications from alerts."
   type        = string
 }
+
+variable "scaleset_actions_recipients_email_list" {
+  description = "List of emails which will be notified for any scaling changes in the VMSS"
+  type = list(string)
+}

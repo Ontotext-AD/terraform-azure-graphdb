@@ -44,6 +44,8 @@ LUN=2
 
 MAX_RETRIES=3
 RETRY_DELAY=5
+# Terraform accepts bool variable for disk_public_network_access but the AZ CLI allows Disabled, Enabled as values
+[ "$DISK_PUBLIC_ACCESS_POLICY" = true ] && DISK_PUBLIC_ACCESS_POLICY="Enabled" || DISK_PUBLIC_ACCESS_POLICY="Disabled";
 
 disk_attach_create() {
   COUNTER=$1

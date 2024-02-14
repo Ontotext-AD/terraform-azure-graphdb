@@ -255,6 +255,9 @@ module "graphdb" {
   disk_public_network_access = var.disk_public_network_access
   disk_storage_account_type  = var.disk_storage_account_type
 
+  # Scale set actions notifications
+  scaleset_actions_recipients_email_list = var.scaleset_actions_recipients_email_list
+
   # App Insights
   appi_connection_string = var.deploy_monitoring ? module.monitoring[0].appi_connection_string : ""
 
