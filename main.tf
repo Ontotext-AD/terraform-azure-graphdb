@@ -193,6 +193,8 @@ module "monitoring" {
 
   la_workspace_sku               = var.la_workspace_sku
   la_workspace_retention_in_days = var.la_workspace_retention_in_days
+
+  ag_push_notification_accounts = var.notification_recipients_email_list
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
@@ -256,7 +258,7 @@ module "graphdb" {
   disk_storage_account_type  = var.disk_storage_account_type
 
   # Scale set actions notifications
-  scaleset_actions_recipients_email_list = var.scaleset_actions_recipients_email_list
+  scaleset_actions_recipients_email_list = var.notification_recipients_email_list
 
   # App Insights
   appi_connection_string = var.deploy_monitoring ? module.monitoring[0].appi_connection_string : ""

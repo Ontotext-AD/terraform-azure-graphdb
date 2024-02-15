@@ -288,3 +288,8 @@ variable "appi_repositories_requests_sampling" {
   type        = number
   default     = 50
 }
+
+variable "scaleset_actions_recipients_email_list" {
+  description = "List of emails which will be notified for any scaling changes in the VMSS"
+  type        = list(string)
+}

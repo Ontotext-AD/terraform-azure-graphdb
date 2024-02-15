@@ -77,7 +77,7 @@ wait_dns_records() {
 }
 
 #  Only the instance with the lowest ID would attempt to create the cluster
-if [ "$INSTANCE_ID" -eq "$${LOWEST_INSTANCE_ID}" ]; then
+if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
 
   echo "##################################"
   echo "#    Beginning cluster setup     #"
@@ -183,11 +183,11 @@ else
   echo "The current instance: $INSTANCE_ID is not the lowest, skipping cluster creation"
 fi
 
-echo "##################################"
-echo "#    Update GraphDB password     #"
-echo "##################################"
+echo "####################################"
+echo "#    Updating GraphDB password     #"
+echo "####################################"
 
-if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" -eq "$${LOWEST_INSTANCE_ID}" ]]; then
+if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
     # The request will fail if the cluster state is unhealthy
     # This handles rolling updates
     for record in "$${ALL_DNS_RECORDS[@]}"; do
@@ -205,13 +205,16 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" -eq "$${LOW
       fi
     done
 
+    # Gets the existing settings for admin user
+    EXISTING_SETTINGS=$(curl --location -s -u "admin:$${GRAPHDB_PASSWORD}" 'http://localhost:7200/rest/security/users/admin' | jq -rc '{grantedAuthorities, appSettings}' | sed 's/^{//;s/}$//')
+
     SET_NEW_PASSWORD=$(
       curl --location -s -w "%%{http_code}" \
         --request PATCH 'http://localhost:7200/rest/security/users/admin' \
         --header 'Content-Type: application/json' \
         --header 'Accept: text/plain' \
         -u "admin:$${GRAPHDB_PASSWORD}" \
-        --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",\"appSettings\":{\"DEFAULT_SAMEAS\":false,\"DEFAULT_INFERENCE\":false,\"EXECUTE_COUNT\":false,\"IGNORE_SHARED_QUERIES\":false,\"DEFAULT_VIS_GRAPH_SCHEMA\":false},\"grantedAuthorities\":[\"ROLE_USER\",\"READ_REPO_empty-rdfsplus\"]}"
+        --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",$EXISTING_SETTINGS}"
     )
     if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
       echo "Updated GraphDB password successfully"
@@ -221,6 +224,8 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" -eq "$${LOW
       echo "Failed updating GraphDB password. Please check the logs!"
       exit 1
     fi
+else
+  echo "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
 fi
 
 echo "###########################"

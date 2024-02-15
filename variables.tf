@@ -393,7 +393,8 @@ variable "monitor_reader_principal_id" {
   type        = string
 }
 
-variable "scaleset_actions_recipients_email_list" {
-  description = "List of emails which will be notified for any scaling changes in the VMSS"
-  type = list(string)
+variable "notification_recipients_email_list" {
+  description = "List of emails which will be notified via e-mail and/or push notifications"
+  type        = list(string)
+  default     = []
 }

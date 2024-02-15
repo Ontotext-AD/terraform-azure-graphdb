@@ -118,7 +118,6 @@ variable "monitor_reader_principal_id" {
 variable "ag_push_notification_accounts" {
   description = "List of accounts to receive push notifications"
   type        = list(string)
-  default     = []
 }
 
 variable "ag_arm_role_receiver_role_id" {
