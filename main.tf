@@ -2,11 +2,15 @@
 
 data "azurerm_client_config" "current" {}
 
+resource "time_static" "current" {}
+
 locals {
   tags = merge({
     # Used to easily track all resource managed by Terraform
     Source     = "Terraform"
     Deployment = var.resource_name_prefix
+    CreatedBy  = data.azurerm_client_config.current.object_id
+    CreatedOn  = time_static.current.rfc3339
   }, var.tags)
   admin_security_principle_id = var.admin_security_principle_id != null ? var.admin_security_principle_id : data.azurerm_client_config.current.object_id
 }
