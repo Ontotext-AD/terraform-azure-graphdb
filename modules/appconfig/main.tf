@@ -18,7 +18,7 @@ resource "azurerm_app_configuration" "graphdb" {
 
   sku = "standard"
 
-  # Note: Enabled until we add a private link
+  # Note: Enabled until we add a private endpoint
   public_network_access      = "Enabled"
   local_auth_enabled         = false
   purge_protection_enabled   = var.app_config_enable_purge_protection

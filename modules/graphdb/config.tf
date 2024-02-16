@@ -1,3 +1,7 @@
+#
+# GraphDB Configurations
+#
+
 resource "random_password" "graphdb_cluster_token" {
   count   = var.graphdb_cluster_token != null ? 0 : 1
   length  = 16

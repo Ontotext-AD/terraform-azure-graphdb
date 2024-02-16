@@ -41,7 +41,7 @@ resource "azurerm_subnet" "graphdb_gateway" {
   name                 = "snet-${var.resource_name_prefix}-gateway"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
-  address_prefixes     = var.app_gateway_subnet_address_prefix
+  address_prefixes     = var.gateway_subnet_address_prefixes
   service_endpoints    = ["Microsoft.KeyVault"]
 }
 
@@ -49,276 +49,8 @@ resource "azurerm_subnet" "graphdb_vmss" {
   name                 = "snet-${var.resource_name_prefix}-vmss"
   resource_group_name  = azurerm_resource_group.graphdb.name
   virtual_network_name = azurerm_virtual_network.graphdb.name
-  address_prefixes     = var.graphdb_subnet_address_prefix
-  service_endpoints    = ["Microsoft.KeyVault", "Microsoft.Storage"]
-}
-
-resource "azurerm_subnet" "graphdb_private_link_subnet" {
-  count = var.gateway_enable_private_link_service ? 1 : 0
-
-  name                                          = "snet-${var.resource_name_prefix}-private-link"
-  resource_group_name                           = azurerm_resource_group.graphdb.name
-  virtual_network_name                          = azurerm_virtual_network.graphdb.name
-  address_prefixes                              = var.gateway_private_link_subnet_address_prefixes
-  private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
-}
-
-resource "azurerm_application_security_group" "graphdb_vmss" {
-  name                = "asg-${var.resource_name_prefix}-vmss"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.graphdb.name
-}
-
-resource "azurerm_network_security_group" "graphdb_gateway" {
-  name                = "nsg-${var.resource_name_prefix}-gateway"
-  resource_group_name = azurerm_resource_group.graphdb.name
-  location            = var.location
-
-  security_rule {
-    name                       = "AllowGatewayManager"
-    description                = "Allows Gateway Manager to perform health monitoring"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_address_prefix      = "GatewayManager"
-    source_port_range          = "*"
-    destination_address_prefix = "*"
-    destination_port_range     = "65200-65535"
-  }
-
-  security_rule {
-    name                         = "AllowLoadBalancer"
-    description                  = "Allows AzureLoadBalancer to perform balancing to gateway instances"
-    priority                     = 110
-    direction                    = "Inbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_address_prefix        = "AzureLoadBalancer"
-    source_port_range            = "*"
-    destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range       = "*"
-  }
-
-  dynamic "security_rule" {
-    for_each = var.gateway_enable_private_link_service ? [] : [1]
-
-    content {
-      name                         = "AllowInternetInBoundHttp"
-      description                  = "Allows HTTP inbound internet traffic to the gateway subnet"
-      priority                     = 200
-      direction                    = "Inbound"
-      access                       = "Allow"
-      protocol                     = "Tcp"
-      source_address_prefix        = "Internet"
-      source_port_range            = "*"
-      destination_address_prefixes = var.app_gateway_subnet_address_prefix
-      destination_port_range       = 80
-    }
-  }
-
-  dynamic "security_rule" {
-    for_each = var.gateway_enable_private_link_service ? [] : [1]
-
-    content {
-      name                         = "AllowInternetInBoundHttps"
-      description                  = "Allows HTTPS inbound internet traffic to the gateway subnet"
-      priority                     = 210
-      direction                    = "Inbound"
-      access                       = "Allow"
-      protocol                     = "Tcp"
-      source_address_prefix        = "Internet"
-      source_port_range            = "*"
-      destination_address_prefixes = var.app_gateway_subnet_address_prefix
-      destination_port_range       = 443
-    }
-  }
-
-  dynamic "security_rule" {
-    for_each = var.gateway_enable_private_link_service ? [1] : []
-
-    content {
-      name                         = "AllowPrivateLinkInBoundHttp"
-      description                  = "Allows HTTP inbound traffic from the private link subnet to the private frontend ip"
-      priority                     = 300
-      direction                    = "Inbound"
-      access                       = "Allow"
-      protocol                     = "Tcp"
-      source_address_prefixes      = var.gateway_private_link_subnet_address_prefixes
-      source_port_range            = "*"
-      destination_address_prefixes = var.app_gateway_subnet_address_prefix
-      destination_port_range       = 80
-    }
-  }
-
-  dynamic "security_rule" {
-    for_each = var.gateway_enable_private_link_service ? [1] : []
-
-    content {
-      name                         = "AllowPrivateLinkInBoundHttps"
-      description                  = "Allows HTTPS inbound traffic from the private link subnet to the private frontend ip"
-      priority                     = 310
-      direction                    = "Inbound"
-      access                       = "Allow"
-      protocol                     = "Tcp"
-      source_address_prefixes      = var.gateway_private_link_subnet_address_prefixes
-      source_port_range            = "*"
-      destination_address_prefixes = var.app_gateway_subnet_address_prefix
-      destination_port_range       = 443
-    }
-  }
-
-  security_rule {
-    name                         = "DenyInBound"
-    description                  = "Denies any other inbound traffic to the associated subnet"
-    priority                     = 4096
-    direction                    = "Inbound"
-    access                       = "Deny"
-    protocol                     = "*"
-    source_address_prefix        = "*"
-    source_port_range            = "*"
-    destination_address_prefixes = var.app_gateway_subnet_address_prefix
-    destination_port_range       = "*"
-  }
-
-  # Note: There are no outbound rules due to App Gateway restrictions
-}
-
-resource "azurerm_network_security_group" "graphdb_vmss" {
-  name                = "nsg-${var.resource_name_prefix}-vmss"
-  resource_group_name = azurerm_resource_group.graphdb.name
-  location            = var.location
-
-  security_rule {
-    name                                       = "AllowApplicationGatewayInBound"
-    description                                = "Allows Application Gateway subnet to access GraphDB nodes and proxies"
-    priority                                   = 100
-    direction                                  = "Inbound"
-    access                                     = "Allow"
-    protocol                                   = "Tcp"
-    source_address_prefixes                    = var.app_gateway_subnet_address_prefix
-    source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    destination_port_range                     = "7200-7201"
-  }
-
-  security_rule {
-    name                                       = "AllowInternalGraphDBHttpInBound"
-    description                                = "Allows internal HTTP traffic between GraphDB nodes and proxies"
-    priority                                   = 200
-    direction                                  = "Inbound"
-    access                                     = "Allow"
-    protocol                                   = "Tcp"
-    source_application_security_group_ids      = [azurerm_application_security_group.graphdb_vmss.id]
-    source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    destination_port_range                     = "7200-7201"
-  }
-
-  security_rule {
-    name                                       = "AllowInternalGraphDBGRPCInBound"
-    description                                = "Allows internal gRPC traffic between GraphDB nodes and proxies"
-    priority                                   = 201
-    direction                                  = "Inbound"
-    access                                     = "Allow"
-    protocol                                   = "Tcp"
-    source_application_security_group_ids      = [azurerm_application_security_group.graphdb_vmss.id]
-    source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    destination_port_range                     = "7300-7301"
-  }
-
-  # TODO: Would be easier as separate resource with count ..?
-  dynamic "security_rule" {
-    for_each = var.deploy_bastion ? [1] : []
-    content {
-      name                                       = "AllowBastionHostInBound"
-      description                                = "Allows remote connections through Azure Bastion"
-      priority                                   = 300
-      direction                                  = "Inbound"
-      access                                     = "Allow"
-      protocol                                   = "Tcp"
-      source_address_prefixes                    = var.bastion_subnet_address_prefix
-      source_port_range                          = "*"
-      destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-      destination_port_range                     = 22
-    }
-  }
-
-  security_rule {
-    name                       = "DenyInBound"
-    description                = "Denies any other inbound traffic to GraphDB's subnet"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_address_prefix      = "*"
-    source_port_range          = "*"
-    destination_address_prefix = "*"
-    destination_port_range     = "*"
-  }
-
-  security_rule {
-    name                                  = "AllowInternetOutBound"
-    description                           = "Allows outbound connectivity to the internet"
-    priority                              = 100
-    direction                             = "Outbound"
-    access                                = "Allow"
-    protocol                              = "*"
-    source_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    source_port_range                     = "*"
-    destination_address_prefix            = "Internet"
-    destination_port_range                = "*"
-  }
-
-  security_rule {
-    name                                       = "AllowInternalGraphDBHttpOutBound"
-    description                                = "Allows internal HTTP traffic between GraphDB nodes and proxies"
-    priority                                   = 200
-    direction                                  = "Outbound"
-    access                                     = "Allow"
-    protocol                                   = "Tcp"
-    source_application_security_group_ids      = [azurerm_application_security_group.graphdb_vmss.id]
-    source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    destination_port_range                     = "7200-7201"
-  }
-
-  security_rule {
-    name                                       = "AllowInternalGraphDBGRPCOutBound"
-    description                                = "Allows internal gRPC traffic between GraphDB nodes and proxies"
-    priority                                   = 201
-    direction                                  = "Outbound"
-    access                                     = "Allow"
-    protocol                                   = "Tcp"
-    source_application_security_group_ids      = [azurerm_application_security_group.graphdb_vmss.id]
-    source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.graphdb_vmss.id]
-    destination_port_range                     = "7300-7301"
-  }
-
-  security_rule {
-    name                       = "DenyOutBound"
-    description                = "Denies any other outbound traffic"
-    priority                   = 4096
-    direction                  = "Outbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_address_prefix      = "*"
-    source_port_range          = "*"
-    destination_address_prefix = "*"
-    destination_port_range     = "*"
-  }
-}
-
-resource "azurerm_subnet_network_security_group_association" "graphdb_gateway" {
-  network_security_group_id = azurerm_network_security_group.graphdb_gateway.id
-  subnet_id                 = azurerm_subnet.graphdb_gateway.id
-}
-
-resource "azurerm_subnet_network_security_group_association" "graphdb_vmss" {
-  network_security_group_id = azurerm_network_security_group.graphdb_vmss.id
-  subnet_id                 = azurerm_subnet.graphdb_vmss.id
+  address_prefixes     = var.graphdb_subnet_address_prefixes
+  service_endpoints    = ["Microsoft.Storage"]
 }
 
 # SUB MODULES ------------------------------------------------------------
@@ -357,15 +89,6 @@ module "backup" {
   storage_account_retention_hot_to_cool = var.storage_account_retention_hot_to_cool
 }
 
-# Creates a Private DNS zone for GraphDB internal cluster communication
-module "dns" {
-  source = "./modules/dns"
-
-  resource_name_prefix = var.resource_name_prefix
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  virtual_network_id   = azurerm_virtual_network.graphdb.id
-}
-
 # Creates an App Configuration store for managing GraphDB specific configurations
 module "appconfig" {
   source = "./modules/appconfig"
@@ -378,22 +101,6 @@ module "appconfig" {
   app_config_retention_days          = var.app_config_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-}
-
-# Creates GraphDB configuration key values in the App Configuration store
-module "configurations" {
-  source = "./modules/configurations"
-
-  app_configuration_id = module.appconfig.app_configuration_id
-
-  graphdb_password        = var.graphdb_password
-  graphdb_license_path    = var.graphdb_license_path
-  graphdb_cluster_token   = var.graphdb_cluster_token
-  graphdb_properties_path = var.graphdb_properties_path
-  graphdb_java_options    = var.graphdb_java_options
-
-  # Wait for role assignments
-  depends_on = [module.appconfig]
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity
@@ -421,19 +128,23 @@ module "application_gateway" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  gateway_subnet_id             = azurerm_subnet.graphdb_gateway.id
-  gateway_subnet_address_prefix = azurerm_subnet.graphdb_gateway.address_prefixes[0]
+  virtual_network_name             = azurerm_virtual_network.graphdb.name
+  gateway_subnet_id                = azurerm_subnet.graphdb_gateway.id
+  gateway_subnet_address_prefixes  = azurerm_subnet.graphdb_gateway.address_prefixes
+  gateway_allowed_address_prefix   = var.inbound_allowed_address_prefix
+  gateway_allowed_address_prefixes = var.inbound_allowed_address_prefixes
 
   # Public / Private toggle
   gateway_enable_private_access = var.gateway_enable_private_access
 
   # TLS
-  gateway_tls_identity_id           = module.tls.tls_identity_id
-  gateway_tls_certificate_secret_id = module.tls.tls_certificate_key_vault_secret_id
+  gateway_tls_certificate_identity_id = module.tls.tls_identity_id
+  gateway_tls_certificate_secret_id   = module.tls.tls_certificate_key_vault_secret_id
 
   # Private Link
-  gateway_enable_private_link_service = var.gateway_enable_private_link_service
-  gateway_private_link_subnet_id      = length(azurerm_subnet.graphdb_private_link_subnet) > 0 ? azurerm_subnet.graphdb_private_link_subnet[0].id : null
+  gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
+  gateway_private_link_subnet_address_prefixes          = var.gateway_private_link_subnet_address_prefixes
+  gateway_private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
 
   # Wait for role assignments
   depends_on = [module.tls]
@@ -449,55 +160,44 @@ module "bastion" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  virtual_network_name          = azurerm_virtual_network.graphdb.name
-  bastion_subnet_address_prefix = var.bastion_subnet_address_prefix
-  bastion_allowed_cidr_blocks   = var.management_cidr_blocks
-}
-
-# Creates a NAT gateway associated with GraphDB's subnet
-module "nat" {
-  source = "./modules/nat"
-
-  resource_name_prefix = var.resource_name_prefix
-  location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  zones                = var.zones
-
-  nat_subnet_id = azurerm_subnet.graphdb_vmss.id
-}
-
-# Prepares a user data script for GraphDB VMSS
-module "user_data" {
-  source = "./modules/user-data"
-
-  count = var.custom_graphdb_vm_user_data != null ? 0 : 1
-
-  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
-
-  app_configuration_name = module.appconfig.app_configuration_name
-
-  disk_iops_read_write       = var.disk_iops_read_write
-  disk_mbps_read_write       = var.disk_mbps_read_write
-  disk_size_gb               = var.disk_size_gb
-  disk_network_access_policy = var.disk_network_access_policy
-  disk_public_network_access = var.disk_public_network_access
-  disk_storage_account_type  = var.disk_storage_account_type
-
-  backup_storage_container_name = module.backup.storage_container_name
-  backup_storage_account_name   = module.backup.storage_account_name
-  backup_schedule               = var.backup_schedule
-  appi_connection_string        = module.monitoring[0].appi_connection_string
+  virtual_network_name                     = azurerm_virtual_network.graphdb.name
+  bastion_subnet_address_prefixes          = var.bastion_subnet_address_prefixes
+  bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
 
 locals {
-  user_data_script         = var.custom_graphdb_vm_user_data != null ? var.custom_graphdb_vm_user_data : module.user_data[0].graphdb_vmss_user_data
   graphdb_gallery_image_id = "/communityGalleries/${var.graphdb_image_gallery}/images/${var.graphdb_version}-${var.graphdb_image_architecture}/versions/${var.graphdb_image_version}"
   graphdb_image_id         = var.graphdb_image_id != null ? var.graphdb_image_id : local.graphdb_gallery_image_id
 }
 
+# Configures Azure monitoring
+module "monitoring" {
+  count = var.deploy_monitoring ? 1 : 0
+
+  source = "./modules/monitoring"
+
+  resource_group_name = azurerm_resource_group.graphdb.name
+  location            = var.location
+
+  web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
+  web_test_geo_locations            = var.web_test_geo_locations
+  web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
+
+  monitor_reader_principal_id = var.monitor_reader_principal_id
+
+  appi_disable_ip_masking                    = var.appi_disable_ip_masking
+  appi_web_test_availability_enabled         = var.appi_web_test_availability_enabled
+  appi_daily_data_cap_notifications_disabled = var.appi_daily_data_cap_notifications_disabled
+  appi_daily_data_cap_in_gb                  = var.appi_daily_data_cap_in_gb
+  appi_retention_in_days                     = var.appi_retention_in_days
+
+  la_workspace_sku               = var.la_workspace_sku
+  la_workspace_retention_in_days = var.la_workspace_retention_in_days
+}
+
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
-module "vmss" {
-  source = "./modules/vmss"
+module "graphdb" {
+  source = "./modules/graphdb"
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
@@ -505,22 +205,45 @@ module "vmss" {
   resource_group_name  = azurerm_resource_group.graphdb.name
   zones                = var.zones
 
-  graphdb_subnet_id                            = azurerm_subnet.graphdb_vmss.id
+  # Networking
+  virtual_network_id                   = azurerm_virtual_network.graphdb.id
+  graphdb_subnet_id                    = azurerm_subnet.graphdb_vmss.id
+  graphdb_inbound_address_prefixes     = var.gateway_subnet_address_prefixes
+  graphdb_ssh_inbound_address_prefixes = var.deploy_bastion ? var.bastion_subnet_address_prefixes : []
+  graphdb_outbound_address_prefix      = var.outbound_allowed_address_prefix
+  graphdb_outbound_address_prefixes    = var.outbound_allowed_address_prefixes
+
+  # Gateway
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
-  application_security_group_ids               = [azurerm_application_security_group.graphdb_vmss.id]
 
-  key_vault_id                 = module.vault.key_vault_id
-  app_configuration_id         = module.appconfig.app_configuration_id
-  backups_storage_container_id = module.backup.storage_account_id
-  private_dns_zone             = module.dns.private_dns_zone_id
+  # Key Vault
+  key_vault_id = module.vault.key_vault_id
 
+  # App Configuration
+  app_configuration_id   = module.appconfig.app_configuration_id
+  app_configuration_name = module.appconfig.app_configuration_name
+
+  # GraphDB Configurations
+  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
+  graphdb_password              = var.graphdb_password
+  graphdb_license_path          = var.graphdb_license_path
+  graphdb_cluster_token         = var.graphdb_cluster_token
+  graphdb_properties_path       = var.graphdb_properties_path
+  graphdb_java_options          = var.graphdb_java_options
+
+  # Backups Storage Account
+  backup_storage_account_name   = module.backup.storage_account_name
+  backup_storage_container_id   = module.backup.storage_account_id
+  backup_storage_container_name = module.backup.storage_container_name
+  backup_schedule               = var.backup_schedule
+
+  # VMSS
   instance_type = var.instance_type
   image_id      = local.graphdb_image_id
   node_count    = var.node_count
   ssh_key       = var.ssh_key
 
-  user_data_script = local.user_data_script
-
+  # Managed Disks
   disk_iops_read_write       = var.disk_iops_read_write
   disk_mbps_read_write       = var.disk_mbps_read_write
   disk_size_gb               = var.disk_size_gb
@@ -528,25 +251,9 @@ module "vmss" {
   disk_public_network_access = var.disk_public_network_access
   disk_storage_account_type  = var.disk_storage_account_type
 
+  # App Insights
+  appi_connection_string = module.monitoring[0].appi_connection_string
+
   # Wait for the configurations to be created in the App Configuration store
-  depends_on = [module.configurations]
-}
-
-module "monitoring" {
-  count = var.deploy_monitoring ? 1 : 0
-
-  source = "./modules/monitoring"
-
-  resource_group_name                        = azurerm_resource_group.graphdb.name
-  location                                   = var.location
-  web_test_availability_request_url          = module.application_gateway.public_ip_address_fqdn
-  web_test_geo_locations                     = var.web_test_geo_locations
-  monitor_reader_principal_id                = var.monitor_reader_principal_id
-  appi_disable_ip_masking                    = var.appi_disable_ip_masking
-  appi_web_test_availability_enabled         = var.appi_web_test_availability_enabled
-  appi_daily_data_cap_notifications_disabled = var.appi_daily_data_cap_notifications_disabled
-  appi_daily_data_cap_in_gb                  = var.appi_daily_data_cap_in_gb
-  appi_retention_in_days                     = var.appi_retention_in_days
-  la_workspace_sku                           = var.la_workspace_sku
-  la_workspace_retention_in_days             = var.la_workspace_retention_in_days
+  depends_on = [module.appconfig]
 }

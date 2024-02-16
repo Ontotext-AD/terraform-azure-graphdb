@@ -1,3 +1,7 @@
+#
+# User data script
+#
+
 data "cloudinit_config" "entrypoint" {
   base64_encode = true
   gzip          = false
@@ -80,5 +84,4 @@ data "cloudinit_config" "entrypoint" {
       app_config_name : var.app_configuration_name
     })
   }
-
 }

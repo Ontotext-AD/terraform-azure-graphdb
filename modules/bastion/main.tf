@@ -2,7 +2,7 @@ resource "azurerm_subnet" "graphdb_bastion" {
   name                 = "AzureBastionSubnet"
   resource_group_name  = var.resource_group_name
   virtual_network_name = var.virtual_network_name
-  address_prefixes     = var.bastion_subnet_address_prefix
+  address_prefixes     = var.bastion_subnet_address_prefixes
 }
 
 resource "azurerm_network_security_group" "graphdb_bastion" {
@@ -23,7 +23,7 @@ resource "azurerm_network_security_group" "graphdb_bastion" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefixes    = var.bastion_allowed_cidr_blocks
+    source_address_prefixes    = var.bastion_allowed_inbound_address_prefixes
     source_port_range          = "*"
     destination_address_prefix = "*"
     destination_port_range     = 443

@@ -1,20 +1,4 @@
-resource "random_string" "fqdn" {
-  length  = 6
-  special = false
-  upper   = false
-  numeric = true
-}
-
-resource "azurerm_public_ip" "graphdb_public_ip_address" {
-  name                = "pip-${var.resource_name_prefix}-app-gateway"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-
-  sku               = "Standard"
-  allocation_method = "Static"
-  zones             = var.zones
-  domain_name_label = "${var.resource_name_prefix}-${random_string.fqdn.result}"
-}
+# Application Gateway
 
 locals {
   gateway_ip_configuration_name                  = "${var.resource_name_prefix}-gateway-ip"
@@ -57,7 +41,7 @@ resource "azurerm_application_gateway" "graphdb-public" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.gateway_tls_identity_id]
+    identity_ids = [var.gateway_tls_certificate_identity_id]
   }
 
   ssl_certificate {
@@ -173,13 +157,6 @@ resource "azurerm_application_gateway" "graphdb-public" {
 resource "azurerm_application_gateway" "graphdb-private" {
   count = var.gateway_enable_private_access ? 1 : 0
 
-  lifecycle {
-    precondition {
-      condition     = !(var.gateway_enable_private_link_service && var.gateway_private_link_subnet_id == null)
-      error_message = "Application Gateway Private Link requires a subnet!"
-    }
-  }
-
   name                = "agw-${var.resource_name_prefix}-private"
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -192,7 +169,7 @@ resource "azurerm_application_gateway" "graphdb-private" {
 
       ip_configuration {
         name                          = local.gateway_private_link_ip_configuration_name
-        subnet_id                     = var.gateway_private_link_subnet_id
+        subnet_id                     = azurerm_subnet.graphdb_private_link_subnet[0].id
         primary                       = true
         private_ip_address_allocation = "Dynamic"
       }
@@ -213,7 +190,7 @@ resource "azurerm_application_gateway" "graphdb-private" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.gateway_tls_identity_id]
+    identity_ids = [var.gateway_tls_certificate_identity_id]
   }
 
   ssl_certificate {
@@ -254,7 +231,7 @@ resource "azurerm_application_gateway" "graphdb-private" {
   frontend_ip_configuration {
     name                            = local.gateway_frontend_private_ip_configuration_name
     private_ip_address_allocation   = "Static"
-    private_ip_address              = cidrhost(var.gateway_subnet_address_prefix, 4)
+    private_ip_address              = cidrhost(var.gateway_subnet_address_prefixes[0], 4)
     subnet_id                       = var.gateway_subnet_id
     private_link_configuration_name = var.gateway_enable_private_link_service ? local.gateway_private_link_configuration_name : null
   }
