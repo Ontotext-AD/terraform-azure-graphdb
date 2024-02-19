@@ -7,8 +7,28 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  source_image_id = var.image_id
-  user_data       = data.cloudinit_config.entrypoint.rendered
+  source_image_id = var.graphdb_image_id
+
+  dynamic "source_image_reference" {
+    for_each = var.graphdb_image_id == null ? [1] : []
+    content {
+      offer     = "graphdb-ee"
+      publisher = "ontotextad1692361256062"
+      sku       = var.graphdb_sku
+      version   = var.graphdb_version
+    }
+  }
+
+  dynamic "plan" {
+    for_each = var.graphdb_image_id == null ? [1] : []
+    content {
+      name      = "graphdb-byol"
+      product   = "graphdb-ee"
+      publisher = "ontotextad1692361256062"
+    }
+  }
+
+  user_data = data.cloudinit_config.entrypoint.rendered
 
   identity {
     type         = "UserAssigned"
@@ -83,19 +103,20 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
 
   # Wait for dependent resources (until we add retry mechanism in the user data script)
   depends_on = [
+    # DNS
     azurerm_private_dns_zone.graphdb,
     azurerm_private_dns_zone_virtual_network_link.graphdb,
-
+    # NAT
     azurerm_nat_gateway.graphdb,
     azurerm_nat_gateway_public_ip_association.graphdb_nat_gateway,
     azurerm_subnet_nat_gateway_association.graphdb_nat_gateway,
-
+    # Disks
     azurerm_managed_disk.managed_disks,
-
+    # NSG
     azurerm_network_security_group.graphdb_vmss,
     azurerm_subnet_network_security_group_association.graphdb_vmss,
-    # TODO: inter and outbound ?
-
+    # TODO: wait for internal and outbound rules?
+    # Configurations
     azurerm_app_configuration_key.graphdb_cluster_token,
     azurerm_app_configuration_key.graphdb_java_options,
     azurerm_app_configuration_key.graphdb_license,

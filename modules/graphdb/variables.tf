@@ -177,6 +177,24 @@ variable "graphdb_java_options_secret_name" {
   default     = "graphdb-java-options"
 }
 
+# GraphDB VM image configuration
+
+variable "graphdb_version" {
+  description = "GraphDB version from the marketplace offer"
+  type        = string
+}
+
+variable "graphdb_sku" {
+  description = "GraphDB SKU from the marketplace offer"
+  type        = string
+}
+
+variable "graphdb_image_id" {
+  description = "GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer"
+  type        = string
+  default     = null
+}
+
 # GraphDB VM
 
 variable "node_count" {
@@ -187,11 +205,6 @@ variable "node_count" {
 
 variable "instance_type" {
   description = "Azure instance type"
-  type        = string
-}
-
-variable "image_id" {
-  description = "Image ID to use with GraphDB instances"
   type        = string
 }
 

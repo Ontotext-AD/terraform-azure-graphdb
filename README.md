@@ -67,12 +67,19 @@ See https://github.com/hashicorp/terraform-aws-consul
 You then need to authenticate in your subscription with Azure CLI,
 see [Authenticating using the Azure CLI](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli) for more details.
 
-Additional steps include
+Additional steps include:
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
 - Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
   you are planning on using Private Link
+
+The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace. 
+This requires you to accept the terms which can be accomplished with Azure CLI:
+
+```bash
+az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
+```
 
 <!-- BEGIN_TF_DOCS -->
 ## Inputs
@@ -103,11 +110,9 @@ Additional steps include
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
 | app\_config\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version to deploy. | `string` | `"10.5.0"` | no |
-| graphdb\_image\_gallery | Identifier of the public compute image gallery from which GraphDB VM images can be pulled. | `string` | `"GraphDB-02faf3ce-79ed-4676-ab69-0e422bbd9ee1"` | no |
-| graphdb\_image\_version | Version of the GraphDB VM image to deploy. | `string` | `"latest"` | no |
-| graphdb\_image\_architecture | Architecture of the GraphDB VM image. | `string` | `"x86_64"` | no |
-| graphdb\_image\_id | Full image identifier to use for running GraphDB VM instances. If left unspecified, Terraform will use the image from our public Compute Gallery. | `string` | `null` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.0"` | no |
+| graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
+| graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
 | graphdb\_cluster\_token | Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared. | `string` | `null` | no |
 | graphdb\_password | Secret token used to access GraphDB cluster. | `string` | `null` | no |

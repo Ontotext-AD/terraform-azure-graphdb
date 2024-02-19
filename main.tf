@@ -165,11 +165,6 @@ module "bastion" {
   bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
 
-locals {
-  graphdb_gallery_image_id = "/communityGalleries/${var.graphdb_image_gallery}/images/${var.graphdb_version}-${var.graphdb_image_architecture}/versions/${var.graphdb_image_version}"
-  graphdb_image_id         = var.graphdb_image_id != null ? var.graphdb_image_id : local.graphdb_gallery_image_id
-}
-
 # Configures Azure monitoring
 module "monitoring" {
   count = var.deploy_monitoring ? 1 : 0
@@ -237,9 +232,13 @@ module "graphdb" {
   backup_storage_container_name = module.backup.storage_container_name
   backup_schedule               = var.backup_schedule
 
+  # VM Image
+  graphdb_sku      = var.graphdb_sku
+  graphdb_version  = var.graphdb_version
+  graphdb_image_id = var.graphdb_image_id
+
   # VMSS
   instance_type = var.instance_type
-  image_id      = local.graphdb_image_id
   node_count    = var.node_count
   ssh_key       = var.ssh_key
 
