@@ -96,3 +96,54 @@ resource "azurerm_subnet_network_security_group_association" "graphdb_gateway" {
   network_security_group_id = azurerm_network_security_group.graphdb_gateway.id
   subnet_id                 = var.gateway_subnet_id
 }
+
+resource "azurerm_network_security_group" "graphdb_gateway_private_link" {
+  count = var.gateway_enable_private_link_service ? 1 : 0
+
+  name                = "nsg-${var.resource_name_prefix}-gateway-private-link"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+}
+
+resource "azurerm_network_security_rule" "graphdb_gateway_private_link_allow_gateway_outbound" {
+  count = var.gateway_enable_private_link_service ? 1 : 0
+
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.graphdb_gateway_private_link[0].name
+
+  name                         = "AllowOutboundToGateway"
+  description                  = "Allows outbound traffic from the private link subnet to the gateway"
+  priority                     = 100
+  direction                    = "Outbound"
+  access                       = "Allow"
+  protocol                     = "Tcp"
+  source_address_prefixes      = var.gateway_private_link_subnet_address_prefixes
+  source_port_range            = "*"
+  destination_address_prefixes = var.gateway_subnet_address_prefixes
+  destination_port_ranges      = ["80", "443"]
+}
+
+resource "azurerm_network_security_rule" "graphdb_gateway_private_link_deny_outbound" {
+  count = var.gateway_enable_private_link_service ? 1 : 0
+
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.graphdb_gateway_private_link[0].name
+
+  name                       = "DenyOutBound"
+  description                = "Denies any other outbound traffic"
+  priority                   = 4096
+  direction                  = "Outbound"
+  access                     = "Deny"
+  protocol                   = "*"
+  source_address_prefix      = "*"
+  source_port_range          = "*"
+  destination_address_prefix = "*"
+  destination_port_range     = "*"
+}
+
+resource "azurerm_subnet_network_security_group_association" "graphdb_gateway-private-link" {
+  count = var.gateway_enable_private_link_service ? 1 : 0
+
+  network_security_group_id = azurerm_network_security_group.graphdb_gateway_private_link[0].id
+  subnet_id                 = azurerm_subnet.graphdb_private_link_subnet[0].id
+}

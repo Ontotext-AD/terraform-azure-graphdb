@@ -1,3 +1,10 @@
+# General configurations
+
+variable "resource_name_prefix" {
+  description = "Resource name prefix used for tagging and naming AWS resources"
+  type        = string
+}
+
 variable "location" {
   description = "Azure geographical location where resources will be deployed"
   type        = string

@@ -171,8 +171,9 @@ module "monitoring" {
 
   source = "./modules/monitoring"
 
-  resource_group_name = azurerm_resource_group.graphdb.name
-  location            = var.location
+  resource_name_prefix = var.resource_name_prefix
+  resource_group_name  = azurerm_resource_group.graphdb.name
+  location             = var.location
 
   web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
   web_test_geo_locations            = var.web_test_geo_locations
@@ -251,7 +252,7 @@ module "graphdb" {
   disk_storage_account_type  = var.disk_storage_account_type
 
   # App Insights
-  appi_connection_string = module.monitoring[0].appi_connection_string
+  appi_connection_string = var.deploy_monitoring ? module.monitoring[0].appi_connection_string : ""
 
   # Wait for the configurations to be created in the App Configuration store
   depends_on = [module.appconfig]
