@@ -9,6 +9,7 @@
 #   * If the current instance has the lowest ID, it attempts to create a GraphDB cluster, retries if necessary, and confirms the cluster's existence.
 #   * Changes the admin user password and enables security if not already enabled.
 #   * Displays appropriate messages for successful completion or potential errors.
+#   * Updates the GraphDB admin password if it has been changed in Application Config
 
 set -euo pipefail
 
@@ -22,6 +23,7 @@ DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
 GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .lastModified)"
 LOWEST_INSTANCE_ID=$(cat /tmp/lowest_id)
+RECORD_NAME=$(cat /tmp/node_name)
 
 # To update the password if changed we need to save the creation date of the config.
 # If a file is found, it will treat the password from Application config as the latest and update it.
@@ -42,6 +44,8 @@ systemctl daemon-reload
 systemctl start graphdb
 systemctl enable graphdb-cluster-proxy.service
 systemctl start graphdb-cluster-proxy.service
+
+echo "Started GraphDB services"
 
 check_gdb() {
   if [ -z "$1" ]; then
@@ -124,19 +128,22 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       CLUSTER_CREATED=$(
         curl -X POST -s http://localhost:7200/rest/cluster/config \
           -w "%%{http_code}" \
+          -o "/dev/null" \
           -H 'Content-type: application/json' \
           -u "admin:$${GRAPHDB_PASSWORD}" \
           -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
       )
-      if [[ "$CLUSTER_CREATED" == 200 ]]; then
+      if [[ "$CLUSTER_CREATED" == 201 ]]; then
         echo "GraphDB cluster successfully created!"
         break
+      else
+        echo "Unexpected Status code returned $CLUSTER_CREATED"
       fi
     elif [ "$IS_CLUSTER" == 200 ]; then
       echo "Cluster exists"
       break
     else
-      echo "Something went wrong! Check the logs."
+      echo "Something went wrong, returned: $IS_CLUSTER. Check the logs!"
     fi
   done
 
@@ -187,6 +194,7 @@ echo "####################################"
 echo "#    Updating GraphDB password     #"
 echo "####################################"
 
+# This will update the GraphDB admin password if this node has the lowest ID and password_creation_time file exists.
 if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
     # The request will fail if the cluster state is unhealthy
     # This handles rolling updates
@@ -227,7 +235,3 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWE
 else
   echo "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
 fi
-
-echo "###########################"
-echo "#    Script completed     #"
-echo "###########################"
