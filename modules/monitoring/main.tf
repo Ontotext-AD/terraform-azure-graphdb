@@ -28,7 +28,7 @@ resource "azurerm_monitor_action_group" "notification_group" {
   dynamic "email_receiver" {
     for_each = var.ag_notifications_email_list
     content {
-      name = "email notification ${email_receiver.value}"
+      name          = "email notification ${email_receiver.value}"
       email_address = email_receiver.value
     }
   }
