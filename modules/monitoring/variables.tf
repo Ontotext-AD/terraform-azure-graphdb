@@ -115,8 +115,8 @@ variable "monitor_reader_principal_id" {
   type        = string
 }
 
-variable "ag_push_notification_accounts" {
-  description = "List of accounts to receive push notifications"
+variable "ag_notifications_email_list" {
+  description = "List of accounts to receive email and push notifications"
   type        = list(string)
 }
 
