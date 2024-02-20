@@ -232,3 +232,41 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "replication-warning" 
     action_groups = [azurerm_monitor_action_group.notification_group.id]
   }
 }
+
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "low-disk-space" {
+  enabled = var.enable_alerts
+
+  name                = "al-${var.resource_group_name}-low-disk-space"
+  description         = "Alert will be triggered if low disk space message is detected"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  auto_mitigation_enabled          = true
+  workspace_alerts_storage_enabled = false
+  evaluation_frequency             = "PT5M"
+  window_duration                  = "PT10M"
+  scopes                           = [azurerm_application_insights.graphdb_insights.id]
+  severity                         = 1
+
+  criteria {
+    query = <<-QUERY
+      traces
+        | where message has "low disk space"
+        or message has "The system is running out of disk space"
+      QUERY
+
+    time_aggregation_method = "Count"
+    threshold               = 1
+    operator                = "GreaterThanOrEqual"
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  skip_query_validation = true
+  action {
+    action_groups = [azurerm_monitor_action_group.notification_group.id]
+  }
+}

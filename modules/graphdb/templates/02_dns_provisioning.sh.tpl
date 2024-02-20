@@ -40,7 +40,7 @@ readarray -t ALL_FQDN_RECORDS <<< "$(az network private-dns record-set list -z $
 # Get all instance IDs for the current VMSS
 INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
 # Sort instance IDs
-SORTED_INSTANCE_IDS=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort))
+SORTED_INSTANCE_IDS=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort -n))
 # Find the lowest, middle and highest instance IDs
 LOWEST_INSTANCE_ID=$${SORTED_INSTANCE_IDS[0]}
 MIDDLE_INSTANCE_ID=$${SORTED_INSTANCE_IDS[1]}

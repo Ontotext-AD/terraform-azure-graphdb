@@ -68,9 +68,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     type_handler_version = "1.0"
   }
 
+  # Explicitly setting instance repair to false.
+  # Re-creating a GraphDB instance would not solve any issues in most cases.
   automatic_instance_repair {
-    enabled      = true
-    grace_period = "PT10M"
+    enabled = false
   }
 
   scale_in {
@@ -143,6 +144,12 @@ resource "azurerm_monitor_autoscale_setting" "graphdb_auto_scale_settings" {
       default = var.node_count
       maximum = var.node_count
       minimum = var.node_count
+    }
+  }
+
+  notification {
+    email {
+      custom_emails = var.scaleset_actions_recipients_email_list
     }
   }
 }

@@ -61,7 +61,7 @@ cat <<-EOF > /opt/graphdb/applicationinsights.json
                 "attributes": [
                    {
                      "key": "http.url",
-                     "value": "https?://[^/]+/.*(cluster|namespaces|status|locations.*|license.*|acl|monitor.*|autocomplete.*|cluster.*|saved-queries|security.*|version.*|all|connectors.*|info.*|rdfrank.*|/sql-views.*)",
+                     "value": "https?://[^/]+/.*(cluster|namespaces|status|locations.*|license.*|acl|monitor.*|autocomplete.*|cluster.*|saved-queries|security.*|version.*|all|connectors.*|info.*|rdfrank.*|/sql-views.*|protocol)",
                      "matchType": "regexp"
                    }
                 ]
