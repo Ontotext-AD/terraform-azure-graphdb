@@ -25,14 +25,16 @@ resource "azurerm_monitor_action_group" "notification_group" {
   resource_group_name = var.resource_group_name
   short_name          = "Notification"
 
-  arm_role_receiver {
-    name                    = "owner notifications"
-    role_id                 = var.ag_arm_role_receiver_role_id
-    use_common_alert_schema = true
+  dynamic "email_receiver" {
+    for_each = var.ag_notifications_email_list
+    content {
+      name          = "email notification ${email_receiver.value}"
+      email_address = email_receiver.value
+    }
   }
 
   dynamic "azure_app_push_receiver" {
-    for_each = var.ag_push_notification_accounts
+    for_each = var.ag_notifications_email_list
     content {
       name          = "push notification ${azure_app_push_receiver.value}"
       email_address = azure_app_push_receiver.value

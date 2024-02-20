@@ -194,7 +194,7 @@ module "monitoring" {
   la_workspace_sku               = var.la_workspace_sku
   la_workspace_retention_in_days = var.la_workspace_retention_in_days
 
-  ag_push_notification_accounts = var.notification_recipients_email_list
+  ag_notifications_email_list = var.notification_recipients_email_list
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
