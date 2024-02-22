@@ -142,8 +142,8 @@ module "application_gateway" {
   gateway_enable_private_access = var.gateway_enable_private_access
 
   # TLS
-  gateway_tls_certificate_identity_id = module.tls.tls_identity_id
-  gateway_tls_certificate_secret_id   = module.tls.tls_certificate_key_vault_secret_id
+  gateway_tls_certificate_identity_id = var.tls_manage_id != null ? var.tls_manage_id : module.tls.tls_identity_id
+  gateway_tls_certificate_secret_id   = var.tls_certificate != null ? var.tls_certificate : module.tls.tls_certificate_key_vault_secret_id
 
   # Private Link
   gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
