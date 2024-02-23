@@ -115,6 +115,7 @@ variable "gateway_private_link_service_network_policies_enabled" {
 variable "tls_certificate_path" {
   description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB."
   type        = string
+  default     = null
 }
 
 variable "tls_certificate_password" {
@@ -123,13 +124,14 @@ variable "tls_certificate_password" {
   default     = null
 }
 
-variable "tls_certificate" {
-  description = "TLS Certificate Secret Identifier."
+variable "tls_certificate_id" {
+  description = "Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls_certificate_path"
   type        = string
+  default     = null
 }
 
-variable "tls_manage_id" {
-  description = "ID for managing TLS. If provided it will use this isntead of the one created by the Terraform Script."
+variable "tls_certificate_identity_id" {
+  description = "Identifier of a managed identity giving access to the TLS certificate specified with tls_certificate_id"
   type        = string
   default     = null
 }

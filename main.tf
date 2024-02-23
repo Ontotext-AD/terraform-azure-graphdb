@@ -59,8 +59,10 @@ resource "azurerm_subnet" "graphdb_vmss" {
 
 # SUB MODULES ------------------------------------------------------------
 
-# Creates Key Vault for secure storage of GraphDB configurations and secrets
+# Creates Key Vault for storing a provided TLS certificate file
 module "vault" {
+  count = var.tls_certificate_id == null ? 1 : 0
+
   source = "./modules/vault"
 
   resource_name_prefix = var.resource_name_prefix
@@ -107,20 +109,22 @@ module "appconfig" {
   admin_security_principle_id = local.admin_security_principle_id
 }
 
-# Creates a TLS certificate secret in the Key Vault and related identity
+# Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
 module "tls" {
+  count = var.tls_certificate_id == null ? 1 : 0
+
   source = "./modules/tls"
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  key_vault_id             = module.vault.key_vault_id
+  key_vault_id             = module.vault[0].key_vault_id
   tls_certificate          = filebase64(var.tls_certificate_path)
   tls_certificate_password = var.tls_certificate_password
 
   # Wait for role assignments
-  depends_on = [module.vault]
+  depends_on = [module.vault[0]]
 }
 
 # Creates a public IP address and an Application Gateway for forwarding internet traffic to the GraphDB proxies/instances
@@ -142,8 +146,8 @@ module "application_gateway" {
   gateway_enable_private_access = var.gateway_enable_private_access
 
   # TLS
-  gateway_tls_certificate_identity_id = var.tls_manage_id != null ? var.tls_manage_id : module.tls.tls_identity_id
-  gateway_tls_certificate_secret_id   = var.tls_certificate != null ? var.tls_certificate : module.tls.tls_certificate_key_vault_secret_id
+  gateway_tls_certificate_secret_id   = var.tls_certificate_id != null ? var.tls_certificate_id : module.tls[0].tls_certificate_id
+  gateway_tls_certificate_identity_id = var.tls_certificate_id != null ? var.tls_certificate_identity_id : module.tls[0].tls_identity_id
 
   # Private Link
   gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
@@ -217,9 +221,6 @@ module "graphdb" {
 
   # Gateway
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
-
-  # Key Vault
-  key_vault_id = module.vault.key_vault_id
 
   # App Configuration
   app_configuration_id   = module.appconfig.app_configuration_id

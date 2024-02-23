@@ -221,6 +221,22 @@ gateway_enable_private_link_service = true
 See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
 for further information on configuring and using Application Gateway Private Link.
 
+**Providing TLS certificate**
+
+There are two options for setting up the Application Gateway with a TLS certificate.
+
+1. Provide local certificate file in PFX format with:
+    ```hcl
+    tls_certificate_path     = "path-to-your-tls-certificate"
+    tls_certificate_password = "tls-certificate-password"     # Optional
+    ```
+   Note: This will create a dedicated Key Vault for storing the certificate.
+2. Or provide a reference to an existing TLS certificate with:
+    ```hcl
+    tls_certificate_id          = "key-vault-certificate-secret-id"
+    tls_certificate_identity_id = "managed-identity-id"
+    ```
+
 <!---
 TODO Add more examples
 -->
