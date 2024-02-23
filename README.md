@@ -103,8 +103,10 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
+| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
+| tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
 | key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
 | key\_vault\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
