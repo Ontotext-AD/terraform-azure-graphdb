@@ -168,3 +168,14 @@ variable "gateway_pip_idle_timeout" {
   type        = number
   default     = 5
 }
+
+# Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+}

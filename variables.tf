@@ -70,6 +70,19 @@ variable "management_cidr_blocks" {
   type        = list(string)
 }
 
+# Application Gateway Global Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+  default     = false
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+  default     = false
+}
+
 # Inbound/Outbound network security rules
 # Note that these should be taken into considerations when gateway_enable_private_access=true
 

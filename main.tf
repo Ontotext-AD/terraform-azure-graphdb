@@ -154,6 +154,10 @@ module "application_gateway" {
   gateway_private_link_subnet_address_prefixes          = var.gateway_private_link_subnet_address_prefixes
   gateway_private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
 
+  # Global buffer settings
+  gateway_global_request_buffering_enabled  = var.gateway_global_request_buffering_enabled
+  gateway_global_response_buffering_enabled = var.gateway_global_response_buffering_enabled
+
   # Wait for role assignments
   depends_on = [module.tls]
 }
