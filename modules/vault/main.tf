@@ -23,7 +23,7 @@ resource "azurerm_key_vault" "graphdb" {
   sku_name                   = "standard"
   enable_rbac_authorization  = true
   purge_protection_enabled   = var.key_vault_enable_purge_protection
-  soft_delete_retention_days = var.key_vault_retention_days
+  soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
   network_acls {
     bypass                     = "AzureServices"

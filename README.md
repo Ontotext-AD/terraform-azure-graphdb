@@ -242,6 +242,26 @@ There are two options for setting up the Application Gateway with a TLS certific
     tls_certificate_identity_id = "managed-identity-id"
     ```
 
+**Purge Protection**
+
+Resources that support purge protection and soft delete have them enabled by default. 
+You can override the default configurations with the following variables:
+
+```hcl
+# Make sure the resource group delete lock is enabled for production
+lock_resources = true
+
+# Configure Key Vault purge protection in case of local TLS certificate usage
+key_vault_enable_purge_protection    = true
+key_vault_soft_delete_retention_days = 7 # From 7 to 90 days
+
+app_config_enable_purge_protection    = true
+app_config_soft_delete_retention_days = 7 # From 1 to 7 days
+
+storage_container_soft_delete_retention_policy = 7 # From 1 to 365 days
+storage_blob_soft_delete_retention_policy      = 7 # From 1 to 365 days
+```
+
 <!---
 TODO Add more examples
 -->

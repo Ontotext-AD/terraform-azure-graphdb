@@ -33,6 +33,19 @@ resource "azurerm_storage_account" "graphdb_backup" {
   shared_access_key_enabled         = false
   min_tls_version                   = "TLS1_2"
   infrastructure_encryption_enabled = true
+  allowed_copy_scope                = var.storage_account_allowed_copy_scope
+
+  blob_properties {
+    container_delete_retention_policy {
+      days = var.storage_container_soft_delete_retention_policy
+    }
+    delete_retention_policy {
+      days = var.storage_blob_soft_delete_retention_policy
+    }
+    last_access_time_enabled      = true
+    change_feed_enabled           = true
+    change_feed_retention_in_days = var.storage_blobs_max_days_since_creation
+  }
 
   network_rules {
     bypass                     = ["AzureServices"]
@@ -60,13 +73,13 @@ resource "azurerm_storage_management_policy" "graphdb_backup_retention" {
     }
     actions {
       base_blob {
-        delete_after_days_since_modification_greater_than = 31
+        delete_after_days_since_creation_greater_than = var.storage_blobs_max_days_since_creation
       }
       snapshot {
-        delete_after_days_since_creation_greater_than = 31
+        delete_after_days_since_creation_greater_than = var.storage_blobs_max_days_since_creation
       }
       version {
-        delete_after_days_since_creation = 31
+        delete_after_days_since_creation = var.storage_blobs_max_days_since_creation
       }
     }
   }
