@@ -68,13 +68,6 @@ variable "application_gateway_backend_address_pool_ids" {
   default     = []
 }
 
-# Key Vault
-
-variable "key_vault_id" {
-  description = "Identifier of a Key Vault for storing GraphDB configurations"
-  type        = string
-}
-
 # App Configuration
 
 variable "app_configuration_id" {

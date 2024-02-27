@@ -8,12 +8,6 @@ resource "azurerm_user_assigned_identity" "graphdb_vmss" {
   location            = var.location
 }
 
-resource "azurerm_role_assignment" "graphdb_vmss_key_vault_reader" {
-  principal_id         = azurerm_user_assigned_identity.graphdb_vmss.principal_id
-  scope                = var.key_vault_id
-  role_definition_name = "Key Vault Reader"
-}
-
 resource "azurerm_role_assignment" "graphdb_vmss_app_config_reader" {
   principal_id         = azurerm_user_assigned_identity.graphdb_vmss.principal_id
   scope                = var.app_configuration_id
