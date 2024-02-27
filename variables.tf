@@ -35,6 +35,12 @@ variable "lock_resources" {
 
 # Networking
 
+variable "graphdb_external_address_fqdn" {
+  description = "External FQDN address for the deployment"
+  type        = string
+  default     = null
+}
+
 variable "virtual_network_address_space" {
   description = "Virtual network address space CIDRs."
   type        = list(string)
@@ -410,3 +416,4 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
+

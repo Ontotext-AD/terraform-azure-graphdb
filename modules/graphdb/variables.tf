@@ -286,3 +286,11 @@ variable "scaleset_actions_recipients_email_list" {
   description = "List of emails which will be notified for any scaling changes in the VMSS"
   type        = list(string)
 }
+
+# Public IP configurations
+
+variable "nat_gateway_pip_idle_timeout" {
+  description = "Specifies the timeout for the TCP idle connection"
+  type        = number
+  default     = 5
+}

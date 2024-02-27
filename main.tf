@@ -227,7 +227,7 @@ module "graphdb" {
   app_configuration_name = module.appconfig.app_configuration_name
 
   # GraphDB Configurations
-  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
+  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
   graphdb_password              = var.graphdb_password
   graphdb_license_path          = var.graphdb_license_path
   graphdb_cluster_token         = var.graphdb_cluster_token

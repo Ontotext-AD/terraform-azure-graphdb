@@ -93,7 +93,7 @@ variable "gateway_backend_protocol" {
 }
 
 variable "gateway_backend_request_timeout" {
-  description = "Backend request timeout in minutes"
+  description = "Backend request timeout in seconds"
   type        = number
   default     = 86400 # 1 day
 }
@@ -159,4 +159,12 @@ variable "gateway_private_link_service_network_policies_enabled" {
   description = "Enable or disable private link service network policies"
   type        = string
   default     = false
+}
+
+# Public IP configurations
+
+variable "gateway_pip_idle_timeout" {
+  description = "Specifies the timeout for the TCP idle connection"
+  type        = number
+  default     = 5
 }
