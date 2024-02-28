@@ -76,7 +76,7 @@ module "vault" {
   key_vault_retention_days          = var.key_vault_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-  storage_account_id          = module.backup.storage_account_id
+  log_analytics_workspace_id  = module.monitoring[0].la_workspace_id
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -107,6 +107,8 @@ module "appconfig" {
   app_config_retention_days          = var.app_config_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
+
+  log_analytics_workspace_id = module.monitoring[0].la_workspace_id
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
