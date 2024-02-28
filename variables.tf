@@ -35,6 +35,12 @@ variable "lock_resources" {
 
 # Networking
 
+variable "graphdb_external_address_fqdn" {
+  description = "External FQDN address for the deployment"
+  type        = string
+  default     = null
+}
+
 variable "virtual_network_address_space" {
   description = "Virtual network address space CIDRs."
   type        = list(string)
@@ -62,6 +68,19 @@ variable "gateway_private_link_subnet_address_prefixes" {
 variable "management_cidr_blocks" {
   description = "CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault."
   type        = list(string)
+}
+
+# Application Gateway Global Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+  default     = false
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+  default     = false
 }
 
 # Inbound/Outbound network security rules
@@ -410,3 +429,4 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
+

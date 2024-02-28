@@ -40,15 +40,11 @@ resource "azurerm_role_assignment" "graphdb_key_vault_manager" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "key_vault_diagnostic_settings" {
-  name               = "Key Vault diagnostic settings"
-  target_resource_id = azurerm_key_vault.graphdb.id
-  storage_account_id = var.storage_account_id
+  name                       = "Key Vault diagnostic settings"
+  target_resource_id         = azurerm_key_vault.graphdb.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log {
     category = "AuditEvent"
-  }
-
-  metric {
-    category = "AllMetrics"
   }
 }

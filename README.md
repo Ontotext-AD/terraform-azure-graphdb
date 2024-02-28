@@ -91,11 +91,14 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
 | tags | Common resource tags. | `map(string)` | `{}` | no |
 | lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
+| graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null` | no |
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
 | gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
 | graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
 | gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
+| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `false` | no |
+| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `false` | no |
 | inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
 | inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
 | outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |

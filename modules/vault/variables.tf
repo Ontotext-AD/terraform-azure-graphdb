@@ -52,9 +52,9 @@ variable "admin_security_principle_id" {
   default     = null
 }
 
-# Storage account
+# Log Analytics Workspace
 
-variable "storage_account_id" {
-  description = "Storage account ID used for saving key vault diagnostics"
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics Workspace ID used for saving key vault diagnostics"
   type        = string
 }

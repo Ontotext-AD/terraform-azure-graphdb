@@ -76,7 +76,7 @@ module "vault" {
   key_vault_retention_days          = var.key_vault_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-  storage_account_id          = module.backup.storage_account_id
+  log_analytics_workspace_id  = module.monitoring[0].la_workspace_id
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -107,6 +107,8 @@ module "appconfig" {
   app_config_retention_days          = var.app_config_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
+
+  log_analytics_workspace_id = module.monitoring[0].la_workspace_id
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
@@ -153,6 +155,10 @@ module "application_gateway" {
   gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
   gateway_private_link_subnet_address_prefixes          = var.gateway_private_link_subnet_address_prefixes
   gateway_private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
+
+  # Global buffer settings
+  gateway_global_request_buffering_enabled  = var.gateway_global_request_buffering_enabled
+  gateway_global_response_buffering_enabled = var.gateway_global_response_buffering_enabled
 
   # Wait for role assignments
   depends_on = [module.tls]
@@ -227,7 +233,7 @@ module "graphdb" {
   app_configuration_name = module.appconfig.app_configuration_name
 
   # GraphDB Configurations
-  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
+  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
   graphdb_password              = var.graphdb_password
   graphdb_license_path          = var.graphdb_license_path
   graphdb_cluster_token         = var.graphdb_cluster_token

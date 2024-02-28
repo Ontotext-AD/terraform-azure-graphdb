@@ -37,3 +37,10 @@ variable "admin_security_principle_id" {
   type        = string
   default     = null
 }
+
+# Log Analytics Workspace
+
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics Workspace ID used for saving key vault diagnostics"
+  type        = string
+}
