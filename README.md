@@ -110,12 +110,12 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
 | tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
-| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| key\_vault\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
-| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| app\_config\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
+| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| key\_vault\_soft\_delete\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
+| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.0"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.1"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -128,7 +128,10 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
 | storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
+| storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
 | storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
+| storage\_container\_soft\_delete\_retention\_policy | Number of days for retaining the storage container from actual deletion | `number` | `31` | no |
+| storage\_blob\_soft\_delete\_retention\_policy | Number of days for retaining storage blobs from actual deletion | `number` | `31` | no |
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
