@@ -49,8 +49,34 @@ variable "storage_account_replication_type" {
   default     = "ZRS"
 }
 
+variable "storage_account_allowed_copy_scope" {
+  description = "Restricts copy operations to and from Storage Accounts"
+  type        = string
+  default     = "AAD"
+}
+
+# Lifecycle
+
+variable "storage_blobs_max_days_since_creation" {
+  description = "Specifies the retention period in days since creation before deleting storage blobs"
+  type        = number
+}
+
 variable "storage_account_retention_hot_to_cool" {
   description = "Specifies the retention period in days between moving data from hot to cool tier storage"
   type        = number
-  default     = 3
+}
+
+# Data protection
+
+variable "storage_container_soft_delete_retention_policy" {
+  description = "Number of days for retaining the storage container from actual deletion"
+  type        = number
+  default     = 7
+}
+
+variable "storage_blob_soft_delete_retention_policy" {
+  description = "Number of days for retaining storage blobs from actual deletion"
+  type        = number
+  default     = 7
 }

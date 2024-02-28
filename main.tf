@@ -31,7 +31,7 @@ resource "azurerm_management_lock" "graphdb_rg_lock" {
   name       = "${var.resource_name_prefix}-rg"
   scope      = azurerm_resource_group.graphdb.id
   lock_level = "CanNotDelete"
-  notes      = "Prevents deleting the resource group"
+  notes      = "Prevents from deleting the resource group"
 }
 
 resource "azurerm_virtual_network" "graphdb" {
@@ -72,8 +72,8 @@ module "vault" {
   nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
-  key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
-  key_vault_retention_days          = var.key_vault_retention_days
+  key_vault_enable_purge_protection    = var.key_vault_enable_purge_protection
+  key_vault_soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
   log_analytics_workspace_id  = module.monitoring[0].la_workspace_id
@@ -92,7 +92,11 @@ module "backup" {
 
   storage_account_tier                  = var.storage_account_tier
   storage_account_replication_type      = var.storage_account_replication_type
+  storage_blobs_max_days_since_creation = var.storage_blobs_max_days_since_creation
   storage_account_retention_hot_to_cool = var.storage_account_retention_hot_to_cool
+
+  storage_container_soft_delete_retention_policy = var.storage_container_soft_delete_retention_policy
+  storage_blob_soft_delete_retention_policy      = var.storage_blob_soft_delete_retention_policy
 }
 
 # Creates an App Configuration store for managing GraphDB specific configurations
@@ -103,8 +107,8 @@ module "appconfig" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  app_config_enable_purge_protection = var.app_config_enable_purge_protection
-  app_config_retention_days          = var.app_config_retention_days
+  app_config_enable_purge_protection    = var.app_config_enable_purge_protection
+  app_config_soft_delete_retention_days = var.app_config_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
 
