@@ -85,4 +85,12 @@ data "cloudinit_config" "entrypoint" {
       app_config_name : var.app_configuration_name
     })
   }
+
+  # 08 Cluster rejoin
+  part {
+    content_type = "text/x-shellscript"
+    content = templatefile("${path.module}/templates/08_cluster_rejoin.sh.tpl", {
+      app_config_name : var.app_configuration_name
+    })
+  }
 }
