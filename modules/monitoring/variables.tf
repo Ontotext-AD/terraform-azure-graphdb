@@ -120,12 +120,6 @@ variable "ag_notifications_email_list" {
   type        = list(string)
 }
 
-variable "ag_arm_role_receiver_role_id" {
-  description = "Principal(Object) ID of the role which will receive e-mails. Defaults to the owner built-in role"
-  type        = string
-  default     = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
-}
-
 variable "enable_alerts" {
   description = "Should the alerts be enabled"
   type        = bool
