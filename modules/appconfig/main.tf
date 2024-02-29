@@ -26,6 +26,8 @@ resource "azurerm_app_configuration" "graphdb" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "application_config_diagnostic_settings" {
+  count = var.log_analytics_workspace_id != null ? 1 : 0
+
   name                       = "Application Config diagnostic settings"
   target_resource_id         = azurerm_app_configuration.graphdb.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
