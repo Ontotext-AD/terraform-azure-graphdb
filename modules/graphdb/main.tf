@@ -102,27 +102,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     username   = "graphdb"
   }
 
-  # Wait for dependent resources (until we add retry mechanism in the user data script)
   depends_on = [
-    # DNS
-    azurerm_private_dns_zone.graphdb,
-    azurerm_private_dns_zone_virtual_network_link.graphdb,
-    # NAT
-    azurerm_nat_gateway.graphdb,
-    azurerm_nat_gateway_public_ip_association.graphdb_nat_gateway,
-    azurerm_subnet_nat_gateway_association.graphdb_nat_gateway,
-    # Disks
-    azurerm_managed_disk.managed_disks,
-    # NSG
-    azurerm_network_security_group.graphdb_vmss,
-    azurerm_subnet_network_security_group_association.graphdb_vmss,
-    # TODO: wait for internal and outbound rules?
-    # Configurations
-    azurerm_app_configuration_key.graphdb_cluster_token,
-    azurerm_app_configuration_key.graphdb_java_options,
-    azurerm_app_configuration_key.graphdb_license,
-    azurerm_app_configuration_key.graphdb_password,
-    azurerm_app_configuration_key.graphdb_properties
+    azurerm_managed_disk.managed_disks
   ]
 }
 
