@@ -74,13 +74,13 @@ variable "management_cidr_blocks" {
 variable "gateway_global_request_buffering_enabled" {
   description = "Whether Application Gateway's Request buffer is enabled."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "gateway_global_response_buffering_enabled" {
   description = "Whether Application Gateway's Response buffer is enabled."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Inbound/Outbound network security rules
