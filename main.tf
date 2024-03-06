@@ -31,7 +31,7 @@ resource "azurerm_management_lock" "graphdb_rg_lock" {
   name       = "${var.resource_name_prefix}-rg"
   scope      = azurerm_resource_group.graphdb.id
   lock_level = "CanNotDelete"
-  notes      = "Prevents deleting the resource group"
+  notes      = "Prevents from deleting the resource group"
 }
 
 resource "azurerm_virtual_network" "graphdb" {
@@ -59,8 +59,10 @@ resource "azurerm_subnet" "graphdb_vmss" {
 
 # SUB MODULES ------------------------------------------------------------
 
-# Creates Key Vault for secure storage of GraphDB configurations and secrets
+# Creates Key Vault for storing a provided TLS certificate file
 module "vault" {
+  count = var.tls_certificate_id == null ? 1 : 0
+
   source = "./modules/vault"
 
   resource_name_prefix = var.resource_name_prefix
@@ -70,11 +72,11 @@ module "vault" {
   nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id]
   nacl_ip_rules   = var.management_cidr_blocks
 
-  key_vault_enable_purge_protection = var.key_vault_enable_purge_protection
-  key_vault_retention_days          = var.key_vault_retention_days
+  key_vault_enable_purge_protection    = var.key_vault_enable_purge_protection
+  key_vault_soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-  storage_account_id          = module.backup.storage_account_id
+  log_analytics_workspace_id  = module.monitoring[0].la_workspace_id
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -90,7 +92,11 @@ module "backup" {
 
   storage_account_tier                  = var.storage_account_tier
   storage_account_replication_type      = var.storage_account_replication_type
+  storage_blobs_max_days_since_creation = var.storage_blobs_max_days_since_creation
   storage_account_retention_hot_to_cool = var.storage_account_retention_hot_to_cool
+
+  storage_container_soft_delete_retention_policy = var.storage_container_soft_delete_retention_policy
+  storage_blob_soft_delete_retention_policy      = var.storage_blob_soft_delete_retention_policy
 }
 
 # Creates an App Configuration store for managing GraphDB specific configurations
@@ -101,26 +107,30 @@ module "appconfig" {
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  app_config_enable_purge_protection = var.app_config_enable_purge_protection
-  app_config_retention_days          = var.app_config_retention_days
+  app_config_enable_purge_protection    = var.app_config_enable_purge_protection
+  app_config_soft_delete_retention_days = var.app_config_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
+
+  log_analytics_workspace_id = module.monitoring[0].la_workspace_id
 }
 
-# Creates a TLS certificate secret in the Key Vault and related identity
+# Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
 module "tls" {
+  count = var.tls_certificate_id == null ? 1 : 0
+
   source = "./modules/tls"
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
   resource_group_name  = azurerm_resource_group.graphdb.name
 
-  key_vault_id             = module.vault.key_vault_id
+  key_vault_id             = module.vault[0].key_vault_id
   tls_certificate          = filebase64(var.tls_certificate_path)
   tls_certificate_password = var.tls_certificate_password
 
   # Wait for role assignments
-  depends_on = [module.vault]
+  depends_on = [module.vault[0]]
 }
 
 # Creates a public IP address and an Application Gateway for forwarding internet traffic to the GraphDB proxies/instances
@@ -142,13 +152,22 @@ module "application_gateway" {
   gateway_enable_private_access = var.gateway_enable_private_access
 
   # TLS
+<<<<<<< HEAD
   gateway_tls_certificate_identity_id = var.tls_manage_id != null ? var.tls_manage_id : module.tls.tls_identity_id
   gateway_tls_certificate_secret_id   = var.tls_certificate != null ? var.tls_certificate : module.tls.tls_certificate_key_vault_secret_id
+=======
+  gateway_tls_certificate_secret_id   = var.tls_certificate_id != null ? var.tls_certificate_id : module.tls[0].tls_certificate_id
+  gateway_tls_certificate_identity_id = var.tls_certificate_id != null ? var.tls_certificate_identity_id : module.tls[0].tls_identity_id
+>>>>>>> a5909aaae4b39df58dd7a317bf50d9dbd232a291
 
   # Private Link
   gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
   gateway_private_link_subnet_address_prefixes          = var.gateway_private_link_subnet_address_prefixes
   gateway_private_link_service_network_policies_enabled = var.gateway_private_link_service_network_policies_enabled
+
+  # Global buffer settings
+  gateway_global_request_buffering_enabled  = var.gateway_global_request_buffering_enabled
+  gateway_global_response_buffering_enabled = var.gateway_global_response_buffering_enabled
 
   # Wait for role assignments
   depends_on = [module.tls]
@@ -218,15 +237,12 @@ module "graphdb" {
   # Gateway
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
 
-  # Key Vault
-  key_vault_id = module.vault.key_vault_id
-
   # App Configuration
   app_configuration_id   = module.appconfig.app_configuration_id
   app_configuration_name = module.appconfig.app_configuration_name
 
   # GraphDB Configurations
-  graphdb_external_address_fqdn = module.application_gateway.public_ip_address_fqdn
+  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
   graphdb_password              = var.graphdb_password
   graphdb_license_path          = var.graphdb_license_path
   graphdb_cluster_token         = var.graphdb_cluster_token

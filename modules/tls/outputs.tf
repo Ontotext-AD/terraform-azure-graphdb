@@ -1,4 +1,4 @@
-output "tls_certificate_key_vault_secret_id" {
+output "tls_certificate_id" {
   description = "Secret identifier of the TLS certificate in the Key Vault"
   value       = azurerm_key_vault_certificate.graphdb_tls_certificate.secret_id
 }

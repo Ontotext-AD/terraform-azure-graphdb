@@ -16,4 +16,6 @@ resource "azurerm_public_ip" "graphdb_public_ip_address" {
   allocation_method = "Static"
   zones             = var.zones
   domain_name_label = "${var.resource_name_prefix}-${random_string.ip_domain_name_suffix.result}"
+
+  idle_timeout_in_minutes = var.gateway_pip_idle_timeout
 }

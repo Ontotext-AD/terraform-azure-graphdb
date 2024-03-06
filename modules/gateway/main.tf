@@ -32,6 +32,11 @@ resource "azurerm_application_gateway" "graphdb-public" {
     max_capacity = var.gateway_max_capacity
   }
 
+  global {
+    request_buffering_enabled  = var.gateway_global_request_buffering_enabled
+    response_buffering_enabled = var.gateway_global_response_buffering_enabled
+  }
+
   enable_http2 = true
 
   sku {
@@ -160,6 +165,11 @@ resource "azurerm_application_gateway" "graphdb-private" {
   name                = "agw-${var.resource_name_prefix}-private"
   resource_group_name = var.resource_group_name
   location            = var.location
+
+  global {
+    request_buffering_enabled  = var.gateway_global_request_buffering_enabled
+    response_buffering_enabled = var.gateway_global_response_buffering_enabled
+  }
 
   dynamic "private_link_configuration" {
     for_each = var.gateway_enable_private_link_service ? [1] : []

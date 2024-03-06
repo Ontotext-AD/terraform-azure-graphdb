@@ -31,14 +31,12 @@ variable "nacl_ip_rules" {
 
 # Key Vault
 
-# Enable only for production
 variable "key_vault_enable_purge_protection" {
   description = "Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed."
   type        = bool
-  default     = false
 }
 
-variable "key_vault_retention_days" {
+variable "key_vault_soft_delete_retention_days" {
   description = "Retention period in days during which soft deleted secrets are kept"
   type        = number
   default     = 7
@@ -49,12 +47,11 @@ variable "key_vault_retention_days" {
 variable "admin_security_principle_id" {
   description = "UUID of a user or service principle that will become Key Vault administrator"
   type        = string
-  default     = null
 }
 
-# Storage account
+# Log Analytics Workspace
 
-variable "storage_account_id" {
-  description = "Storage account ID used for saving key vault diagnostics"
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics Workspace ID used for saving key vault diagnostics"
   type        = string
 }

@@ -15,6 +15,8 @@ resource "azurerm_public_ip" "graphdb_nat_gateway" {
   sku               = "Standard"
   allocation_method = "Static"
   zones             = [local.nat_zone]
+
+  idle_timeout_in_minutes = var.nat_gateway_pip_idle_timeout
 }
 
 resource "azurerm_nat_gateway" "graphdb" {

@@ -22,7 +22,17 @@ resource "azurerm_app_configuration" "graphdb" {
   public_network_access      = "Enabled"
   local_auth_enabled         = false
   purge_protection_enabled   = var.app_config_enable_purge_protection
-  soft_delete_retention_days = var.app_config_retention_days
+  soft_delete_retention_days = var.app_config_soft_delete_retention_days
+}
+
+resource "azurerm_monitor_diagnostic_setting" "application_config_diagnostic_settings" {
+  name                       = "Application Config diagnostic settings"
+  target_resource_id         = azurerm_app_configuration.graphdb.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category = "Audit"
+  }
 }
 
 resource "azurerm_role_assignment" "app_config_data_owner" {

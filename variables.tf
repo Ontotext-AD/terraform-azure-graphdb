@@ -35,6 +35,12 @@ variable "lock_resources" {
 
 # Networking
 
+variable "graphdb_external_address_fqdn" {
+  description = "External FQDN address for the deployment"
+  type        = string
+  default     = null
+}
+
 variable "virtual_network_address_space" {
   description = "Virtual network address space CIDRs."
   type        = list(string)
@@ -62,6 +68,19 @@ variable "gateway_private_link_subnet_address_prefixes" {
 variable "management_cidr_blocks" {
   description = "CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault."
   type        = list(string)
+}
+
+# Application Gateway Global Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+  default     = true
 }
 
 # Inbound/Outbound network security rules
@@ -115,6 +134,7 @@ variable "gateway_private_link_service_network_policies_enabled" {
 variable "tls_certificate_path" {
   description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB."
   type        = string
+  default     = null
 }
 
 variable "tls_certificate_password" {
@@ -123,6 +143,7 @@ variable "tls_certificate_password" {
   default     = null
 }
 
+<<<<<<< HEAD
 variable "tls_certificate" {
   description = "TLS Certificate Secret Identifier."
   type        = string
@@ -130,44 +151,52 @@ variable "tls_certificate" {
 
 variable "tls_manage_id" {
   description = "ID for managing TLS. If provided it will use this isntead of the one created by the Terraform Script."
+=======
+variable "tls_certificate_id" {
+  description = "Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls_certificate_path"
+  type        = string
+  default     = null
+}
+
+variable "tls_certificate_identity_id" {
+  description = "Identifier of a managed identity giving access to the TLS certificate specified with tls_certificate_id"
+>>>>>>> a5909aaae4b39df58dd7a317bf50d9dbd232a291
   type        = string
   default     = null
 }
 
 # Key Vault
 
-# Enable only for production
 variable "key_vault_enable_purge_protection" {
   description = "Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed."
   type        = bool
-  default     = false
+  default     = true
 }
 
-variable "key_vault_retention_days" {
+variable "key_vault_soft_delete_retention_days" {
   description = "Retention period in days during which soft deleted secrets are kept"
   type        = number
   default     = 30
   validation {
-    condition     = var.key_vault_retention_days >= 7 && var.key_vault_retention_days <= 90
+    condition     = var.key_vault_soft_delete_retention_days >= 7 && var.key_vault_soft_delete_retention_days <= 90
     error_message = "Key Vault soft delete retention days must be between 7 and 90 (inclusive)"
   }
 }
 
 # App Configuration
 
-# Enable only for production
 variable "app_config_enable_purge_protection" {
   description = "Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed."
   type        = bool
-  default     = false
+  default     = true
 }
 
-variable "app_config_retention_days" {
+variable "app_config_soft_delete_retention_days" {
   description = "Retention period in days during which soft deleted keys are kept"
   type        = number
   default     = 7
   validation {
-    condition     = var.app_config_retention_days >= 1 && var.app_config_retention_days <= 7
+    condition     = var.app_config_soft_delete_retention_days >= 1 && var.app_config_soft_delete_retention_days <= 7
     error_message = "App Configuration soft delete retention days must be between 1 and 7 (inclusive)"
   }
 }
@@ -185,7 +214,7 @@ variable "admin_security_principle_id" {
 variable "graphdb_version" {
   description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.6.0"
+  default     = "10.6.1"
 }
 
 variable "graphdb_sku" {
@@ -252,7 +281,7 @@ variable "ssh_key" {
   default     = null
 }
 
-# Storage account
+# Storage account, primarily used for GraphDB backups
 
 variable "storage_account_tier" {
   description = "Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating"
@@ -266,10 +295,36 @@ variable "storage_account_replication_type" {
   default     = "ZRS"
 }
 
+variable "storage_blobs_max_days_since_creation" {
+  description = "Specifies the retention period in days since creation before deleting storage blobs"
+  type        = number
+  default     = 31
+}
+
 variable "storage_account_retention_hot_to_cool" {
   description = "Specifies the retention period in days between moving data from hot to cool tier storage"
   type        = number
   default     = 3
+}
+
+variable "storage_container_soft_delete_retention_policy" {
+  description = "Number of days for retaining the storage container from actual deletion"
+  type        = number
+  default     = 31
+  validation {
+    condition     = var.storage_container_soft_delete_retention_policy >= 1 && var.storage_container_soft_delete_retention_policy <= 365
+    error_message = "Storage container soft delete retention days must be between 1 and 365 (inclusive)"
+  }
+}
+
+variable "storage_blob_soft_delete_retention_policy" {
+  description = "Number of days for retaining storage blobs from actual deletion"
+  type        = number
+  default     = 31
+  validation {
+    condition     = var.storage_blob_soft_delete_retention_policy >= 1 && var.storage_blob_soft_delete_retention_policy <= 365
+    error_message = "Storage blobs soft delete retention days must be between 1 and 365 (inclusive)"
+  }
 }
 
 # Backup configurations
@@ -303,7 +358,6 @@ variable "deploy_monitoring" {
 }
 
 # Managed disks
-
 
 variable "disk_size_gb" {
   description = "Size of the managed data disk which will be created"
@@ -408,3 +462,4 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
+

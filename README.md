@@ -91,11 +91,14 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
 | tags | Common resource tags. | `map(string)` | `{}` | no |
 | lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
+| graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null` | no |
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
 | gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
 | graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
 | gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
+| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
+| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
 | inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
 | outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |
@@ -103,14 +106,16 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
-| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| key\_vault\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
-| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `false` | no |
-| app\_config\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
+| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
+| tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
+| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| key\_vault\_soft\_delete\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
+| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.0"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.1"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -123,7 +128,10 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
 | storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
+| storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
 | storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
+| storage\_container\_soft\_delete\_retention\_policy | Number of days for retaining the storage container from actual deletion | `number` | `31` | no |
+| storage\_blob\_soft\_delete\_retention\_policy | Number of days for retaining storage blobs from actual deletion | `number` | `31` | no |
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
@@ -220,6 +228,42 @@ gateway_enable_private_link_service = true
 
 See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
 for further information on configuring and using Application Gateway Private Link.
+
+**Providing TLS certificate**
+
+There are two options for setting up the Application Gateway with a TLS certificate.
+
+1. Provide local certificate file in PFX format with:
+    ```hcl
+    tls_certificate_path     = "path-to-your-tls-certificate"
+    tls_certificate_password = "tls-certificate-password"     # Optional
+    ```
+   Note: This will create a dedicated Key Vault for storing the certificate.
+2. Or provide a reference to an existing TLS certificate with:
+    ```hcl
+    tls_certificate_id          = "key-vault-certificate-secret-id"
+    tls_certificate_identity_id = "managed-identity-id"
+    ```
+
+**Purge Protection**
+
+Resources that support purge protection and soft delete have them enabled by default. 
+You can override the default configurations with the following variables:
+
+```hcl
+# Make sure the resource group delete lock is enabled for production
+lock_resources = true
+
+# Configure Key Vault purge protection in case of local TLS certificate usage
+key_vault_enable_purge_protection    = true
+key_vault_soft_delete_retention_days = 7 # From 7 to 90 days
+
+app_config_enable_purge_protection    = true
+app_config_soft_delete_retention_days = 7 # From 1 to 7 days
+
+storage_container_soft_delete_retention_policy = 7 # From 1 to 365 days
+storage_blob_soft_delete_retention_policy      = 7 # From 1 to 365 days
+```
 
 <!---
 TODO Add more examples
