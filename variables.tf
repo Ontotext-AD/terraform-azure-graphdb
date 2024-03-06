@@ -445,6 +445,7 @@ variable "web_test_geo_locations" {
 variable "monitor_reader_principal_id" {
   description = "Principal(Object) ID of a user/group which would receive notifications from alerts."
   type        = string
+  default     = null
 }
 
 variable "notification_recipients_email_list" {
