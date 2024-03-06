@@ -17,6 +17,20 @@ data "cloudinit_config" "entrypoint" {
       EOF
   }
 
+  # 00 Wait for dependent resources
+  part {
+    content_type = "text/x-shellscript"
+    content = templatefile("${path.module}/templates/00_wait_resources.sh.tpl", {
+      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+      private_dns_zone_id : azurerm_private_dns_zone.graphdb.id
+      private_dns_zone_link_name : azurerm_private_dns_zone_virtual_network_link.graphdb.name
+      private_dns_zone_link_id : azurerm_private_dns_zone_virtual_network_link.graphdb.id
+      app_configuration_name : var.app_configuration_name
+      app_configuration_id : var.app_configuration_id
+      storage_account_name : var.backup_storage_account_name
+    })
+  }
+
   # 01 Disk setup
   part {
     content_type = "text/x-shellscript"
@@ -34,7 +48,9 @@ data "cloudinit_config" "entrypoint" {
   # 02 DNS setup
   part {
     content_type = "text/x-shellscript"
-    content      = templatefile("${path.module}/templates/02_dns_provisioning.sh.tpl", {})
+    content = templatefile("${path.module}/templates/02_dns_provisioning.sh.tpl", {
+      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+    })
   }
 
   # 03 GDB config overrides
@@ -42,7 +58,14 @@ data "cloudinit_config" "entrypoint" {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/03_gdb_conf_overrides.sh.tpl", {
       graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
+      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+      # App configurations
       app_config_name : var.app_configuration_name
+      graphdb_license_secret_name : var.graphdb_license_secret_name
+      graphdb_cluster_token_name : var.graphdb_cluster_token_name
+      graphdb_password_secret_name : var.graphdb_password_secret_name
+      graphdb_properties_secret_name : var.graphdb_properties_secret_name
+      graphdb_java_options_secret_name : var.graphdb_java_options_secret_name
     })
   }
 
@@ -82,7 +105,8 @@ data "cloudinit_config" "entrypoint" {
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/templates/07_cluster_setup.sh.tpl", {
-      app_config_name : var.app_configuration_name
+      app_config_name : var.app_configuration_name,
+      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
     })
   }
 

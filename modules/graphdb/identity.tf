@@ -8,9 +8,10 @@ resource "azurerm_user_assigned_identity" "graphdb_vmss" {
   location            = var.location
 }
 
-resource "azurerm_role_assignment" "graphdb_vmss_app_config_reader" {
+# Required by the 00_wait_resources.sh.tpl template
+resource "azurerm_role_assignment" "graphdb_rg_reader" {
   principal_id         = azurerm_user_assigned_identity.graphdb_vmss.principal_id
-  scope                = var.app_configuration_id
+  scope                = var.resource_group_id
   role_definition_name = "Reader"
 }
 

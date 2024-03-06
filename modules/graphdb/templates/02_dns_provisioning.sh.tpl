@@ -23,17 +23,7 @@ RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/insta
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
 VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
-
-for i in $(seq 1 6); do
-  # Waits for DNS zone to be created and role assigned
-  DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
-  if [ -z "$${DNS_ZONE_NAME:-}" ]; then
-    echo 'Zone not available yet'
-    sleep 10
-  else
-    break
-  fi
-done
+DNS_ZONE_NAME=${private_dns_zone_name}
 
 # Get all FQDN records from the private DNS zone containing "node"
 readarray -t ALL_FQDN_RECORDS <<< "$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv)"
@@ -99,4 +89,3 @@ for i in "$${!SORTED_INSTANCE_IDS[@]}"; do
 
   break
 done
-
