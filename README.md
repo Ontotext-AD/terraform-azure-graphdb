@@ -151,7 +151,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true` | no |
 | web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false` | no |
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
-| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | n/a | yes |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null` | no |
 | notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
 <!-- END_TF_DOCS -->
 
