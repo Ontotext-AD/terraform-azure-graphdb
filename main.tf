@@ -76,8 +76,6 @@ module "vault" {
   key_vault_soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-
-  log_analytics_workspace_id = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -112,8 +110,6 @@ module "appconfig" {
   app_config_soft_delete_retention_days = var.app_config_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-
-  log_analytics_workspace_id = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
@@ -210,6 +206,10 @@ module "monitoring" {
   la_workspace_retention_in_days = var.la_workspace_retention_in_days
 
   ag_notifications_email_list = var.notification_recipients_email_list
+
+  # Diagnostic settings
+  app_configuration_id = module.appconfig.app_configuration_id
+  kv_id                = module.vault[0].key_vault_id
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies

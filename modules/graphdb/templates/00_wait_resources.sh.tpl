@@ -3,7 +3,7 @@
 # This scripts wait for resources on which the VM relies to exists and with access to
 # Because Terraform creates resources in parallel, the VM could try to access a resources that is still being created in Azure in the background
 
-set -o errexit
+# Do not set "set -o errexit" as the az cli throws an error if the resource does not exits, which breaks the retry.
 set -o nounset
 set -o pipefail
 
@@ -20,6 +20,30 @@ PRIVATE_DNS_ZONE_LINK_ID="${private_dns_zone_link_id}"
 APP_CONFIGURATION_NAME="${app_configuration_name}"
 APP_CONFIGURATION_ID="${app_configuration_id}"
 STORAGE_ACCOUNT_NAME=${storage_account_name}
+
+waitForAppConfigKey() {
+    local config_key="$1"
+
+    local start_time=$(date +%s)
+    while true; do
+        local current_time=$(date +%s)
+        local elapsed_time=$((current_time - start_time))
+
+        # Check if the configuration exists
+        az appconfig kv show --name "$APP_CONFIGURATION_NAME" --auth-mode login --key "$config_key"  &>/dev/null
+        exit_code=$?
+        if [ $exit_code -eq 0 ]; then
+            echo "Configuration '$config_key' in App Configuration '$APP_CONFIGURATION_NAME' is available."
+            return 0  # Success
+        elif [ "$elapsed_time" -ge "$MAX_TIMEOUT" ]; then
+            echo "Timeout reached. Configuration did not become available in time."
+            return 1  # Timeout
+        else
+            echo "Configuration is still being created. Waiting for $POLL_INTERVAL seconds..."
+            sleep "$POLL_INTERVAL"
+        fi
+    done
+}
 
 echo "Waiting for Private DNS zone: $PRIVATE_DNS_ZONE_NAME"
 time az resource wait \
@@ -60,6 +84,11 @@ time az resource wait \
    --created \
    --interval $POLL_INTERVAL \
    --timeout $MAX_TIMEOUT
+
+# Waits for specific keys in Application Config
+waitForAppConfigKey "graphdb-cluster-token"
+waitForAppConfigKey "graphdb-password"
+waitForAppConfigKey "graphdb-license"
 
 echo "#########################################################"
 echo "# Finished waiting for dependent resources and services #"

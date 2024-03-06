@@ -137,3 +137,14 @@ variable "al_low_memory_warning_threshold" {
   type        = number
   default     = 90
 }
+
+variable "app_configuration_id" {
+  description = "ID of the Application Config resource, required for diagnostic settings"
+  type        = string
+}
+
+variable "kv_id" {
+  description = "ID of the Key Vault resource, required for diagnostic settings"
+  type        = string
+}
+

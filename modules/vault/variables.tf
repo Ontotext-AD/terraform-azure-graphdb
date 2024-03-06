@@ -48,11 +48,3 @@ variable "admin_security_principle_id" {
   description = "UUID of a user or service principle that will become Key Vault administrator"
   type        = string
 }
-
-# Log Analytics Workspace
-
-variable "log_analytics_workspace_id" {
-  description = "Log Analytics Workspace ID used for saving key vault diagnostics"
-  type        = string
-  default     = null
-}
