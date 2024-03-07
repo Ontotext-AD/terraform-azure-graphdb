@@ -19,16 +19,16 @@ echo "#######################################"
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 DNS_ZONE_NAME=${private_dns_zone_name}
 RECORD_NAME=$(cat /tmp/node_name)
-APP_CONFIG_NAME=${app_config_name}
+APP_CONFIG_ENDPOINT=${app_configuration_endpoint}
 
 echo "Getting secrets"
-secrets=$(az appconfig kv list --name "$APP_CONFIG_NAME" --auth-mode login | jq .[].key)
+secrets=$(az appconfig kv list --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login | jq .[].key)
 
 echo "Getting GraphDB license"
-az appconfig kv show --name "$APP_CONFIG_NAME" --auth-mode login --key ${graphdb_license_secret_name} | jq -r .value | base64 -d > /etc/graphdb/graphdb.license
+az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_license_secret_name} | jq -r .value | base64 -d > /etc/graphdb/graphdb.license
 
 echo "Getting the cluster token"
-graphdb_cluster_token=$(az appconfig kv show --name "$APP_CONFIG_NAME" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
+graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
 
 echo "Getting the full DNS record for current instance"
 NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
@@ -70,13 +70,13 @@ EOF
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"${graphdb_properties_secret_name}"* ]]; then
   echo "Using graphdb.properties overrides"
-  az appconfig kv show --name "$APP_CONFIG_NAME" --auth-mode login --key ${graphdb_properties_secret_name} | jq -r .value | base64 -d >> /etc/graphdb/graphdb.properties
+  az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_properties_secret_name} | jq -r .value | base64 -d >> /etc/graphdb/graphdb.properties
 fi
 
 # Appends environment overrides to GDB_JAVA_OPTS
 if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   echo "Using GDB_JAVA_OPTS overrides"
-  extra_graphdb_java_options=$(az appconfig kv show --name "$APP_CONFIG_NAME" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
+  extra_graphdb_java_options=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
   (
     source /etc/graphdb/graphdb.env
     echo "GDB_JAVA_OPTS=$GDB_JAVA_OPTS $extra_graphdb_java_options" >> /etc/graphdb/graphdb.env

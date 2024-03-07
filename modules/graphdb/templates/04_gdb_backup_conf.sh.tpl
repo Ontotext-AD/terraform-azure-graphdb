@@ -18,7 +18,7 @@ cat <<EOF > /usr/bin/run_backup.sh
 az login --identity
 
 # Extract GraphDB password from Azure App Configuration
-graphdb_password="\$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+graphdb_password="\$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 
 /usr/bin/graphdb_backup admin \$${graphdb_password} ${backup_storage_account_name} ${backup_storage_container_name}
 

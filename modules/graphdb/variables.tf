@@ -80,6 +80,11 @@ variable "app_configuration_name" {
   type        = string
 }
 
+variable "app_configuration_endpoint" {
+  description = "Endpoint of the App Configuration store for GraphDB"
+  type        = string
+}
+
 # Backups storage
 
 variable "backup_storage_account_name" {
