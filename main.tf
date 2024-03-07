@@ -234,8 +234,9 @@ module "graphdb" {
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
 
   # App Configuration
-  app_configuration_id   = module.appconfig.app_configuration_id
-  app_configuration_name = module.appconfig.app_configuration_name
+  app_configuration_id       = module.appconfig.app_configuration_id
+  app_configuration_name     = module.appconfig.app_configuration_name
+  app_configuration_endpoint = module.appconfig.app_configuration_endpoint
 
   # GraphDB Configurations
   graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn

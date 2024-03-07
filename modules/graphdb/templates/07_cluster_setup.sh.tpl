@@ -20,8 +20,8 @@ echo "###########################"
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 DNS_ZONE_NAME=${private_dns_zone_name}
-GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
-GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
 LOWEST_INSTANCE_ID=$(cat /tmp/lowest_id)
 RECORD_NAME=$(cat /tmp/node_name)
 
@@ -34,7 +34,7 @@ if [ ! -e "/var/opt/graphdb/password_creation_time" ]; then
 else
   # Gets the previous password
   PASSWORD_CREATION_DATE=$(cat /var/opt/graphdb/password_creation_time)
-  GRAPHDB_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password --datetime $PASSWORD_CREATION_DATE | jq -r .value | base64 -d)"
+  GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password --datetime $PASSWORD_CREATION_DATE | jq -r .value | base64 -d)"
 fi
 
 MAX_RETRIES=3
@@ -226,7 +226,7 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWE
     )
     if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
       echo "Updated GraphDB password successfully"
-      GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+      GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
       echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
     else
       echo "Failed updating GraphDB password. Please check the logs!"

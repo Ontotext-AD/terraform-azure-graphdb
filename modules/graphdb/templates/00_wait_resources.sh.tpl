@@ -17,7 +17,7 @@ PRIVATE_DNS_ZONE_NAME="${private_dns_zone_name}"
 PRIVATE_DNS_ZONE_ID="${private_dns_zone_id}"
 PRIVATE_DNS_ZONE_LINK_NAME="${private_dns_zone_link_name}"
 PRIVATE_DNS_ZONE_LINK_ID="${private_dns_zone_link_id}"
-APP_CONFIGURATION_NAME="${app_configuration_name}"
+APP_CONFIGURATION_ENDPOINT="${app_configuration_endpoint}"
 APP_CONFIGURATION_ID="${app_configuration_id}"
 STORAGE_ACCOUNT_NAME=${storage_account_name}
 
@@ -30,10 +30,10 @@ waitForAppConfigKey() {
         local elapsed_time=$((current_time - start_time))
 
         # Check if the configuration exists
-        az appconfig kv show --name "$APP_CONFIGURATION_NAME" --auth-mode login --key "$config_key"  &>/dev/null
+        az appconfig kv show --endpoint "$APP_CONFIGURATION_ENDPOINT" --auth-mode login --key "$config_key"  &>/dev/null
         exit_code=$?
         if [ $exit_code -eq 0 ]; then
-            echo "Configuration '$config_key' in App Configuration '$APP_CONFIGURATION_NAME' is available."
+            echo "Configuration '$config_key' in App Configuration '$APP_CONFIGURATION_ENDPOINT' is available."
             return 0  # Success
         elif [ "$elapsed_time" -ge "$MAX_TIMEOUT" ]; then
             echo "Timeout reached. Configuration did not become available in time."
@@ -65,7 +65,7 @@ time az resource wait \
    --interval $POLL_INTERVAL \
    --timeout $MAX_TIMEOUT
 
-echo "Waiting for App Configuration: $APP_CONFIGURATION_NAME"
+echo "Waiting for App Configuration: $APP_CONFIGURATION_ENDPOINT"
 time az resource wait \
    --resource-group "$RESOURCE_GROUP" \
    --ids "$APP_CONFIGURATION_ID" \

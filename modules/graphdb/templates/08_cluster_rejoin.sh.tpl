@@ -9,7 +9,7 @@ set -euo pipefail
 
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
-GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --name ${app_config_name} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 CURRENT_NODE_NAME=$(cat /tmp/node_name)
 RAFT_DIR="/var/opt/graphdb/node/data/raft"
 NODES=("node-1" "node-2" "node-3")
