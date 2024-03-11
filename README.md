@@ -111,12 +111,12 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
 | gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
-| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
-| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
 | inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
 | outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |
 | outbound\_allowed\_address\_prefixes | Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
+| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
+| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
@@ -129,7 +129,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.1"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.2"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
