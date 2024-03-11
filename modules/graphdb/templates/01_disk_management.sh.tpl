@@ -135,7 +135,7 @@ disk_attach_create() {
   fi
 
   # Gets device name based on LUN 2
-  graphdb_device=$(lsscsi --scsi --size | awk '/\[1:.*:0:2\]/ {print $7}')
+  graphdb_device=$(lsscsi --scsi --size | grep -v 'cd/dvd' | awk '/\[*:.*:0:2\]/ {print $7}')
 }
 
 disk_attach_create 0
