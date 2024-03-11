@@ -235,7 +235,6 @@ module "graphdb" {
 
   # App Configuration
   app_configuration_id       = module.appconfig.app_configuration_id
-  app_configuration_name     = module.appconfig.app_configuration_name
   app_configuration_endpoint = module.appconfig.app_configuration_endpoint
 
   # GraphDB Configurations

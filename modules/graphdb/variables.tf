@@ -75,11 +75,6 @@ variable "app_configuration_id" {
   type        = string
 }
 
-variable "app_configuration_name" {
-  description = "Name of the App Configuration store for GraphDB"
-  type        = string
-}
-
 variable "app_configuration_endpoint" {
   description = "Endpoint of the App Configuration store for GraphDB"
   type        = string
