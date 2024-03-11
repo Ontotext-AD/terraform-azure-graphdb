@@ -209,7 +209,7 @@ module "monitoring" {
 
   # Diagnostic settings
   app_configuration_id = module.appconfig.app_configuration_id
-  kv_id                = module.vault[0].key_vault_id
+  key_vault_id         = var.tls_certificate_id != null ? null : module.vault[0].key_vault_id
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies

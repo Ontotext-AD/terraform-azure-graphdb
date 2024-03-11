@@ -13,9 +13,10 @@ resource "azurerm_monitor_diagnostic_setting" "application_config_diagnostic_set
 # Key Vault Audit log monitoring
 
 resource "azurerm_monitor_diagnostic_setting" "key_vault_diagnostic_settings" {
+  count = var.key_vault_id != null ? 1 : 0
 
   name                       = "Key Vault diagnostic settings"
-  target_resource_id         = var.kv_id
+  target_resource_id         = var.key_vault_id
   log_analytics_workspace_id = azurerm_log_analytics_workspace.log_analytics_workspace.id
 
   enabled_log {
