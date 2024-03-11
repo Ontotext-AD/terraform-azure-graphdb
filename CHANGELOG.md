@@ -2,4 +2,4 @@
 
 ## 1.0.0
 
-Initial version for the GraphDB Azure module
+First release of the official Terraform module for deploying GraphDB on Microsoft Azure.

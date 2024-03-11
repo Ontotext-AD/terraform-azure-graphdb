@@ -70,19 +70,6 @@ variable "management_cidr_blocks" {
   type        = list(string)
 }
 
-# Application Gateway Global Proxy buffer configurations
-variable "gateway_global_request_buffering_enabled" {
-  description = "Whether Application Gateway's Request buffer is enabled."
-  type        = bool
-  default     = true
-}
-
-variable "gateway_global_response_buffering_enabled" {
-  description = "Whether Application Gateway's Response buffer is enabled."
-  type        = bool
-  default     = true
-}
-
 # Inbound/Outbound network security rules
 # Note that these should be taken into considerations when gateway_enable_private_access=true
 
@@ -111,6 +98,19 @@ variable "outbound_allowed_address_prefixes" {
 }
 
 # Application Gateway & Private Link Configurations
+
+# Application Gateway Global Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+  default     = true
+}
 
 variable "gateway_enable_private_access" {
   description = "Enable or disable private access to the application gateway"
@@ -204,7 +204,7 @@ variable "admin_security_principle_id" {
 variable "graphdb_version" {
   description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.6.1"
+  default     = "10.6.2"
 }
 
 variable "graphdb_sku" {
