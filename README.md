@@ -10,8 +10,9 @@ HA cluster on [Microsoft Azure](https://azure.microsoft.com/).
 
 - [About GraphDB](#about-graphdb)
 - [Features](#features)
+- [Versioning](#versioning)
 - [Prerequisites](#prerequisites)
-- [Configurations](#configurations)
+- [Inputs](#inputs)
 - [Usage](#usage)
 - [Examples](#examples)
 - [Local Development](#local-development)
@@ -44,6 +45,7 @@ zones using a VM scale set. Key features of the module include:
 
 - Azure VM scale set across multiple Availability Zones
 - Azure Application Gateway for load balancing and TLS termination
+- Azure Private Link with private Application Gateway
 - Azure NAT gateway for outbound connections
 - Automated backups in Azure Blob Storage
 - Azure Private DNS for internal GraphDB cluster communication
@@ -56,6 +58,18 @@ zones using a VM scale set. Key features of the module include:
 TODO list the key features of the module as well as the purpose of the modules + maybe some diagram?
 See https://github.com/hashicorp/terraform-aws-consul
 -->
+
+## Versioning
+
+The Terraform module follows the [Semantic Versioning 2.0.0](https://semver.org/) rules and has a release lifecycle separate from the GraphDB
+versions. The next table shows the version compatability between GraphDB and the Terraform module.
+
+| GraphDB Terraform | GraphDB        |
+|-------------------|----------------|
+| Version 1.x.x     | Version 10.6.x |
+
+You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
+the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
 
 ## Prerequisites
 
@@ -71,10 +85,10 @@ Additional steps include:
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
-- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
+- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if
   you are planning on using Private Link
 
-The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace. 
+The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace.
 This requires you to accept the terms which can be accomplished with Azure CLI:
 
 ```bash
@@ -201,20 +215,41 @@ Once deployed, you should be able to access the environment at the generated FQD
 
 ## Examples
 
+**GraphDB Secrets**
+
+Instead of generating a random administrator password, you can provide one with:
+
+```hcl
+graphdb_password = "s3cr37P@$w0rD"
+```
+
+It's the same with the shared GraphDB cluster secret, to override the randomly generated password, use:
+
+```hcl
+graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
+```
+
+**GraphDB Configurations**
+
+The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.6/directories-and-config-properties.html#configuration):
+
+```hcl
+graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
+```
+
+Or by setting the `GDB_JAVA_OPTS` environment variable with `graphdb_java_options`. For example, if you want to print the command line flags, use:
+
+```hcl
+graphdb_java_options = "-XX:+PrintCommandLineFlags"
+```
+
 **Bastion**
 
 To enable the deployment of Azure Bastion, you simply need to enable the following flag:
 
 ```hcl
 deploy_bastion = true
-```
-
-**GraphDB admin password**
-
-Instead of generating a random administrator password, you can provide one with:
-
-```hcl
-graphdb_password = "s3cr37P@$w0rD"
 ```
 
 **Private Gateway with Private Link**
@@ -226,10 +261,10 @@ gateway_enable_private_access       = true
 gateway_enable_private_link_service = true
 ```
 
-See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
+See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal)
 for further information on configuring and using Application Gateway Private Link.
 
-**Providing TLS certificate**
+**Providing a TLS certificate**
 
 There are two options for setting up the Application Gateway with a TLS certificate.
 
@@ -247,7 +282,7 @@ There are two options for setting up the Application Gateway with a TLS certific
 
 **Purge Protection**
 
-Resources that support purge protection and soft delete have them enabled by default. 
+Resources that support purge protection and soft delete have them enabled by default.
 You can override the default configurations with the following variables:
 
 ```hcl
@@ -263,6 +298,33 @@ app_config_soft_delete_retention_days = 7 # From 1 to 7 days
 
 storage_container_soft_delete_retention_policy = 7 # From 1 to 365 days
 storage_blob_soft_delete_retention_policy      = 7 # From 1 to 365 days
+```
+
+**Managed Disks**
+
+Depending on the amount of data, expected statements or other factors, you might want to reconfigure the default options used for provisioning managed
+disks for persistent storage.
+
+```hcl
+disk_size_gb         = 1250
+disk_iops_read_write = 16000
+disk_mbps_read_write = 1000
+```
+
+**Monitoring**
+
+Resources related to the monitoring (App Insights and ) are deployed by default, you can change this with
+
+```hcl
+deploy_monitoring = false
+```
+
+**Custom GraphDB VM Image**
+
+You can provide the VMSS with a custom VM image by specifying `graphdb_image_id`, for example:
+
+```hcl
+graphdb_image_id = "/subscriptions/<subscription_id>/resourceGroups/<resource_group_name>/providers/Microsoft.Compute/galleries/<gallery_name>/images/<image_definition_name>/versions/<image_version>"
 ```
 
 <!---
