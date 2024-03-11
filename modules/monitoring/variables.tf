@@ -143,7 +143,7 @@ variable "app_configuration_id" {
   type        = string
 }
 
-variable "kv_id" {
+variable "key_vault_id" {
   description = "ID of the Key Vault resource, required for diagnostic settings"
   type        = string
 }
