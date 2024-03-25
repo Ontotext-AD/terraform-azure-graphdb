@@ -1,6 +1,7 @@
 # GraphDB Azure Terraform Module
 
 [![CI](https://github.com/Ontotext-AD/terraform-azure-graphdb/actions/workflows/ci.yml/badge.svg)](https://github.com/Ontotext-AD/terraform-azure-graphdb/actions/workflows/ci.yml)
+![GitHub Release](https://img.shields.io/github/v/release/Ontotext-AD/terraform-azure-graphdb?display_name=tag)
 
 This repository contains a set of [Terraform](https://www.terraform.io/) modules for
 deploying [Ontotext GraphDB](https://www.ontotext.com/products/graphdb/)
