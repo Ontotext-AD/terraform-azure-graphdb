@@ -82,6 +82,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   network_interface {
     name    = "nic-${var.resource_name_prefix}-vmss"
     primary = true
+    # Ensures the VMSS will always resolve addresses in the Private DNS Zone.
+    # https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16
+    dns_servers = ["168.63.129.16"]
 
     ip_configuration {
       name                                         = "${var.resource_name_prefix}-ip-config"
