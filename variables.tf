@@ -47,6 +47,12 @@ variable "lock_resources" {
 
 # Networking
 
+variable "vmss_dns_servers" {
+  description = "List of DNS servers for the VMSS"
+  type        = list(string)
+  default     = []
+}
+
 variable "graphdb_external_address_fqdn" {
   description = "External FQDN address for the deployment"
   type        = string
