@@ -22,14 +22,13 @@ RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/insta
 DNS_ZONE_NAME=${private_dns_zone_name}
 GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
-LOWEST_INSTANCE_ID=$(cat /tmp/lowest_id)
-RECORD_NAME=$(cat /tmp/node_name)
+VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
 
 # To update the password if changed we need to save the creation date of the config.
 # If a file is found, it will treat the password from Application config as the latest and update it.
 if [ ! -e "/var/opt/graphdb/password_creation_time" ]; then
   # This has to be persisted
-  echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") > /var/opt/graphdb/password_creation_time
+  echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
   GRAPHDB_PASSWORD=$GRAPHDB_ADMIN_PASSWORD
 else
   # Gets the previous password
@@ -63,7 +62,6 @@ check_gdb() {
   fi
 }
 
-# Waits for 3 DNS records to be available
 wait_dns_records() {
   ALL_FQDN_RECORDS_COUNT=($(
     az network private-dns record-set list \
@@ -72,13 +70,34 @@ wait_dns_records() {
       --query "[?contains(name, 'node')].fqdn | length(@)"
   ))
 
-  if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne 3 ]; then
+  if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne "${node_count}" ]; then
     sleep 5
     wait_dns_records
   else
     echo "Private DNS zone record count is $${ALL_FQDN_RECORDS_COUNT}"
   fi
 }
+
+# Function to check if the GraphDB license has been applied
+check_license() {
+  # Define the URL to check
+  local URL="http://localhost:7200/rest/graphdb-settings/license"
+
+  # Send an HTTP GET request and store the response in a variable
+  local response=$(curl -s "$URL")
+
+  # Check if the response contains the word "free"
+  if [[ "$response" == *"free"* ]]; then
+    echo "Free license detected"
+    exit 1
+  fi
+}
+# Get all instance IDs for the current VMSS
+INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
+# Sort instance IDs
+SORTED_INSTANCE_IDS=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort -n))
+# Find the lowest ID
+LOWEST_INSTANCE_ID=$${SORTED_INSTANCE_IDS[0]}
 
 #  Only the instance with the lowest ID would attempt to create the cluster
 if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
@@ -88,11 +107,13 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
   echo "##################################"
 
   wait_dns_records
+  check_license
+
   readarray -t ALL_DNS_RECORDS <<<"$(az network private-dns record-set list \
-  --zone $DNS_ZONE_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --query "[?contains(name, 'node')].fqdn" \
-  --output tsv)"
+    --zone $DNS_ZONE_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --query "[?contains(name, 'node')].fqdn" \
+    --output tsv)"
 
   # Check all instances are running
   for record in "$${ALL_DNS_RECORDS[@]}"; do
@@ -125,14 +146,17 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       echo "Retrying ($i/$MAX_RETRIES) after $RETRY_DELAY seconds..."
       sleep $RETRY_DELAY
     elif [ "$IS_CLUSTER" == 503 ]; then
+      EXISTING_DNS_RECORDS=$(az network private-dns record-set list -g $RESOURCE_GROUP -z $DNS_ZONE_NAME --query "[?starts_with(name, 'node')].fqdn")
+      CLUSTER_ADDRESS_GRPC=$(echo "$EXISTING_DNS_RECORDS" | jq -r '[ .[] | rtrimstr(".") + ":7300" ]')
       CLUSTER_CREATED=$(
         curl -X POST -s http://localhost:7200/rest/cluster/config \
           -w "%%{http_code}" \
           -o "/dev/null" \
           -H 'Content-type: application/json' \
           -u "admin:$${GRAPHDB_PASSWORD}" \
-          -d "{\"nodes\": [\"node-1.$${DNS_ZONE_NAME}:7300\",\"node-2.$${DNS_ZONE_NAME}:7300\",\"node-3.$${DNS_ZONE_NAME}:7300\"]}"
+          -d "{\"nodes\": $CLUSTER_ADDRESS_GRPC}"
       )
+
       if [[ "$CLUSTER_CREATED" == 201 ]]; then
         echo "GraphDB cluster successfully created!"
         break
@@ -153,9 +177,9 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
   echo "###########################################################"
 
   IS_SECURITY_ENABLED=$(curl -s -X GET \
-  --header 'Accept: application/json' \
-  -u "admin:$${GRAPHDB_PASSWORD}" \
-  'http://localhost:7200/rest/security')
+    --header 'Accept: application/json' \
+    -u "admin:$${GRAPHDB_PASSWORD}" \
+    'http://localhost:7200/rest/security')
 
   # Check if GDB security is enabled
   if [[ $IS_SECURITY_ENABLED == "true" ]]; then
@@ -196,42 +220,42 @@ echo "####################################"
 
 # This will update the GraphDB admin password if this node has the lowest ID and password_creation_time file exists.
 if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
-    # The request will fail if the cluster state is unhealthy
-    # This handles rolling updates
-    for record in "$${ALL_DNS_RECORDS[@]}"; do
-      echo "Pinging $record"
-      # Removes the '.' at the end of the DNS address
-      cleanedAddress=$${record%?}
-      # Check if cleanedAddress is non-empty before calling check_gdb
-      if [ -n "$cleanedAddress" ]; then
-        while ! check_gdb "$cleanedAddress"; do
-          echo "Waiting for GDB $cleanedAddress to start"
-          sleep "$RETRY_DELAY"
-        done
-      else
-        echo "Error: cleanedAddress is empty."
-      fi
-    done
-
-    # Gets the existing settings for admin user
-    EXISTING_SETTINGS=$(curl --location -s -u "admin:$${GRAPHDB_PASSWORD}" 'http://localhost:7200/rest/security/users/admin' | jq -rc '{grantedAuthorities, appSettings}' | sed 's/^{//;s/}$//')
-
-    SET_NEW_PASSWORD=$(
-      curl --location -s -w "%%{http_code}" \
-        --request PATCH 'http://localhost:7200/rest/security/users/admin' \
-        --header 'Content-Type: application/json' \
-        --header 'Accept: text/plain' \
-        -u "admin:$${GRAPHDB_PASSWORD}" \
-        --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",$EXISTING_SETTINGS}"
-    )
-    if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
-      echo "Updated GraphDB password successfully"
-      GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
-      echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
+  # The request will fail if the cluster state is unhealthy
+  # This handles rolling updates
+  for record in "$${ALL_DNS_RECORDS[@]}"; do
+    echo "Pinging $record"
+    # Removes the '.' at the end of the DNS address
+    cleanedAddress=$${record%?}
+    # Check if cleanedAddress is non-empty before calling check_gdb
+    if [ -n "$cleanedAddress" ]; then
+      while ! check_gdb "$cleanedAddress"; do
+        echo "Waiting for GDB $cleanedAddress to start"
+        sleep "$RETRY_DELAY"
+      done
     else
-      echo "Failed updating GraphDB password. Please check the logs!"
-      exit 1
+      echo "Error: cleanedAddress is empty."
     fi
+  done
+
+  # Gets the existing settings for admin user
+  EXISTING_SETTINGS=$(curl --location -s -u "admin:$${GRAPHDB_PASSWORD}" 'http://localhost:7200/rest/security/users/admin' | jq -rc '{grantedAuthorities, appSettings}' | sed 's/^{//;s/}$//')
+
+  SET_NEW_PASSWORD=$(
+    curl --location -s -w "%%{http_code}" \
+      --request PATCH 'http://localhost:7200/rest/security/users/admin' \
+      --header 'Content-Type: application/json' \
+      --header 'Accept: text/plain' \
+      -u "admin:$${GRAPHDB_PASSWORD}" \
+      --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",$EXISTING_SETTINGS}"
+  )
+  if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
+    echo "Updated GraphDB password successfully"
+    GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+    echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
+  else
+    echo "Failed updating GraphDB password. Please check the logs!"
+    exit 1
+  fi
 else
   echo "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
 fi

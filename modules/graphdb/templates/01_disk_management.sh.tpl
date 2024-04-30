@@ -28,7 +28,7 @@ ATTACHED_DISK=$(
     --resource-group "$RESOURCE_GROUP" \
     --name "$VMSS_NAME" \
     --query "[?instanceId=='$INSTANCE_ID'].storageProfile.dataDisks[].name" --output tsv
-  )
+)
 
 INSTANCE_HOSTNAME=\'$(hostname)\'
 ZONE_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/zone?api-version=2021-01-01&format=text")
@@ -45,91 +45,97 @@ LUN=2
 MAX_RETRIES=3
 RETRY_DELAY=5
 # Terraform accepts bool variable for disk_public_network_access but the AZ CLI allows Disabled, Enabled as values
-[ "$DISK_PUBLIC_ACCESS_POLICY" = true ] && DISK_PUBLIC_ACCESS_POLICY="Enabled" || DISK_PUBLIC_ACCESS_POLICY="Disabled";
+[ "$DISK_PUBLIC_ACCESS_POLICY" = true ] && DISK_PUBLIC_ACCESS_POLICY="Enabled" || DISK_PUBLIC_ACCESS_POLICY="Disabled"
 
-disk_attach_create() {
-  COUNTER=$1
-  # Checks if a disk is attached (handles Terraform apply updates to the userdata script on a running instance)
-  if [ -z "$ATTACHED_DISK" ]; then
+wait_for_available_disk() {
+  for i in $(seq 1 6); do
+    existingUnattachedDisk=$(
+      az disk list --resource-group $RESOURCE_GROUP \
+        --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_PREFIX}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
+        --output tsv
+    )
 
-    for i in $(seq 1 6); do
-      # Wait for existing disks in the Resource group, which are unattached
-      existingUnattachedDisk=$(
-        az disk list --resource-group $RESOURCE_GROUP \
-          --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_PREFIX}') && zones[0]=='$${ZONE_ID}'].{Name:name}" \
-          --output tsv
-      )
+    if [ -z "$existingUnattachedDisk" ]; then
+      echo 'Disk not yet available'
+      sleep $RETRY_DELAY
+    else
+      break
+    fi
+  done
+}
 
-      if [ -z "$${existingUnattachedDisk:-}" ]; then
-        echo 'Disk not yet available'
-        sleep $RETRY_DELAY
-      else
+create_managed_disk() {
+  local counter=$1
+  local disks_in_zone=$(az disk list --resource-group $RESOURCE_GROUP --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
+  local disk_order=$((disks_in_zone + 1))
+
+  while [ $counter -le $MAX_RETRIES ]; do
+    local disk_name="disk-$${RESOURCE_PREFIX}-$${ZONE_ID}-$${disk_order}"
+
+    az disk create --resource-group $RESOURCE_GROUP \
+      --name $disk_name \
+      --size-gb $DISK_SIZE_GB \
+      --location $REGION_ID \
+      --sku $DISK_STORAGE_TYPE \
+      --zone $ZONE_ID \
+      --disk-iops-read-write $DISK_IOPS \
+      --disk-mbps-read-write $DISK_THROUGHPUT \
+      --tags createdBy=$INSTANCE_HOSTNAME \
+      --public-network-access $DISK_PUBLIC_ACCESS_POLICY \
+      --network-access-policy $DISK_NETWORK_ACCESS_POLICY
+
+    if [ $? -eq 0 ]; then
+      echo "Disk creation successful."
+      break
+    else
+      echo "Disk creation failed. Retrying with incremented disk order..."
+      disk_order=$((disk_order + 1))
+      if [ $counter -gt $MAX_RETRIES ]; then
+        echo "Disk creation failed after $MAX_RETRIES retries. Exiting."
         break
       fi
-    done
-
-    # If there isn't an available disk after 30 seconds, will attempt to create a new one.
-    if [ -z "$existingUnattachedDisk" ]; then
-      echo "Creating a new managed disk"
-      # Gets number of managed disks in the current AZ
-      DISKS_IN_ZONE=$(az disk list --resource-group $RESOURCE_GROUP --query "length([?zones[0]=='$${ZONE_ID}'])" --output tsv)
-
-      # Increment the number for the new name
-      DISK_ORDER=$((DISKS_IN_ZONE + 1))
-
-      while [ $COUNTER -le $MAX_RETRIES ]; do
-        # Construct the disk name
-        DISK_NAME="disk-$${RESOURCE_PREFIX}-$${ZONE_ID}-$${DISK_ORDER}"
-
-        # Attempt to create the disk
-        az disk create --resource-group $RESOURCE_GROUP \
-          --name $DISK_NAME \
-          --size-gb $DISK_SIZE_GB \
-          --location $REGION_ID \
-          --sku $DISK_STORAGE_TYPE \
-          --zone $ZONE_ID \
-          --disk-iops-read-write $DISK_IOPS \
-          --disk-mbps-read-write $DISK_THROUGHPUT \
-          --tags createdBy=$INSTANCE_HOSTNAME \
-          --public-network-access $DISK_PUBLIC_ACCESS_POLICY \
-          --network-access-policy $DISK_NETWORK_ACCESS_POLICY
-
-        # Check the exit status of the last command
-        if [ $? -eq 0 ]; then
-          echo "Disk creation successful."
-          break
-        else
-          # It's unlikely but possible for the creation to fail if another instance in the same AZ is creating a disk with the same ID
-          echo "Disk creation failed. Retrying with incremented disk order..."
-          # Increment the disk order for the next retry
-          DISK_ORDER=$((DISK_ORDER + 1))
-          if [ $COUNTER -gt $MAX_RETRIES ]; then
-            echo "Disk creation failed after $MAX_RETRIES retries. Exiting."
-            break
-          fi
-          COUNTER=$((COUNTER + 1))
-        fi
-      done
+      counter=$((counter + 1))
     fi
+  done
+}
 
-    # Try to attach an existing managed disk
-    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_PREFIX}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
-
-    # It's possible the created disk to be stolen by another VM starting at the same time in the same AZ
-    # That's why we retry if this occurs.
-    if [ -z "$availableDisks" ]; then
-      echo "Something went wrong, no available disks, Retrying..."
-      disk_attach_create 0
-      availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_PREFIX}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+check_existing_disk_attachments() {
+  for availableDisk in $availableDisks; do
+    attachingVM=$(az disk list --query "[?name=='$availableDisk'].managedBy" --output tsv)
+    if [ "$attachingVM" != "" ]; then
+      echo "Disk $availableDisk is already being attached to VM $attachingVM. Skipping attachment."
+      availableDisks=$(echo "$availableDisks" | grep -v "$availableDisk")
     fi
+  done
+}
 
+attach_available_disks() {
+  if [ -n "$availableDisks" ]; then
     echo "Attaching available disk $availableDisks."
-    # Set Internal Field Separator to newline to handle spaces in names
     IFS=$'\n'
-    # Would iterate through all available disks and attempt to attach them
     for availableDisk in $availableDisks; do
       az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
     done
+  else
+    echo "No available disks to attach."
+  fi
+}
+
+disk_attach_create() {
+  COUNTER=$1
+  if [ -z "$ATTACHED_DISK" ]; then
+    wait_for_available_disk
+
+    if [ -z "$existingUnattachedDisk" ]; then
+      echo "Creating a new managed disk"
+      create_managed_disk $COUNTER
+    fi
+
+    availableDisks=$(az disk list --resource-group $RESOURCE_GROUP --query "[?diskState=='Unattached' && starts_with(name, 'disk-$${RESOURCE_PREFIX}') && zones[0]=='$${ZONE_ID}'].{Name:name}" --output tsv)
+
+    check_existing_disk_attachments
+
+    attach_available_disks
   else
     echo "Managed disk is attached"
   fi

@@ -6,10 +6,10 @@ echo "###########################################"
 echo "#    Configuring Application Insights     #"
 echo "###########################################"
 
-RECORD_NAME=$(cat /tmp/node_name)
+RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
 
 # Overrides the config file
-cat <<-EOF > /opt/graphdb/applicationinsights.json
+cat <<-EOF >/opt/graphdb/applicationinsights.json
 {
     "role": {
         "name": "$RECORD_NAME"
