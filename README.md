@@ -162,7 +162,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
-| deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
+| deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
 | disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
