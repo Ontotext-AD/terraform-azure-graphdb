@@ -107,13 +107,14 @@ data "cloudinit_config" "entrypoint" {
     content = templatefile("${path.module}/templates/07_cluster_setup.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+      node_count : var.node_count
     })
   }
 
   # 08 Cluster rejoin
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/08_cluster_rejoin.sh.tpl", {
+    content = templatefile("${path.module}/templates/08_cluster_join.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
     })
   }

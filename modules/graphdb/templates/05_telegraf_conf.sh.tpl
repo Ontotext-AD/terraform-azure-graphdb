@@ -19,7 +19,7 @@ REGION_ID=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/c
 GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 
 # Overrides the config file
-cat <<-EOF > /etc/telegraf/telegraf.conf
+cat <<-EOF >/etc/telegraf/telegraf.conf
   [[inputs.prometheus]]
     urls = ["http://localhost:7200/rest/monitor/infrastructure", "http://localhost:7200/rest/monitor/structures"]
     username = "admin"

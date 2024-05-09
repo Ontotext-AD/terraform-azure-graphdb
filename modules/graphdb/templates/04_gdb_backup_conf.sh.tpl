@@ -12,7 +12,7 @@ echo "#################################################"
 echo "#    Configuring the GraphDB backup cron job    #"
 echo "#################################################"
 
-cat <<EOF > /usr/bin/run_backup.sh
+cat <<EOF >/usr/bin/run_backup.sh
 #!/bin/bash
 
 az login --identity
@@ -25,6 +25,6 @@ graphdb_password="\$(az appconfig kv show --endpoint ${app_configuration_endpoin
 EOF
 
 chmod +x /usr/bin/run_backup.sh
-echo "${backup_schedule}" graphdb /usr/bin/run_backup.sh > /etc/cron.d/graphdb_backup
+echo "${backup_schedule}" graphdb /usr/bin/run_backup.sh >/etc/cron.d/graphdb_backup
 
 echo "Cron job created"

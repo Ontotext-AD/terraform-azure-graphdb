@@ -344,7 +344,7 @@ variable "bastion_subnet_address_prefixes" {
 variable "deploy_monitoring" {
   description = "Deploy monitoring module"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Managed disks

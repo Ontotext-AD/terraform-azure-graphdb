@@ -35,9 +35,8 @@ Ontotext GraphDB is a highly efficient, scalable and robust graph database with 
 integration with external search applications, compatibility with industry standards, and both community and commercial support, GraphDB is the
 preferred database choice of both small independent developers and big enterprises.
 
-<!---
-TODO link to azure marketplace?
--->
+GraphDB is available on the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps?search=Ontotext%20AD)
+in several listings depending on your needs.
 
 ## Features
 
@@ -54,6 +53,19 @@ zones using a VM scale set. Key features of the module include:
 - Optional Azure Bastion deployment
 - User assigned identities for RBAC authorization with the least privilege principle
 - and more
+
+## Modules Overview
+
+| Modules                    | Purpose                                                                                                           | Features                                                                                                                                                          |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Vault Module               | Creates a Key Vault for storing TLS certificates and secrets                                                      | - Enables purge protection for Key Vault.<br/> - Sets soft delete retention days for Key Vault.                                                                   |
+| Backup Module              | Sets up a Storage Account for storing GraphDB backups.                                                            | - Configures storage account tier and replication type.<br/> - Defines retention policies for storage blobs and containers.                                       |
+| AppConfig Module           | Establishes an App Configuration store for managing GraphDB configurations.                                       | - Enables purge protection for App Configuration. <br/> - Sets soft delete retention days for App Configuration.                                                  |
+| TLS Module                 | Manages TLS certificate secrets in Key Vault and their related identities.                                        | - Creates TLS certificate secrets in Key Vault.<br/> - Configures identity related to the TLS certificate.                                                        |
+| Application Gateway Module | Sets up a public IP address and Application Gateway for forwarding internet traffic to GraphDB proxies/instances. | - Configures TLS certificate for the gateway.<br/> - Enables private access and private link service.<br/> - Defines global buffer settings.                      |
+| Bastion Module             | Deploys an Azure Bastion host for secure remote connections.                                                      | - Configures the bastion host within the specified virtual network.                                                                                               |
+| Monitoring Module          | Configures Azure monitoring for the deployed resources.                                                           | - Sets up Application Insights for the GraphDB scale set.<br/> - Sets up web test availability monitoring.<br/> - Defines retention policies for monitoring data. |
+| GraphDB Module             | Deploys a VM scale set for GraphDB and its cluster proxies.                                                       | - Configures networking settings.<br/> - Sets up GraphDB configurations and licenses.<br/> - Defines backup storage, VM image, and managed disk settings.         |
 
 <!---
 TODO list the key features of the module as well as the purpose of the modules + maybe some diagram?
@@ -150,7 +162,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
-| deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
+| deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
 | disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
@@ -314,7 +326,7 @@ disk_mbps_read_write = 1000
 
 **Monitoring**
 
-Resources related to the monitoring (App Insights and ) are deployed by default, you can change this with
+Resources related to the monitoring (Application Insights) are deployed by default, you can change this with
 
 ```hcl
 deploy_monitoring = false

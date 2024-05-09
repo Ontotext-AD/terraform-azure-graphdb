@@ -9,8 +9,8 @@
 #   * Retrieves and sorts instance IDs for the current VMSS.
 #   * Identifies the lowest, middle, and highest instance IDs.
 #   * Pings DNS records and updates them with the current instance's IP address if necessary.
-#   * Assigns DNS record names based on instance ID, creating records if they don't exist.
-#   * Saves relevant information to temporary files for use in subsequent scripts.
+#   * Assigns DNS record names based on name availability in the private DNS.
+#   * Saves relevant information to files for use in subsequent scripts.
 
 set -euo pipefail
 
@@ -21,71 +21,58 @@ echo "########################"
 
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
-VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
-INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 DNS_ZONE_NAME=${private_dns_zone_name}
+NODE_DNS_PATH="/var/opt/graphdb/node_dns_name"
+NODE_NUMBER=1
 
-# Get all FQDN records from the private DNS zone containing "node"
-readarray -t ALL_FQDN_RECORDS <<< "$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, 'node')].fqdn" --output tsv)"
-# Get all instance IDs for the current VMSS
-INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
-# Sort instance IDs
-SORTED_INSTANCE_IDS=($(echo "$${INSTANCE_IDS[@]}" | tr ' ' '\n' | sort -n))
-# Find the lowest, middle and highest instance IDs
-LOWEST_INSTANCE_ID=$${SORTED_INSTANCE_IDS[0]}
-MIDDLE_INSTANCE_ID=$${SORTED_INSTANCE_IDS[1]}
-HIGHEST_INSTANCE_ID=$${SORTED_INSTANCE_IDS[2]}
+# This will be removed in the future, it's required for migration between TF module version 1.0.x and 1.1.x
+IP_RECORD_PRESENT=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?aRecords[?ipv4Address=='$IP_ADDRESS'].ipv4Address].name" --output tsv)
 
-# Saving this to a file as it is required by 06_cluster_setup.sh.tpl
-echo $LOWEST_INSTANCE_ID > /tmp/lowest_id
+echo "Attempting to get DNS record by IP address"
+if [ "$IP_RECORD_PRESENT" ]; then
+  echo "$IP_RECORD_PRESENT" > $NODE_DNS_PATH
+fi
 
-# Pings a DNS record, if no response is returned, will update the DNS record with the IP of the current instance
-ping_and_set_dns_record() {
-  local DNS_RECORD="$1"
-  # Checks if a record with the current instance IP is present
-  IP_RECORD_PRESENT=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?aRecords[?ipv4Address=='$IP_ADDRESS'].ipv4Address].name" --output tsv)
-  # If no record is present for the current IP check, which node is missing and assign the IP to it.
-  if [ -z "$IP_RECORD_PRESENT" ]; then
-    echo "Pinging $DNS_RECORD"
-      if ping -c 5 "$DNS_RECORD"; then
-        echo "Ping successful"
+if [ -f $NODE_DNS_PATH ]; then
+  echo "Found $NODE_DNS_PATH"
+  NODE_DNS_RECORD=$(cat $NODE_DNS_PATH)
+
+  # Updates the NODE_DSN record on file with the new IP.
+  echo "Updating IP address for $NODE_DNS_RECORD"
+  # We need to recreate the record to update the IP, cannot update with the same IP.
+  az network private-dns record-set a delete --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $NODE_DNS_RECORD --yes || true
+  az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $NODE_DNS_RECORD --ipv4-address "$IP_ADDRESS"
+
+  hostnamectl set-hostname "$NODE_DNS_RECORD"
+  echo "DNS record for $NODE_DNS_RECORD has been updated"
+else
+  echo "$NODE_DNS_PATH does not exist. New DNS record will be created."
+
+  while true; do
+    # Concatenate "node" with the extracted number
+    NODE_NAME="node-$NODE_NUMBER"
+
+    # Check if the record exists for the node name in the Private DNS zone
+    DNS_RECORD_TAKEN=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?name=='$NODE_NAME'].name" --output tsv)
+
+    if [ "$DNS_RECORD_TAKEN" ]; then
+      # Increment node number for the next iteration
+      NODE_NUMBER=$((NODE_NUMBER + 1))
+    else
+      echo "Record $NODE_NAME does not exist"
+      NODE_DNS_RECORD=$NODE_NAME
+      # Creates the record
+      if az network private-dns record-set a create --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $NODE_NAME &>/dev/null &&
+        az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $NODE_NAME --ipv4-address "$IP_ADDRESS" &>/dev/null; then
+        echo "DNS record for $NODE_DNS_RECORD has been created"
+        hostnamectl set-hostname "$NODE_DNS_RECORD"
+        echo $NODE_NAME > $NODE_DNS_PATH
+        break # Exit loop when non-existing node name is found
       else
-        echo "Ping failed for $DNS_RECORD"
-        # Extracts the record name
-        RECORD_NAME=$(echo "$DNS_RECORD" | awk -F'.' '{print $1}')
-        az network private-dns record-set a update --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --set ARecords[0].ipv4Address="$IP_ADDRESS"
+        echo "Creating DNS record failed for $NODE_NAME, retrying with next available name"
+        # Retry with the next node number
+        NODE_NUMBER=$((NODE_NUMBER + 1))
       fi
-  else
-    echo "Record for this IP is present in the Private DNS"
-  fi
-}
-
-# Assign DNS record name based on instanceId
-for i in "$${!SORTED_INSTANCE_IDS[@]}"; do
-  if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
-    RECORD_NAME="node-1"
-  elif [ "$INSTANCE_ID" == "$${MIDDLE_INSTANCE_ID}" ]; then
-    RECORD_NAME="node-2"
-  elif [ "$INSTANCE_ID" == "$${HIGHEST_INSTANCE_ID}" ]; then
-    RECORD_NAME="node-3"
-  fi
-
-  # Saving this to file as it is required in 03_gdb_conf_overrides.sh.tpl
-  echo $RECORD_NAME > /tmp/node_name
-
-  # Get the FQDN for the current instance
-  FQDN=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?contains(name, '$RECORD_NAME')].fqdn" --output tsv)
-
-  if [ -z "$${FQDN:-}" ]; then
-    # Have to first create and then add, see https://github.com/Azure/azure-cli/issues/27374
-    az network private-dns record-set a create --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME
-    az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $RECORD_NAME --ipv4-address "$IP_ADDRESS"
-  else
-    for record in "$${ALL_FQDN_RECORDS[@]}"; do
-      echo "Checking DNS record $record"
-      ping_and_set_dns_record "$record"
-    done
-  fi
-
-  break
-done
+    fi
+  done
+fi

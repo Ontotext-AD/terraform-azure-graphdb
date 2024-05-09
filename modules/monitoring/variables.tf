@@ -147,4 +147,3 @@ variable "key_vault_id" {
   description = "ID of the Key Vault resource, required for diagnostic settings"
   type        = string
 }
-
