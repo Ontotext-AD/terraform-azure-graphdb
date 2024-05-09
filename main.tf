@@ -208,8 +208,9 @@ module "monitoring" {
   ag_notifications_email_list = var.notification_recipients_email_list
 
   # Diagnostic settings
-  app_configuration_id = module.appconfig.app_configuration_id
-  key_vault_id         = var.tls_certificate_id != null ? null : module.vault[0].key_vault_id
+  app_configuration_id                 = module.appconfig.app_configuration_id
+  key_vault_id                         = var.tls_certificate_id != null ? null : module.vault[0].key_vault_id
+  create_key_vault_diagnostic_settings = var.tls_certificate_id == null ? true : false
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies

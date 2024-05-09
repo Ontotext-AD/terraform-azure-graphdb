@@ -12,6 +12,8 @@
   * Added check for total quorum availability before node joining the cluster.
   * Removed useless if check before waiting for the raft folder existence.
 
+* Fixed the deployment of `azurerm_monitor_diagnostic_setting` for the key vault when monitoring is enabled
+
 ## 1.0.1
 
 Updated GraphDB version to [10.6.3](https://graphdb.ontotext.com/documentation/10.6/release-notes.html#graphdb-10-6-3)
