@@ -147,3 +147,8 @@ variable "key_vault_id" {
   description = "ID of the Key Vault resource, required for diagnostic settings"
   type        = string
 }
+
+variable "create_key_vault_diagnostic_settings" {
+  description = "Boolean variable to determine whether to create Key Vault diagnostic settings."
+  type        = bool
+}
