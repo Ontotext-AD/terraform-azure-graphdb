@@ -8,7 +8,9 @@
 #   * Overrides the configuration file for Telegraf.
 #   * Restarts the Telegraf service to apply the updated configuration.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 
 echo "###############################"
 echo "#    Configuring Telegraf     #"

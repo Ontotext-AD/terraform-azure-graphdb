@@ -1,6 +1,11 @@
 #!/bin/bash
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 echo "###########################################"
 echo "#    Configuring Application Insights     #"
@@ -107,3 +112,5 @@ cat <<-EOF >/opt/graphdb/applicationinsights.json
 EOF
 
 chown graphdb:graphdb /opt/graphdb/applicationinsights.json
+
+log_with_timestamp "Finished configuring Application Insights Agent"

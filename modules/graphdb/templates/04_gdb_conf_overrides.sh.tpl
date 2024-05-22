@@ -10,7 +10,12 @@
 #   * Creates systemd service overrides for GraphDB based on memory calculations.
 #   * Applies optional overrides for graphdb.properties and GDB_JAVA_OPTS from Azure App Configuration secrets.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 echo "#######################################"
 echo "#   GraphDB configuration overrides   #"
@@ -21,19 +26,19 @@ DNS_ZONE_NAME=${private_dns_zone_name}
 RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
 APP_CONFIG_ENDPOINT=${app_configuration_endpoint}
 
-echo "Getting secrets"
+log_with_timestamp "Getting secrets"
 secrets=$(az appconfig kv list --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login | jq .[].key)
 
-echo "Getting GraphDB license"
+log_with_timestamp "Getting GraphDB license"
 az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_license_secret_name} | jq -r .value | base64 -d >/etc/graphdb/graphdb.license
 
-echo "Getting the cluster token"
+log_with_timestamp "Getting the cluster token"
 graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
 
-echo "Getting the full DNS record for current instance"
+log_with_timestamp "Getting the full DNS record for current instance"
 NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
-echo "Writing configuration files"
+log_with_timestamp "Writing configuration files"
 # TODO: where is the vhost here?
 cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
@@ -51,7 +56,7 @@ graphdb.rpc.address=$${NODE_DNS}:7301
 graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF
 
-echo "Calculating 85 percent of total memory"
+log_with_timestamp "Calculating 85 percent of total memory"
 # Get total memory in kilobytes
 total_memory_kb=$(grep -i "MemTotal" /proc/meminfo | awk '{print $2}')
 # Convert total memory to gigabytes
@@ -69,13 +74,13 @@ EOF
 # TODO: overrides for the proxy?
 # Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"${graphdb_properties_secret_name}"* ]]; then
-  echo "Using graphdb.properties overrides"
+  log_with_timestamp "Using graphdb.properties overrides"
   az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_properties_secret_name} | jq -r .value | base64 -d >>/etc/graphdb/graphdb.properties
 fi
 
 # Appends environment overrides to GDB_JAVA_OPTS
 if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
-  echo "Using GDB_JAVA_OPTS overrides"
+  log_with_timestamp "Using GDB_JAVA_OPTS overrides"
   extra_graphdb_java_options=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
   (
     source /etc/graphdb/graphdb.env
@@ -83,4 +88,4 @@ if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   )
 fi
 
-echo "Completed applying overrides"
+log_with_timestamp "Completed applying overrides"

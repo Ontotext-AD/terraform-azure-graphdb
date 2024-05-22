@@ -17,10 +17,17 @@ data "cloudinit_config" "entrypoint" {
       EOF
   }
 
-  # 00 Wait for dependent resources
+  # 00 Helper functions
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/00_wait_resources.sh.tpl", {
+    content = templatefile("${path.module}/templates/00_functions.sh", {})
+  }
+
+
+  # 01 Wait for dependent resources
+  part {
+    content_type = "text/x-shellscript"
+    content = templatefile("${path.module}/templates/01_wait_resources.sh.tpl", {
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
       private_dns_zone_id : azurerm_private_dns_zone.graphdb.id
       private_dns_zone_link_name : azurerm_private_dns_zone_virtual_network_link.graphdb.name
@@ -31,10 +38,10 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 01 Disk setup
+  # 02 Disk setup
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/01_disk_management.sh.tpl", {
+    content = templatefile("${path.module}/templates/02_disk_management.sh.tpl", {
       resource_name_prefix : var.resource_name_prefix
       disk_storage_account_type : var.disk_storage_account_type
       disk_iops_read_write : var.disk_iops_read_write
@@ -45,18 +52,18 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 02 DNS setup
+  # 03 DNS setup
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/02_dns_provisioning.sh.tpl", {
+    content = templatefile("${path.module}/templates/03_dns_provisioning.sh.tpl", {
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
     })
   }
 
-  # 03 GDB config overrides
+  # 04 GDB config overrides
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/03_gdb_conf_overrides.sh.tpl", {
+    content = templatefile("${path.module}/templates/04_gdb_conf_overrides.sh.tpl", {
       graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
       # App configurations
@@ -69,10 +76,10 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 04 Backup script configuration
+  # 05 Backup script configuration
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/04_gdb_backup_conf.sh.tpl", {
+    content = templatefile("${path.module}/templates/05_gdb_backup_conf.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
       backup_schedule : var.backup_schedule
       backup_storage_account_name : var.backup_storage_account_name
@@ -80,18 +87,18 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 05 Telegraf configuration
+  # 06 Telegraf configuration
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/05_telegraf_conf.sh.tpl", {
+    content = templatefile("${path.module}/templates/06_telegraf_conf.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
     })
   }
 
-  # 06 Application Insights configuration
+  # 07 Application Insights configuration
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/06_application_insights_config.sh.tpl", {
+    content = templatefile("${path.module}/templates/07_application_insights_config.sh.tpl", {
       appi_connection_string : var.appi_connection_string
       appi_sampling_percentage : var.appi_sampling_percentage
       appi_logging_level : var.appi_logging_level
@@ -101,20 +108,20 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 07 Cluster setup
+  # 08 Cluster setup
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/07_cluster_setup.sh.tpl", {
+    content = templatefile("${path.module}/templates/08_cluster_setup.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
       node_count : var.node_count
     })
   }
 
-  # 08 Cluster rejoin
+  # 09 Cluster rejoin
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/08_cluster_join.sh.tpl", {
+    content = templatefile("${path.module}/templates/09_cluster_join.sh.tpl", {
       app_configuration_endpoint : var.app_configuration_endpoint
     })
   }

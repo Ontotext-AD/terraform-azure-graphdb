@@ -6,7 +6,12 @@
 #   * Sets up a cron job for GraphDB backup using Terraform variables
 #   * Writes the cron job configuration to the /etc/cron.d/graphdb_backup file.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 echo "#################################################"
 echo "#    Configuring the GraphDB backup cron job    #"
@@ -27,4 +32,4 @@ EOF
 chmod +x /usr/bin/run_backup.sh
 echo "${backup_schedule}" graphdb /usr/bin/run_backup.sh >/etc/cron.d/graphdb_backup
 
-echo "Cron job created"
+log_with_timestamp "Cron job created"
