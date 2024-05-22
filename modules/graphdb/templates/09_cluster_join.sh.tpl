@@ -10,7 +10,13 @@
 #    * Initiates the addition of the current node to the cluster by contacting the leader node.
 #  * Provides feedback on the successful completion of the script execution.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))

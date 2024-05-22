@@ -11,7 +11,12 @@
 #   * Ensures the disk is automatically mounted on system startup by updating the /etc/fstab file.
 #   * Verifies and reports the successful setup and mounting of the disk.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 echo "###########################################"
 echo "#    Creating/Attaching managed disks     #"
@@ -56,7 +61,7 @@ wait_for_available_disk() {
     )
 
     if [ -z "$existingUnattachedDisk" ]; then
-      echo 'Disk not yet available'
+      log_with_timestamp 'Disk not yet available'
       sleep $RETRY_DELAY
     else
       break
@@ -72,6 +77,7 @@ create_managed_disk() {
   while [ $counter -le $MAX_RETRIES ]; do
     local disk_name="disk-$${RESOURCE_PREFIX}-$${ZONE_ID}-$${disk_order}"
 
+    # TODO check if we can get the disk ID as output and reuse it in the attach operation
     az disk create --resource-group $RESOURCE_GROUP \
       --name $disk_name \
       --size-gb $DISK_SIZE_GB \
@@ -85,13 +91,13 @@ create_managed_disk() {
       --network-access-policy $DISK_NETWORK_ACCESS_POLICY
 
     if [ $? -eq 0 ]; then
-      echo "Disk creation successful."
+      log_with_timestamp "Disk creation successful."
       break
     else
-      echo "Disk creation failed. Retrying with incremented disk order..."
+      log_with_timestamp "Disk creation failed. Retrying with incremented disk order..."
       disk_order=$((disk_order + 1))
       if [ $counter -gt $MAX_RETRIES ]; then
-        echo "Disk creation failed after $MAX_RETRIES retries. Exiting."
+        log_with_timestamp "Disk creation failed after $MAX_RETRIES retries. Exiting."
         break
       fi
       counter=$((counter + 1))
@@ -103,21 +109,21 @@ check_existing_disk_attachments() {
   for availableDisk in $availableDisks; do
     attachingVM=$(az disk list --query "[?name=='$availableDisk'].managedBy" --output tsv)
     if [ "$attachingVM" != "" ]; then
-      echo "Disk $availableDisk is already being attached to VM $attachingVM. Skipping attachment."
-      availableDisks=$(echo "$availableDisks" | grep -v "$availableDisk")
+      log_with_timestamp "Disk $availableDisk is already being attached to VM $attachingVM. Skipping attachment."
+      availableDisks=$(log_with_timestamp "$availableDisks" | grep -v "$availableDisk")
     fi
   done
 }
 
 attach_available_disks() {
   if [ -n "$availableDisks" ]; then
-    echo "Attaching available disk $availableDisks."
+    log_with_timestamp "Attaching available disk $availableDisks."
     IFS=$'\n'
     for availableDisk in $availableDisks; do
       az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$availableDisk" || true
     done
   else
-    echo "No available disks to attach."
+    log_with_timestamp "No available disks to attach."
   fi
 }
 
@@ -127,7 +133,7 @@ disk_attach_create() {
     wait_for_available_disk
 
     if [ -z "$existingUnattachedDisk" ]; then
-      echo "Creating a new managed disk"
+      log_with_timestamp "Creating a new managed disk"
       create_managed_disk $COUNTER
     fi
 
@@ -137,7 +143,7 @@ disk_attach_create() {
 
     attach_available_disks
   else
-    echo "Managed disk is attached"
+    log_with_timestamp "Managed disk is attached"
   fi
 
   # Gets device name based on LUN 2
@@ -152,9 +158,9 @@ echo "##########################################"
 
 # Check if the device is present after attaching the disk
 if [ -b "$graphdb_device" ]; then
-  echo "Device $graphdb_device is available."
+  log_with_timestamp "Device $graphdb_device is available."
 else
-  echo "Device $graphdb_device is not available. Something went wrong. Retrying disk creation ..."
+  log_with_timestamp "Device $graphdb_device is not available. Something went wrong. Retrying disk creation ..."
   # If for any reason the disk is not available this will reattempt to create and attach it.
   disk_attach_create 0
 fi
@@ -168,19 +174,19 @@ mkdir -p "$disk_mount_point"
 
 # Check if the disk is already mounted
 if ! mount | grep -q "$graphdb_device"; then
-  echo "The disk at $graphdb_device is not mounted."
+  log_with_timestamp "The disk at $graphdb_device is not mounted."
 
   # Add an entry to the fstab file to automatically mount the disk
   if ! grep -q "$graphdb_device" /etc/fstab; then
-    echo "$graphdb_device $disk_mount_point ext4 defaults 0 2" >>/etc/fstab
+    log_with_timestamp "$graphdb_device $disk_mount_point ext4 defaults 0 2" >>/etc/fstab
   fi
 
   # Mount the disk
   mount "$disk_mount_point"
-  echo "The disk at $graphdb_device is now mounted at $disk_mount_point."
+  log_with_timestamp "The disk at $graphdb_device is now mounted at $disk_mount_point."
   mkdir -p /var/opt/graphdb/node /var/opt/graphdb/cluster-proxy
   # TODO research how to avoid using chown, as it would be a slow operation if data is present.
   chown -R graphdb:graphdb /var/opt/graphdb
 else
-  echo "The disk at $graphdb_device is already mounted."
+  log_with_timestamp "The disk at $graphdb_device is already mounted."
 fi

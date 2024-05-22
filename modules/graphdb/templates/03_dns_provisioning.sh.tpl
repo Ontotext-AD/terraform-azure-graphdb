@@ -11,7 +11,12 @@
 #  * Sets the hostname of the instance to match the DNS record name.
 #  * Saves relevant information to files for use in subsequent scripts.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 echo "########################"
 echo "#   DNS Provisioning   #"
@@ -29,25 +34,25 @@ NODE_NUMBER=1
 IP_RECORD_PRESENT=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?aRecords[?ipv4Address=='$IP_ADDRESS'].ipv4Address].name" --output tsv)
 
 if [ "$IP_RECORD_PRESENT" ]  && [ -z "$NODE_DNS_PATH" ]; then
-  echo "Recovering node_dns_name by current IP address"
+  log_with_timestamp "Recovering node_dns_name by current IP address"
   echo "$IP_RECORD_PRESENT" > $NODE_DNS_PATH
 fi
 ###########################################################################################################
 
 if [ -f $NODE_DNS_PATH ]; then
-  echo "Found $NODE_DNS_PATH"
+  log_with_timestamp "Found $NODE_DNS_PATH"
   NODE_DNS_RECORD=$(cat $NODE_DNS_PATH)
 
   # Updates the NODE_DSN record on file with the new IP.
-  echo "Updating IP address for $NODE_DNS_RECORD"
+  log_with_timestamp "Updating IP address for $NODE_DNS_RECORD"
   # We need to recreate the record to update the IP, cannot update with the same IP.
   az network private-dns record-set a delete --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $NODE_DNS_RECORD --yes || true
   az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $NODE_DNS_RECORD --ipv4-address "$IP_ADDRESS"
 
   hostnamectl set-hostname "$NODE_DNS_RECORD"
-  echo "DNS record for $NODE_DNS_RECORD has been updated"
+  log_with_timestamp "DNS record for $NODE_DNS_RECORD has been updated"
 else
-  echo "$NODE_DNS_PATH does not exist. New DNS record will be created."
+  log_with_timestamp "$NODE_DNS_PATH does not exist. New DNS record will be created."
 
   while true; do
     # Concatenate "node" with the extracted number
@@ -60,17 +65,17 @@ else
       # Increment node number for the next iteration
       NODE_NUMBER=$((NODE_NUMBER + 1))
     else
-      echo "Record $NODE_NAME does not exist"
+      log_with_timestamp "Record $NODE_NAME does not exist"
       NODE_DNS_RECORD=$NODE_NAME
       # Creates the record
       if az network private-dns record-set a create --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $NODE_NAME &>/dev/null &&
         az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $NODE_NAME --ipv4-address "$IP_ADDRESS" &>/dev/null; then
-        echo "DNS record for $NODE_DNS_RECORD has been created"
+        log_with_timestamp "DNS record for $NODE_DNS_RECORD has been created"
         hostnamectl set-hostname "$NODE_DNS_RECORD"
-        echo $NODE_NAME > $NODE_DNS_PATH
+        log_with_timestamp $NODE_NAME > $NODE_DNS_PATH
         break # Exit loop when non-existing node name is found
       else
-        echo "Creating DNS record failed for $NODE_NAME, retrying with next available name"
+        log_with_timestamp "Creating DNS record failed for $NODE_NAME, retrying with next available name"
         # Retry with the next node number
         NODE_NUMBER=$((NODE_NUMBER + 1))
       fi
