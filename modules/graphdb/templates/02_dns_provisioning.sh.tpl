@@ -3,14 +3,13 @@
 # This script focuses on DNS provisioning in an Azure environment for instances within a VMSS.
 #
 # It performs the following tasks:
-#   * Retrieves metadata about the Azure instance, including the resource group, IP address, VMSS name, and instance ID.
-#   * Waits for the DNS zone to be created and role assigned.
-#   * Gathers all FQDN records from the private DNS zone containing "node."
-#   * Retrieves and sorts instance IDs for the current VMSS.
-#   * Identifies the lowest, middle, and highest instance IDs.
-#   * Pings DNS records and updates them with the current instance's IP address if necessary.
-#   * Assigns DNS record names based on name availability in the private DNS.
-#   * Saves relevant information to files for use in subsequent scripts.
+#  * Retrieves metadata about the Azure instance, including the resource group, IP address, and VMSS name.
+#  * Gathers the DNS zone name from the provided environment variable.
+#  * Checks for existing DNS records associated with the instance's IP address.
+#    * If a DNS record exists, updates it with the current instance's IP address.
+#    * If no DNS record exists, creates a new one with a unique name.
+#  * Sets the hostname of the instance to match the DNS record name.
+#  * Saves relevant information to files for use in subsequent scripts.
 
 set -euo pipefail
 
@@ -25,13 +24,15 @@ DNS_ZONE_NAME=${private_dns_zone_name}
 NODE_DNS_PATH="/var/opt/graphdb/node_dns_name"
 NODE_NUMBER=1
 
+###########################################################################################################
 # This will be removed in the future, it's required for migration between TF module version 1.0.x and 1.1.x
 IP_RECORD_PRESENT=$(az network private-dns record-set list -z $DNS_ZONE_NAME --resource-group $RESOURCE_GROUP --query "[?aRecords[?ipv4Address=='$IP_ADDRESS'].ipv4Address].name" --output tsv)
 
-echo "Attempting to get DNS record by IP address"
-if [ "$IP_RECORD_PRESENT" ]; then
+if [ "$IP_RECORD_PRESENT" ]  && [ -z "$NODE_DNS_PATH" ]; then
+  echo "Recovering node_dns_name by current IP address"
   echo "$IP_RECORD_PRESENT" > $NODE_DNS_PATH
 fi
+###########################################################################################################
 
 if [ -f $NODE_DNS_PATH ]; then
   echo "Found $NODE_DNS_PATH"

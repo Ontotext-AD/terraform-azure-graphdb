@@ -6,9 +6,9 @@
 #   * Retrieves essential metadata about the Azure instance, including the instance ID, RG, DNS zone name, and GraphDB password.
 #   * Initiates GraphDB and enables the GraphDB cluster proxy service.
 #   * Monitors the availability of GraphDB instances using DNS records and waits for all instances to be running.
-#   * If the current instance has the lowest ID, it attempts to create a GraphDB cluster, retries if necessary, and confirms the cluster's existence.
+#   * Finds the instance with lowest ID in the VMSS.
+#     * If the current instance has the lowest ID, it attempts to create a GraphDB cluster, retries if necessary, and confirms the cluster's existence.
 #   * Changes the admin user password and enables security if not already enabled.
-#   * Displays appropriate messages for successful completion or potential errors.
 #   * Updates the GraphDB admin password if it has been changed in Application Config
 
 set -euo pipefail
@@ -71,6 +71,7 @@ wait_dns_records() {
   ))
 
   if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne "${node_count}" ]; then
+    echo "Expected ${node_count}, found $${ALL_FQDN_RECORDS_COUNT}"
     sleep 5
     wait_dns_records
   else

@@ -3,7 +3,12 @@
 # This script focuses on the GraphDB node joining the cluster if the scale set spawns a new VM instance with a new volume.
 #
 # It performs the following tasks:
-#   * Joins the node to the cluster if raft folder is not found or empty
+#  * Retrieves metadata about the Azure instance, including the resource group, instance ID, DNS zone name, and GraphDB admin password.
+#  * Checks the availability of GraphDB nodes and identifies the leader node in the cluster.
+#  * Monitors the presence of the Raft directory, if no Raft directory is found in 150 seconds:
+#    * Waits for the total quorum of the cluster to be achieved.
+#    * Initiates the addition of the current node to the cluster by contacting the leader node.
+#  * Provides feedback on the successful completion of the script execution.
 
 set -euo pipefail
 
@@ -132,8 +137,7 @@ for i in {1..30}; do
   else
     echo "Found Raft directory"
     if [ -z "$(ls -A $RAFT_DIR)" ]; then
-      echo "Found $RAFT_DIR folder, but it is empty, attempting to join node to the cluster"
-      join_cluster
+      echo "Found $RAFT_DIR folder, but it is empty, please check the data folder and proceed by manually adding the node to the cluster"
       break
     else
       break
