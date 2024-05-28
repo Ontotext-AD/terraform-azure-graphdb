@@ -3,12 +3,12 @@
 # This scripts wait for resources on which the VM relies to exists and with access to
 # Because Terraform creates resources in parallel, the VM could try to access a resources that is still being created in Azure in the background
 
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 set -o errexit
 set -o nounset
 set -o pipefail
-
-# Imports helper functions
-source /var/lib/cloud/instance/scripts/part-002
 
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 

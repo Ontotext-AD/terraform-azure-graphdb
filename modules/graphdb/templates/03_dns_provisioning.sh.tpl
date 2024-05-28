@@ -7,16 +7,16 @@
 #  * Gathers the DNS zone name from the provided environment variable.
 #  * Checks for existing DNS records associated with the instance's IP address.
 #    * If a DNS record exists, updates it with the current instance's IP address.
-#    * If no DNS record exists, creates a new one with a unique name.
+#    * If no DNS record exists, creates a new one withInclui a unique name.
 #  * Sets the hostname of the instance to match the DNS record name.
 #  * Saves relevant information to files for use in subsequent scripts.
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
 
 set -o errexit
 set -o nounset
 set -o pipefail
-
-# Imports helper functions
-source /var/lib/cloud/instance/scripts/part-002
 
 echo "########################"
 echo "#   DNS Provisioning   #"
@@ -72,7 +72,7 @@ else
         az network private-dns record-set a add-record --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --record-set-name $NODE_NAME --ipv4-address "$IP_ADDRESS" &>/dev/null; then
         log_with_timestamp "DNS record for $NODE_DNS_RECORD has been created"
         hostnamectl set-hostname "$NODE_DNS_RECORD"
-        log_with_timestamp $NODE_NAME > $NODE_DNS_PATH
+        echo $NODE_NAME > $NODE_DNS_PATH
         break # Exit loop when non-existing node name is found
       else
         log_with_timestamp "Creating DNS record failed for $NODE_NAME, retrying with next available name"
