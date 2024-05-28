@@ -258,9 +258,10 @@ module "graphdb" {
   graphdb_image_id = var.graphdb_image_id
 
   # VMSS
-  instance_type = var.instance_type
-  node_count    = var.node_count
-  ssh_key       = var.ssh_key
+  instance_type         = var.instance_type
+  node_count            = var.node_count
+  ssh_key               = file(var.ssh_key)
+  user_supplied_scripts = var.user_supplied_scripts
 
   # Managed Disks
   disk_iops_read_write       = var.disk_iops_read_write

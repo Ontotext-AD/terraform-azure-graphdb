@@ -294,3 +294,9 @@ variable "nat_gateway_pip_idle_timeout" {
   type        = number
   default     = 5
 }
+
+# Customer provided user data scripts
+variable "user_supplied_scripts" {
+  description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."
+  type        = list(string)
+}

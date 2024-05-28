@@ -271,6 +271,13 @@ variable "ssh_key" {
   default     = null
 }
 
+# Customer provided user data scripts
+variable "user_supplied_scripts" {
+  description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."
+  type        = list(string)
+  default     = []
+}
+
 # Storage account, primarily used for GraphDB backups
 
 variable "storage_account_tier" {
