@@ -7,7 +7,7 @@
 #  * Gathers the DNS zone name from the provided environment variable.
 #  * Checks for existing DNS records associated with the instance's IP address.
 #    * If a DNS record exists, updates it with the current instance's IP address.
-#    * If no DNS record exists, creates a new one withInclui a unique name.
+#    * If no DNS record exists, creates a new one with an incremented name.
 #  * Sets the hostname of the instance to match the DNS record name.
 #  * Saves relevant information to files for use in subsequent scripts.
 
