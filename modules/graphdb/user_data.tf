@@ -20,7 +20,7 @@ data "cloudinit_config" "entrypoint" {
   # 00 Helper functions
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/00_functions.sh", {})
+    content      = templatefile("${path.module}/templates/00_functions.sh", {})
   }
 
 
