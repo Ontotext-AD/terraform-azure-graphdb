@@ -11,12 +11,12 @@
 #   * Changes the admin user password and enables security if not already enabled.
 #   * Updates the GraphDB admin password if it has been changed in Application Config
 
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 set -o errexit
 set -o nounset
 set -o pipefail
-
-# Imports helper functions
-source /var/lib/cloud/instance/scripts/part-002
 
 echo "###########################"
 echo "#    Starting GraphDB     #"
@@ -257,7 +257,7 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWE
   if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
     log_with_timestamp "Updated GraphDB password successfully"
     GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
-    log_with_timestamp $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
+    echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
   else
     log_with_timestamp "Failed updating GraphDB password. Please check the logs!"
     exit 1

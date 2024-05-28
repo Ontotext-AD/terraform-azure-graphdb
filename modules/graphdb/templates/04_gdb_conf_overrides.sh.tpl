@@ -10,12 +10,12 @@
 #   * Creates systemd service overrides for GraphDB based on memory calculations.
 #   * Applies optional overrides for graphdb.properties and GDB_JAVA_OPTS from Azure App Configuration secrets.
 
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 set -o errexit
 set -o nounset
 set -o pipefail
-
-# Imports helper functions
-source /var/lib/cloud/instance/scripts/part-002
 
 echo "#######################################"
 echo "#   GraphDB configuration overrides   #"

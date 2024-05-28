@@ -8,6 +8,9 @@
 #   * Overrides the configuration file for Telegraf.
 #   * Restarts the Telegraf service to apply the updated configuration.
 
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -34,3 +37,5 @@ cat <<-EOF >/etc/telegraf/telegraf.conf
 EOF
 
 systemctl restart telegraf
+
+log_with_timestamp "Completed configuring Telegraf"
