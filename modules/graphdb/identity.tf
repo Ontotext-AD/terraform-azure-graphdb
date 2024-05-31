@@ -38,3 +38,11 @@ resource "azurerm_role_assignment" "graphdb_vmss_private_dns_contributor" {
   scope                = azurerm_private_dns_zone.graphdb.id
   role_definition_name = "Private DNS Zone Contributor"
 }
+
+# TODO reduce the role permissions?, should be able to perform action(s) 'Microsoft.ManagedIdentity/userAssignedIdentities/assign/action'
+# The only built-in roles having this allowed are Owner, Contributor and Azure RedHat OpenShift Machine API Operator Role
+resource "azurerm_role_assignment" "graphdb_vmss_managed_identity_contributor" {
+  principal_id         = azurerm_user_assigned_identity.graphdb_vmss.principal_id
+  scope                = azurerm_user_assigned_identity.graphdb_vmss.id
+  role_definition_name = "Contributor"
+}

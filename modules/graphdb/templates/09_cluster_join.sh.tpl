@@ -159,11 +159,15 @@ join_cluster() {
 # therefore we need to be sure that this is not triggered before the first cluster initialization.
 # Wait for 150 seconds, break if the raft folder appears (Handles cluster initialization).
 
-for i in {1..30}; do
+echo "#####################################"
+echo "#    Looking for Raft directory     #"
+echo "#####################################"
+
+for i in {1..60}; do
   if [ ! -d "$RAFT_DIR" ]; then
     log_with_timestamp "Raft directory not found yet. Waiting (attempt $i of 30)..."
     sleep 5
-    if [ $i == 30 ]; then
+    if [ $i == 60 ]; then
       log_with_timestamp "$RAFT_DIR folder is not found, joining the current node to the cluster"
       join_cluster
       break

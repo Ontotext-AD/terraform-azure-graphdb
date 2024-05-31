@@ -107,7 +107,9 @@ create_managed_disk() {
 attach_disk() {
   local disk_name=$1
 
-  if az vmss disk attach --vmss-name $VMSS_NAME --resource-group $RESOURCE_GROUP --instance-id $INSTANCE_ID --lun $LUN --disk "$disk_name"; then
+  # az vmss disk attach --vmss-name vmss-vik-gdb --resource-group rg-vik-gdb --instance-id vmss-vik-gdb_38d6d472 --lun 2 --disk disk-vik-gdb-2-1
+  # az vm disk attach --resource-group $RESOURCE_GROUP --vm-name $INSTANCE_ID  --lun 2 --disk $disk_name
+  if az vm disk attach --resource-group $RESOURCE_GROUP --vm-name $INSTANCE_ID  --lun 2 --name $disk_name; then
     log_with_timestamp "Disk $disk_name successfully attached."
     return 0
   else

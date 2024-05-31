@@ -98,6 +98,8 @@ check_license() {
     exit 1
   fi
 }
+
+# TODO refactor this to get the instance IDs from the DNS name
 # Get all instance IDs for the current VMSS
 INSTANCE_IDS=($(az vmss list-instances --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "[].instanceId" --output tsv))
 # Sort instance IDs
