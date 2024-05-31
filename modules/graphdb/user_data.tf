@@ -118,4 +118,13 @@ data "cloudinit_config" "entrypoint" {
       app_configuration_endpoint : var.app_configuration_endpoint
     })
   }
+
+  # 09 Execute additional scripts
+  dynamic "part" {
+    for_each = var.user_supplied_scripts
+    content {
+      content_type = "text/x-shellscript"
+      content      = file(part.value)
+    }
+  }
 }

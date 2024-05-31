@@ -153,6 +153,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
+| user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]` | no |
 | storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
 | storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
