@@ -260,7 +260,7 @@ module "graphdb" {
   # VMSS
   instance_type         = var.instance_type
   node_count            = var.node_count
-  ssh_key               = file(var.ssh_key)
+  ssh_key               = var.ssh_key
   user_supplied_scripts = var.user_supplied_scripts
 
   # Managed Disks
