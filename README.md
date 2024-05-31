@@ -351,6 +351,15 @@ TODO Add more examples
 TODO Configure security, provisioning etc. links for loading data? backend for state
 -->
 
+**Deploying in Existing Resource Group and Virtual Network**
+
+To deploy in already existing Resource Group and Virtual Network you just need to specify their names, for example:
+
+```hcl
+resource_group_name  = "existing_rg"
+virtual_network_name = "existing_vnet"
+```
+
 ## Local Development
 
 Instead of using the module as dependency, you can create a local variables file named `terraform.tfvars` and provide configuration overrides there.
