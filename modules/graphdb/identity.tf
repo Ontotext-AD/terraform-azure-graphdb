@@ -8,7 +8,7 @@ resource "azurerm_user_assigned_identity" "graphdb_vmss" {
   location            = var.location
 }
 
-# Required by the 00_wait_resources.sh.tpl template
+# Required by the 01_wait_resources.sh.tpl template
 resource "azurerm_role_assignment" "graphdb_rg_reader" {
   principal_id         = azurerm_user_assigned_identity.graphdb_vmss.principal_id
   scope                = var.resource_group_id

@@ -3,6 +3,9 @@
 # This scripts wait for resources on which the VM relies to exists and with access to
 # Because Terraform creates resources in parallel, the VM could try to access a resources that is still being created in Azure in the background
 
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -30,19 +33,19 @@ waitForAppConfigKey() {
     local elapsed_time=$((current_time - start_time))
 
     if az appconfig kv show --endpoint "$APP_CONFIGURATION_ENDPOINT" --auth-mode login --key "$config_key" &>/dev/null; then
-      echo "Configuration '$config_key' in App Configuration '$APP_CONFIGURATION_ENDPOINT' is available."
+      log_with_timestamp "Configuration '$config_key' in App Configuration '$APP_CONFIGURATION_ENDPOINT' is available."
       return 0 # Success
     elif [ "$elapsed_time" -ge "$MAX_TIMEOUT" ]; then
-      echo "Timeout reached. Configuration did not become available in time."
+      log_with_timestamp "Timeout reached. Configuration did not become available in time."
       return 1 # Timeout
     else
-      echo "Configuration is still being created. Waiting for $POLL_INTERVAL seconds..."
+      log_with_timestamp "Configuration is still being created. Waiting for $POLL_INTERVAL seconds..."
       sleep "$POLL_INTERVAL"
     fi
   done
 }
 
-echo "Waiting for Private DNS zone: $PRIVATE_DNS_ZONE_NAME"
+log_with_timestamp "Waiting for Private DNS zone: $PRIVATE_DNS_ZONE_NAME"
 time az resource wait \
   --resource-group "$RESOURCE_GROUP" \
   --ids "$PRIVATE_DNS_ZONE_ID" \
@@ -52,7 +55,7 @@ time az resource wait \
   --interval $POLL_INTERVAL \
   --timeout $MAX_TIMEOUT
 
-echo "Waiting for Private DNS zone link: $PRIVATE_DNS_ZONE_LINK_NAME"
+log_with_timestamp "Waiting for Private DNS zone link: $PRIVATE_DNS_ZONE_LINK_NAME"
 time az resource wait \
   --resource-group "$RESOURCE_GROUP" \
   --ids "$PRIVATE_DNS_ZONE_LINK_ID" \
@@ -62,7 +65,7 @@ time az resource wait \
   --interval $POLL_INTERVAL \
   --timeout $MAX_TIMEOUT
 
-echo "Waiting for App Configuration: $APP_CONFIGURATION_ENDPOINT"
+log_with_timestamp "Waiting for App Configuration: $APP_CONFIGURATION_ENDPOINT"
 time az resource wait \
   --resource-group "$RESOURCE_GROUP" \
   --ids "$APP_CONFIGURATION_ID" \
@@ -72,7 +75,7 @@ time az resource wait \
   --interval $POLL_INTERVAL \
   --timeout $MAX_TIMEOUT
 
-echo "Waiting for Storage Account: $STORAGE_ACCOUNT_NAME"
+log_with_timestamp "Waiting for Storage Account: $STORAGE_ACCOUNT_NAME"
 time az resource wait \
   --resource-group "$RESOURCE_GROUP" \
   --name "$STORAGE_ACCOUNT_NAME" \

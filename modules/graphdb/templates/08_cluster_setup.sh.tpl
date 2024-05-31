@@ -11,7 +11,12 @@
 #   * Changes the admin user password and enables security if not already enabled.
 #   * Updates the GraphDB admin password if it has been changed in Application Config
 
-set -euo pipefail
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
+set -o errexit
+set -o nounset
+set -o pipefail
 
 echo "###########################"
 echo "#    Starting GraphDB     #"
@@ -44,20 +49,20 @@ systemctl start graphdb
 systemctl enable graphdb-cluster-proxy.service
 systemctl start graphdb-cluster-proxy.service
 
-echo "Started GraphDB services"
+log_with_timestamp "Started GraphDB services"
 
 check_gdb() {
   if [ -z "$1" ]; then
-    echo "Error: IP address or hostname is not provided."
+    log_with_timestamp "Error: IP address or hostname is not provided."
     return 1
   fi
 
   local gdb_address="$1:7200/rest/monitor/infrastructure"
   if curl -s --head -u "admin:$${GRAPHDB_PASSWORD}" --fail "$gdb_address" >/dev/null; then
-    echo "Success, GraphDB node $gdb_address is available"
+    log_with_timestamp "Success, GraphDB node $gdb_address is available"
     return 0
   else
-    echo "GraphDB node $gdb_address is not available yet"
+    log_with_timestamp "GraphDB node $gdb_address is not available yet"
     return 1
   fi
 }
@@ -71,11 +76,11 @@ wait_dns_records() {
   ))
 
   if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne "${node_count}" ]; then
-    echo "Expected ${node_count}, found $${ALL_FQDN_RECORDS_COUNT}"
+    log_with_timestamp "Expected ${node_count}, found $${ALL_FQDN_RECORDS_COUNT}"
     sleep 5
     wait_dns_records
   else
-    echo "Private DNS zone record count is $${ALL_FQDN_RECORDS_COUNT}"
+    log_with_timestamp "Private DNS zone record count is $${ALL_FQDN_RECORDS_COUNT}"
   fi
 }
 
@@ -89,7 +94,7 @@ check_license() {
 
   # Check if the response contains the word "free"
   if [[ "$response" == *"free"* ]]; then
-    echo "Free license detected"
+    log_with_timestamp "Free license detected"
     exit 1
   fi
 }
@@ -118,21 +123,21 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
 
   # Check all instances are running
   for record in "$${ALL_DNS_RECORDS[@]}"; do
-    echo "Pinging $record"
+    log_with_timestamp "Pinging $record"
     # Removes the '.' at the end of the DNS address
     cleanedAddress=$${record%?}
     # Check if cleanedAddress is non-empty before calling check_gdb
     if [ -n "$cleanedAddress" ]; then
       while ! check_gdb "$cleanedAddress"; do
-        echo "Waiting for GDB $cleanedAddress to start"
+        log_with_timestamp "Waiting for GDB $cleanedAddress to start"
         sleep "$RETRY_DELAY"
       done
     else
-      echo "Error: cleanedAddress is empty."
+      log_with_timestamp "Error: cleanedAddress is empty."
     fi
   done
 
-  echo "All GDB instances are available. Proceeding..."
+  log_with_timestamp "All GDB instances are available. Proceeding..."
 
   for ((i = 1; i <= $MAX_RETRIES; i++)); do
     IS_CLUSTER=$(
@@ -144,7 +149,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
 
     # 000 = no HTTP code was received
     if [[ "$IS_CLUSTER" == 000 ]]; then
-      echo "Retrying ($i/$MAX_RETRIES) after $RETRY_DELAY seconds..."
+      log_with_timestamp "Retrying ($i/$MAX_RETRIES) after $RETRY_DELAY seconds..."
       sleep $RETRY_DELAY
     elif [ "$IS_CLUSTER" == 503 ]; then
       EXISTING_DNS_RECORDS=$(az network private-dns record-set list -g $RESOURCE_GROUP -z $DNS_ZONE_NAME --query "[?starts_with(name, 'node')].fqdn")
@@ -159,16 +164,16 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       )
 
       if [[ "$CLUSTER_CREATED" == 201 ]]; then
-        echo "GraphDB cluster successfully created!"
+        log_with_timestamp "GraphDB cluster successfully created!"
         break
       else
-        echo "Unexpected Status code returned $CLUSTER_CREATED"
+        log_with_timestamp "Unexpected Status code returned $CLUSTER_CREATED"
       fi
     elif [ "$IS_CLUSTER" == 200 ]; then
-      echo "Cluster exists"
+      log_with_timestamp "Cluster exists"
       break
     else
-      echo "Something went wrong, returned: $IS_CLUSTER. Check the logs!"
+      log_with_timestamp "Something went wrong, returned: $IS_CLUSTER. Check the logs!"
     fi
   done
 
@@ -184,7 +189,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
 
   # Check if GDB security is enabled
   if [[ $IS_SECURITY_ENABLED == "true" ]]; then
-    echo "Security is enabled"
+    log_with_timestamp "Security is enabled"
   else
     # Set the admin password
     SET_PASSWORD=$(
@@ -194,9 +199,9 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
         --data "{ \"password\": \"$${GRAPHDB_PASSWORD}\" }"
     )
     if [[ "$SET_PASSWORD" == 200 ]]; then
-      echo "Set GraphDB password successfully"
+      log_with_timestamp "Set GraphDB password successfully"
     else
-      echo "Failed setting GraphDB password. Please check the logs!"
+      log_with_timestamp "Failed setting GraphDB password. Please check the logs!"
     fi
 
     # Enable the security
@@ -206,13 +211,13 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       -d 'true' 'http://localhost:7200/rest/security')
 
     if [[ "$ENABLED_SECURITY" == 200 ]]; then
-      echo "Enabled GraphDB security successfully"
+      log_with_timestamp "Enabled GraphDB security successfully"
     else
-      echo "Failed enabling GraphDB security. Please check the logs!"
+      log_with_timestamp "Failed enabling GraphDB security. Please check the logs!"
     fi
   fi
 else
-  echo "The current instance: $INSTANCE_ID is not the lowest, skipping cluster creation"
+  log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping cluster creation"
 fi
 
 echo "####################################"
@@ -224,17 +229,17 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWE
   # The request will fail if the cluster state is unhealthy
   # This handles rolling updates
   for record in "$${ALL_DNS_RECORDS[@]}"; do
-    echo "Pinging $record"
+    log_with_timestamp "Pinging $record"
     # Removes the '.' at the end of the DNS address
     cleanedAddress=$${record%?}
     # Check if cleanedAddress is non-empty before calling check_gdb
     if [ -n "$cleanedAddress" ]; then
       while ! check_gdb "$cleanedAddress"; do
-        echo "Waiting for GDB $cleanedAddress to start"
+        log_with_timestamp "Waiting for GDB $cleanedAddress to start"
         sleep "$RETRY_DELAY"
       done
     else
-      echo "Error: cleanedAddress is empty."
+      log_with_timestamp "Error: cleanedAddress is empty."
     fi
   done
 
@@ -250,13 +255,13 @@ if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWE
       --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",$EXISTING_SETTINGS}"
   )
   if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
-    echo "Updated GraphDB password successfully"
+    log_with_timestamp "Updated GraphDB password successfully"
     GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
     echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
   else
-    echo "Failed updating GraphDB password. Please check the logs!"
+    log_with_timestamp "Failed updating GraphDB password. Please check the logs!"
     exit 1
   fi
 else
-  echo "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
+  log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
 fi

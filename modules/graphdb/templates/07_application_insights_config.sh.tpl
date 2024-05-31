@@ -1,6 +1,17 @@
 #!/bin/bash
 
-set -euo pipefail
+# This script focuses on configuring Application Insights
+#
+# It performs the following tasks:
+# * Provisions /opt/graphdb/applicationinsights.json
+# * Changes the owner of applicationinsights.json to graphdb
+
+# Imports helper functions
+source /var/lib/cloud/instance/scripts/part-002
+
+set -o errexit
+set -o nounset
+set -o pipefail
 
 echo "###########################################"
 echo "#    Configuring Application Insights     #"
@@ -107,3 +118,5 @@ cat <<-EOF >/opt/graphdb/applicationinsights.json
 EOF
 
 chown graphdb:graphdb /opt/graphdb/applicationinsights.json
+
+log_with_timestamp "Finished configuring Application Insights Agent"
