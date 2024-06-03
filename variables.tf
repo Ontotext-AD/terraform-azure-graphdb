@@ -1,5 +1,17 @@
 # General configurations
 
+variable "resource_group_name" {
+  description = "The name of the existing resource group to use. If not provided, a new resource group will be created."
+  type        = string
+  default     = null
+}
+
+variable "virtual_network_name" {
+  description = "The name of the existing vnet to use. If not provided, a new virtual network will be created."
+  type        = string
+  default     = null
+}
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
