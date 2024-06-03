@@ -120,6 +120,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
 | tags | Common resource tags. | `map(string)` | `{}` | no |
 | lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
+| vmss\_dns\_servers | List of DNS servers for the VMSS | `list(string)` | `[]` | no |
 | graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null` | no |
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
 | gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |

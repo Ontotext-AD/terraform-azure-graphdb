@@ -18,6 +18,8 @@
 * Updated the shell options to be more descriptive.
 * Fixed the deployment of `azurerm_monitor_diagnostic_setting` for the key vault when monitoring is enabled
 * Introduced a mechanism to provide additional user data scripts via the `user_supplied_scripts` variable.
+* Added `dns_servers = ["168.63.129.16"]` to the VMSS. This allows the Private DNS zone records to be resolved
+even if a custom DNS server is set for the Virtual Network.
 
 
 ## 1.0.1

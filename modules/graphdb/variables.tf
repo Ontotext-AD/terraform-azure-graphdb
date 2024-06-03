@@ -28,6 +28,11 @@ variable "resource_group_name" {
 
 # Networking
 
+variable "vmss_dns_servers" {
+  description = "List of DNS servers for the VMSS"
+  type        = list(string)
+}
+
 variable "virtual_network_id" {
   description = "Virtual network the DNS will be linked to"
   type        = string
@@ -300,3 +305,4 @@ variable "user_supplied_scripts" {
   description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."
   type        = list(string)
 }
+

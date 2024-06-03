@@ -2,6 +2,12 @@
 # Linux VMs scale set for GraphDB
 #
 
+# Ensures the VMSS will always resolve addresses in the Private DNS Zone.
+# https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16
+locals {
+  dns_servers = setunion(var.vmss_dns_servers, ["168.63.129.16"])
+}
+
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   name                = "vmss-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
@@ -80,8 +86,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   network_interface {
-    name    = "nic-${var.resource_name_prefix}-vmss"
-    primary = true
+    name        = "nic-${var.resource_name_prefix}-vmss"
+    primary     = true
+    dns_servers = local.dns_servers
 
     ip_configuration {
       name                                         = "${var.resource_name_prefix}-ip-config"
