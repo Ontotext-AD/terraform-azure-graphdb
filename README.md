@@ -113,6 +113,8 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| resource\_group\_name | The name of the existing resource group to use. If not provided, a new resource group will be created. | `string` | `null` | no |
+| virtual\_network\_name | The name of the existing vnet to use. If not provided, a new virtual network will be created. | `string` | `null` | no |
 | resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a | yes |
 | location | Azure geographical location where resources will be deployed | `string` | n/a | yes |
 | zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
