@@ -105,7 +105,7 @@ The Terraform module deploys a VM scale set based on a VM image published in the
 This requires you to accept the terms which can be accomplished with Azure CLI:
 
 ```bash
-az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
+az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
 ```
 
 <!-- BEGIN_TF_DOCS -->
