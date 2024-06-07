@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 1.1.1
+
+* Updated GraphDB version to [10.6.4](https://graphdb.ontotext.com/documentation/10.6/release-notes.html#graphdb-10-6-4)
+
 ## 1.1.0
 
 ### New Features & Enhancements
