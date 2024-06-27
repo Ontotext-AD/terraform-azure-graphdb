@@ -44,7 +44,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   sku           = var.instance_type
   instances     = var.node_count
   zones         = var.zones
-  zone_balance  = true
+  zone_balance  = false
   upgrade_mode  = "Manual"
   overprovision = false
 

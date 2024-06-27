@@ -148,6 +148,30 @@ variable "gateway_private_link_service_network_policies_enabled" {
   default     = false
 }
 
+variable "gateway_backend_port" {
+  description = "Backend port for the Application Gateway rules"
+  type        = number
+  default     = 7201
+}
+
+variable "gateway_probe_interval" {
+  description = "Interval in seconds between the health probe checks"
+  type        = number
+  default     = 10
+}
+
+variable "gateway_probe_timeout" {
+  description = "Timeout in seconds for the health probe checks"
+  type        = number
+  default     = 1
+}
+
+variable "gateway_probe_threshold" {
+  description = "Number of consecutive health checks to consider the probe passing or failing"
+  type        = number
+  default     = 2
+}
+
 # TLS
 variable "tls_certificate_path" {
   description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB."
@@ -478,4 +502,3 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
-

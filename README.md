@@ -368,6 +368,25 @@ virtual_network_name = "existing_vnet"
 Instead of using the module as dependency, you can create a local variables file named `terraform.tfvars` and provide configuration overrides there.
 Then simply follow the same steps as in the [Usage](#usage) section.
 
+## Single Node Deployment
+
+This Terraform module has the ability to deploy a single instance of GraphDB.
+To deploy a single instance you just need to set `node_count` to 1, everything else happens automatically.
+
+### Migrating from a Single Node Deployment to Cluster Deployment
+
+Here is the procedure for migrating your single node deployment to cluster e.g., from one node to 3 nodes
+
+1. Create a backup of your data.
+2. Change the `node_count` to 3 or more, depending on the cluster size you desire.
+3. Run `terraform import 'module.graphdb.azurerm_managed_disk.managed_disks[\"<DISK_NAME>\"]' /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP_NAME>/providers/Microsoft.Compute/disks/<DISK_NAME>`
+   * **IMPORTANT!** Resource names are case-sensitive and mismatch will lead to resource recreation and data loss.
+   * The CLI syntax differs depending on the OS please refer to the [documentation](https://developer.hashicorp.com/terraform/cli/commands/import).
+4. Validate the import is successful by checking the `terraform.tfstate` file, should contain `azurerm_managed_disk`
+   resource with the name of the disk you've imported.
+5. Run `terraform plan` and review the plan carefully if everything seems fine run `terraform apply`
+
+
 ## Release History
 
 All notable changes between version are tracked and documented at [CHANGELOG.md](CHANGELOG.md).
