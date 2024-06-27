@@ -163,12 +163,18 @@ module "application_gateway" {
   location             = var.location
   resource_group_name  = local.resource_group_name
   zones                = var.zones
+  node_count           = var.node_count
 
   virtual_network_name             = local.virtual_network_name
   gateway_subnet_id                = azurerm_subnet.graphdb_gateway.id
   gateway_subnet_address_prefixes  = azurerm_subnet.graphdb_gateway.address_prefixes
   gateway_allowed_address_prefix   = var.inbound_allowed_address_prefix
   gateway_allowed_address_prefixes = var.inbound_allowed_address_prefixes
+
+  # Health probe settings
+  gateway_probe_interval  = var.gateway_probe_interval
+  gateway_probe_timeout   = var.gateway_probe_timeout
+  gateway_probe_threshold = var.gateway_probe_threshold
 
   # Public / Private toggle
   gateway_enable_private_access = var.gateway_enable_private_access
@@ -205,6 +211,7 @@ module "bastion" {
   bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
 
+
 # Configures Azure monitoring
 module "monitoring" {
   count = var.deploy_monitoring ? 1 : 0
@@ -214,10 +221,12 @@ module "monitoring" {
   resource_name_prefix = var.resource_name_prefix
   resource_group_name  = local.resource_group_name
   location             = var.location
+  node_count           = var.node_count
 
   web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
   web_test_geo_locations            = var.web_test_geo_locations
   web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
+  graphdb_external_address_fqdn     = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
 
   monitor_reader_principal_id = var.monitor_reader_principal_id
 
@@ -238,6 +247,11 @@ module "monitoring" {
   create_key_vault_diagnostic_settings = var.tls_certificate_id == null ? true : false
 }
 
+locals {
+  # If node_count is 1 take the first zone only, if node_count > 1 use all provided zones.
+  adjusted_zones = var.node_count == 1 ? [element(var.zones, 0)] : var.zones
+}
+
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
 module "graphdb" {
   source = "./modules/graphdb"
@@ -246,7 +260,7 @@ module "graphdb" {
   location             = var.location
   resource_group_id    = local.resource_group_id
   resource_group_name  = local.resource_group_name
-  zones                = var.zones
+  zones                = local.adjusted_zones
 
   # Networking
   virtual_network_id                   = local.virtual_network_id

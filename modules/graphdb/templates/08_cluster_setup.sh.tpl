@@ -67,23 +67,6 @@ check_gdb() {
   fi
 }
 
-wait_dns_records() {
-  ALL_FQDN_RECORDS_COUNT=($(
-    az network private-dns record-set list \
-      --zone $DNS_ZONE_NAME \
-      --resource-group $RESOURCE_GROUP \
-      --query "[?contains(name, 'node')].fqdn | length(@)"
-  ))
-
-  if [ "$${ALL_FQDN_RECORDS_COUNT}" -ne "${node_count}" ]; then
-    log_with_timestamp "Expected ${node_count}, found $${ALL_FQDN_RECORDS_COUNT}"
-    sleep 5
-    wait_dns_records
-  else
-    log_with_timestamp "Private DNS zone record count is $${ALL_FQDN_RECORDS_COUNT}"
-  fi
-}
-
 # Function to check if the GraphDB license has been applied
 check_license() {
   # Define the URL to check
@@ -112,32 +95,8 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
   echo "#    Beginning cluster setup     #"
   echo "##################################"
 
-  wait_dns_records
-  check_license
-
-  readarray -t ALL_DNS_RECORDS <<<"$(az network private-dns record-set list \
-    --zone $DNS_ZONE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --query "[?contains(name, 'node')].fqdn" \
-    --output tsv)"
-
-  # Check all instances are running
-  for record in "$${ALL_DNS_RECORDS[@]}"; do
-    log_with_timestamp "Pinging $record"
-    # Removes the '.' at the end of the DNS address
-    cleanedAddress=$${record%?}
-    # Check if cleanedAddress is non-empty before calling check_gdb
-    if [ -n "$cleanedAddress" ]; then
-      while ! check_gdb "$cleanedAddress"; do
-        log_with_timestamp "Waiting for GDB $cleanedAddress to start"
-        sleep "$RETRY_DELAY"
-      done
-    else
-      log_with_timestamp "Error: cleanedAddress is empty."
-    fi
-  done
-
-  log_with_timestamp "All GDB instances are available. Proceeding..."
+  wait_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "${node_count}"
+  check_all_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "$RETRY_DELAY"
 
   for ((i = 1; i <= $MAX_RETRIES; i++)); do
     IS_CLUSTER=$(
@@ -155,7 +114,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       EXISTING_DNS_RECORDS=$(az network private-dns record-set list -g $RESOURCE_GROUP -z $DNS_ZONE_NAME --query "[?starts_with(name, 'node')].fqdn")
       CLUSTER_ADDRESS_GRPC=$(echo "$EXISTING_DNS_RECORDS" | jq -r '[ .[] | rtrimstr(".") + ":7300" ]')
       CLUSTER_CREATED=$(
-        curl -X POST -s http://localhost:7200/rest/cluster/config \
+        curl -X POST -s http://node-1.$DNS_ZONE_NAME:7200/rest/cluster/config \
           -w "%%{http_code}" \
           -o "/dev/null" \
           -H 'Content-type: application/json' \
@@ -182,40 +141,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
   echo "#    Changing admin user password and enable security     #"
   echo "###########################################################"
 
-  IS_SECURITY_ENABLED=$(curl -s -X GET \
-    --header 'Accept: application/json' \
-    -u "admin:$${GRAPHDB_PASSWORD}" \
-    'http://localhost:7200/rest/security')
-
-  # Check if GDB security is enabled
-  if [[ $IS_SECURITY_ENABLED == "true" ]]; then
-    log_with_timestamp "Security is enabled"
-  else
-    # Set the admin password
-    SET_PASSWORD=$(
-      curl --location -s -w "%%{http_code}" \
-        --request PATCH 'http://localhost:7200/rest/security/users/admin' \
-        --header 'Content-Type: application/json' \
-        --data "{ \"password\": \"$${GRAPHDB_PASSWORD}\" }"
-    )
-    if [[ "$SET_PASSWORD" == 200 ]]; then
-      log_with_timestamp "Set GraphDB password successfully"
-    else
-      log_with_timestamp "Failed setting GraphDB password. Please check the logs!"
-    fi
-
-    # Enable the security
-    ENABLED_SECURITY=$(curl -X POST -s -w "%%{http_code}" \
-      --header 'Content-Type: application/json' \
-      --header 'Accept: */*' \
-      -d 'true' 'http://localhost:7200/rest/security')
-
-    if [[ "$ENABLED_SECURITY" == 200 ]]; then
-      log_with_timestamp "Enabled GraphDB security successfully"
-    else
-      log_with_timestamp "Failed enabling GraphDB security. Please check the logs!"
-    fi
-  fi
+  configure_graphdb_security "$GRAPHDB_ADMIN_PASSWORD"
 else
   log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping cluster creation"
 fi
@@ -226,42 +152,7 @@ echo "####################################"
 
 # This will update the GraphDB admin password if this node has the lowest ID and password_creation_time file exists.
 if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
-  # The request will fail if the cluster state is unhealthy
-  # This handles rolling updates
-  for record in "$${ALL_DNS_RECORDS[@]}"; do
-    log_with_timestamp "Pinging $record"
-    # Removes the '.' at the end of the DNS address
-    cleanedAddress=$${record%?}
-    # Check if cleanedAddress is non-empty before calling check_gdb
-    if [ -n "$cleanedAddress" ]; then
-      while ! check_gdb "$cleanedAddress"; do
-        log_with_timestamp "Waiting for GDB $cleanedAddress to start"
-        sleep "$RETRY_DELAY"
-      done
-    else
-      log_with_timestamp "Error: cleanedAddress is empty."
-    fi
-  done
-
-  # Gets the existing settings for admin user
-  EXISTING_SETTINGS=$(curl --location -s -u "admin:$${GRAPHDB_PASSWORD}" 'http://localhost:7200/rest/security/users/admin' | jq -rc '{grantedAuthorities, appSettings}' | sed 's/^{//;s/}$//')
-
-  SET_NEW_PASSWORD=$(
-    curl --location -s -w "%%{http_code}" \
-      --request PATCH 'http://localhost:7200/rest/security/users/admin' \
-      --header 'Content-Type: application/json' \
-      --header 'Accept: text/plain' \
-      -u "admin:$${GRAPHDB_PASSWORD}" \
-      --data "{\"password\":\"$${GRAPHDB_ADMIN_PASSWORD}\",$EXISTING_SETTINGS}"
-  )
-  if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
-    log_with_timestamp "Updated GraphDB password successfully"
-    GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
-    echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
-  else
-    log_with_timestamp "Failed updating GraphDB password. Please check the logs!"
-    exit 1
-  fi
+  update_graphdb_admin_password "$GRAPHDB_PASSWORD" "$GRAPHDB_ADMIN_PASSWORD" "$RETRY_DELAY" "${app_configuration_endpoint}" "$${ALL_DNS_RECORDS[@]}"
 else
   log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping password update"
 fi

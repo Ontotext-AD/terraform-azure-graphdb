@@ -13,7 +13,9 @@ locals {
 
 # Creates managed disks which will be attached to the VMSS instances by the userdata script
 resource "azurerm_managed_disk" "managed_disks" {
-  for_each = {
+
+  # Do not create disks if node_count = 1 as we don't know which AZ will be the primary
+  for_each = var.node_count == 1 ? {} : {
     for entry in local.lun_map : entry.datadisk_name => entry.zone
   }
 
