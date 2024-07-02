@@ -1,5 +1,10 @@
 # General configurations
 
+variable "node_count" {
+  description = "Number of GraphDB nodes deployed in ASG"
+  type        = number
+}
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming AWS resources"
   type        = string
@@ -151,4 +156,9 @@ variable "key_vault_id" {
 variable "create_key_vault_diagnostic_settings" {
   description = "Boolean variable to determine whether to create Key Vault diagnostic settings."
   type        = bool
+}
+
+variable "graphdb_external_address_fqdn" {
+  description = "Public FQDN where GraphDB can be addressed"
+  type        = string
 }

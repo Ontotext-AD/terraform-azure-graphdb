@@ -91,8 +91,8 @@ resource "azurerm_application_gateway" "graphdb-public" {
     name = local.gateway_http_probe_name
 
     host                = "127.0.0.1"
-    path                = var.gateway_probe_path
-    port                = var.gateway_probe_port
+    path                = var.node_count != 1 ? "/rest/cluster/node/status" : "/protocol"
+    port                = var.node_count != 1 ? 7201 : 7200
     protocol            = var.gateway_backend_protocol
     interval            = var.gateway_probe_interval
     timeout             = var.gateway_probe_timeout
@@ -102,7 +102,7 @@ resource "azurerm_application_gateway" "graphdb-public" {
   backend_http_settings {
     name            = local.gateway_backend_http_settings_name
     path            = var.gateway_backend_path
-    port            = var.gateway_backend_port
+    port            = var.node_count != 1 ? 7201 : 7200
     protocol        = var.gateway_backend_protocol
     request_timeout = var.gateway_backend_request_timeout
 
@@ -255,8 +255,8 @@ resource "azurerm_application_gateway" "graphdb-private" {
     name = local.gateway_http_probe_name
 
     host                = "127.0.0.1"
-    path                = var.gateway_probe_path
-    port                = var.gateway_probe_port
+    path                = var.node_count != 1 ? "/rest/cluster/node/status" : "/protocol"
+    port                = var.node_count != 1 ? 7201 : 7200
     protocol            = var.gateway_backend_protocol
     interval            = var.gateway_probe_interval
     timeout             = var.gateway_probe_timeout
@@ -266,7 +266,7 @@ resource "azurerm_application_gateway" "graphdb-private" {
   backend_http_settings {
     name            = local.gateway_backend_http_settings_name
     path            = var.gateway_backend_path
-    port            = var.gateway_backend_port
+    port            = var.node_count != 1 ? 7201 : 7200
     protocol        = var.gateway_backend_protocol
     request_timeout = var.gateway_backend_request_timeout
 

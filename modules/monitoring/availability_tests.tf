@@ -1,4 +1,9 @@
 # Availability tests
+
+locals {
+  web_test_url = var.node_count != 1 ? "https://${var.graphdb_external_address_fqdn}/rest/cluster/node/status" : "https://${var.graphdb_external_address_fqdn}/protocol"
+}
+
 resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
   enabled = var.appi_web_test_availability_enabled
 
@@ -11,17 +16,21 @@ resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
   timeout                 = var.web_test_timeout
 
   request {
-    url = "https://${var.web_test_availability_request_url}/rest/cluster/node/status"
+    url = local.web_test_url
   }
 
   validation_rules {
     expected_status_code = var.web_test_availability_expected_status_code
     ssl_check_enabled    = var.web_test_ssl_check_enabled
 
-    content {
-      content_match      = var.web_test_availability_content_match
-      pass_if_text_found = true
-      ignore_case        = true
+    # Content match will not be enabled if a single node is deployed
+    dynamic "content" {
+      for_each = var.node_count > 1 ? [1] : []
+      content {
+        content_match      = var.web_test_availability_content_match
+        pass_if_text_found = true
+        ignore_case        = true
+      }
     }
   }
 }
