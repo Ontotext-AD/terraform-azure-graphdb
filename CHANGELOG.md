@@ -9,6 +9,7 @@
   * Made cluster-related userdata scripts executable only when `node_count` is greater than 1.
   * Added new userdata script `10_start_single_graphdb_services.sh.tpl` for single node setup.
 * Moved some functions to `00_functions.sh` so they are reused instead of duplicated in the userdata scripts.
+* Updated GraphDB version to [10.7.0](https://graphdb.ontotext.com/documentation/10.7/release-notes.html)
 
 ## 1.1.1
 

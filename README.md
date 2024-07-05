@@ -80,6 +80,7 @@ versions. The next table shows the version compatability between GraphDB and the
 | GraphDB Terraform | GraphDB        |
 |-------------------|----------------|
 | Version 1.x.x     | Version 10.6.x |
+| Version 1.2.x     | Version 10.7.x |
 
 You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
 the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
@@ -197,7 +198,7 @@ To use the GraphDB module, create a new Terraform project or add to an existing 
 ```hcl
 module "graphdb" {
   source  = "Ontotext-AD/graphdb/azure"
-  version = "1.0.0"
+  version = "~> 1.0"
 
   resource_name_prefix = "graphdb"
   location             = "East US"
@@ -253,7 +254,7 @@ graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
 **GraphDB Configurations**
 
 The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
-supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.6/directories-and-config-properties.html#configuration):
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.7/directories-and-config-properties.html#configuration):
 
 ```hcl
 graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
