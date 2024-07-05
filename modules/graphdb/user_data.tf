@@ -109,24 +109,43 @@ data "cloudinit_config" "entrypoint" {
   }
 
   # 08 Cluster setup
-  part {
-    content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/08_cluster_setup.sh.tpl", {
-      app_configuration_endpoint : var.app_configuration_endpoint
-      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
-      node_count : var.node_count
-    })
+  dynamic "part" {
+    for_each = var.node_count > 1 ? [1] : []
+    content {
+      content_type = "text/x-shellscript"
+      content = templatefile("${path.module}/templates/08_cluster_setup.sh.tpl", {
+        app_configuration_endpoint : var.app_configuration_endpoint
+        private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+        node_count : var.node_count
+      })
+    }
   }
 
   # 09 Cluster rejoin
-  part {
-    content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/09_cluster_join.sh.tpl", {
-      app_configuration_endpoint : var.app_configuration_endpoint
-    })
+  dynamic "part" {
+    for_each = var.node_count > 1 ? [1] : []
+    content {
+      content_type = "text/x-shellscript"
+      content = templatefile("${path.module}/templates/09_cluster_join.sh.tpl", {
+        app_configuration_endpoint : var.app_configuration_endpoint
+      })
+    }
   }
 
-  # 09 Execute additional scripts
+  # 10 Start GDB services - Single node
+  dynamic "part" {
+    for_each = var.node_count == 1 ? [1] : []
+    content {
+      content_type = "text/x-shellscript"
+      content = templatefile("${path.module}/templates/10_start_single_graphdb_services.sh.tpl", {
+        app_configuration_endpoint : var.app_configuration_endpoint
+        private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+        node_count : var.node_count
+      })
+    }
+  }
+
+  # 11 Execute additional scripts
   dynamic "part" {
     for_each = var.user_supplied_scripts
     content {

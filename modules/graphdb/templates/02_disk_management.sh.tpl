@@ -88,7 +88,6 @@ create_managed_disk() {
       --zone $ZONE_ID \
       --disk-iops-read-write $DISK_IOPS \
       --disk-mbps-read-write $DISK_THROUGHPUT \
-      --tags createdBy=$INSTANCE_HOSTNAME \
       --public-network-access $DISK_PUBLIC_ACCESS_POLICY \
       --network-access-policy $DISK_NETWORK_ACCESS_POLICY; then
       log_with_timestamp "Disk creation successful."

@@ -136,6 +136,10 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
+| gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
+| gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
+| gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
+| gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
 | tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
@@ -367,6 +371,25 @@ virtual_network_name = "existing_vnet"
 
 Instead of using the module as dependency, you can create a local variables file named `terraform.tfvars` and provide configuration overrides there.
 Then simply follow the same steps as in the [Usage](#usage) section.
+
+## Single Node Deployment
+
+This Terraform module has the ability to deploy a single instance of GraphDB.
+To deploy a single instance you just need to set `node_count` to 1, everything else happens automatically.
+
+### Migrating from a Single Node Deployment to Cluster Deployment
+
+Here is the procedure for migrating your single node deployment to cluster e.g., from one node to 3 nodes
+
+1. Create a backup of your data.
+2. Change the `node_count` to 3 or more, depending on the cluster size you desire.
+3. Run `terraform import 'module.graphdb.azurerm_managed_disk.managed_disks[\"<DISK_NAME>\"]' /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP_NAME>/providers/Microsoft.Compute/disks/<DISK_NAME>`
+   * **IMPORTANT!** Resource names are case-sensitive and mismatch will lead to resource recreation and data loss.
+   * The CLI syntax differs depending on the OS please refer to the [documentation](https://developer.hashicorp.com/terraform/cli/commands/import).
+4. Validate the import is successful by checking the `terraform.tfstate` file, should contain `azurerm_managed_disk`
+   resource with the name of the disk you've imported.
+5. Run `terraform plan` and review the plan carefully if everything seems fine run `terraform apply`
+
 
 ## Release History
 

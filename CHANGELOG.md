@@ -1,5 +1,15 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 1.2.0
+* Support for single node deployment:
+  * If `node_count` is 1 and multiple availability zones are specified, only the first AZ will be used.
+  * Updated Monitoring module to dynamically adjust properties based on `node_count`.
+  * Updated Gateway module to dynamically adjust properties based on `node_count`.
+  * For `node_count` of 1, no disk is created beforehand; the disk is created by the userdata scripts.
+  * Made cluster-related userdata scripts executable only when `node_count` is greater than 1.
+  * Added new userdata script `10_start_single_graphdb_services.sh.tpl` for single node setup.
+* Moved some functions to `00_functions.sh` so they are reused instead of duplicated in the userdata scripts.
+
 ## 1.1.1
 
 * Updated GraphDB version to [10.6.4](https://graphdb.ontotext.com/documentation/10.6/release-notes.html#graphdb-10-6-4)

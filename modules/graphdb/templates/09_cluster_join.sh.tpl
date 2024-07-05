@@ -31,16 +31,6 @@ readarray -t NODES <<<"$(az network private-dns record-set list \
   --query "[?contains(name, 'node')].name" \
   --output tsv)"
 
-check_gdb() {
-  local gdb_address="$1:7200/rest/monitor/infrastructure"
-  if curl -s --head -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" --fail "$gdb_address" >/dev/null; then
-    log_with_timestamp "Success, GraphDB node $gdb_address is available"
-    return 0
-  else
-    log_with_timestamp "GraphDB node $gdb_address is not available yet"
-    return 1
-  fi
-}
 # This function should be used only after the Leader node is found
 get_cluster_state() {
   curl_response=$(curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s -u "admin:$GRAPHDB_ADMIN_PASSWORD")
