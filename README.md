@@ -80,6 +80,7 @@ versions. The next table shows the version compatability between GraphDB and the
 | GraphDB Terraform | GraphDB        |
 |-------------------|----------------|
 | Version 1.x.x     | Version 10.6.x |
+| Version 1.2.x     | Version 10.7.x |
 
 You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
 the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
@@ -149,7 +150,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.4"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.0"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -197,7 +198,7 @@ To use the GraphDB module, create a new Terraform project or add to an existing 
 ```hcl
 module "graphdb" {
   source  = "Ontotext-AD/graphdb/azure"
-  version = "1.0.0"
+  version = "~> 1.0"
 
   resource_name_prefix = "graphdb"
   location             = "East US"
@@ -253,7 +254,7 @@ graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
 **GraphDB Configurations**
 
 The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
-supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.6/directories-and-config-properties.html#configuration):
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.7/directories-and-config-properties.html#configuration):
 
 ```hcl
 graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
