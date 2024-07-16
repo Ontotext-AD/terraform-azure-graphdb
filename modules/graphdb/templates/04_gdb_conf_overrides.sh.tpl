@@ -39,15 +39,24 @@ log_with_timestamp "Getting the full DNS record for current instance"
 NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
 log_with_timestamp "Writing configuration files"
-# TODO: where is the vhost here?
-cat <<EOF >/etc/graphdb/graphdb.properties
+
+# graphdb.external-url.enforce.transactions: determines whether it is necessary to rewrite the Location header when no proxy is configured.
+# This is required because when working with the GDB transaction endpoint it returns an erroneous URL with HTTP protocol instead of HTTPS
+if [ "${node_count}" -eq 1 ]; then
+  cat <<EOF >/etc/graphdb/graphdb.properties
+graphdb.connector.port=7200
+graphdb.external-url=https://${graphdb_external_address_fqdn}
+graphdb.external-url.enforce.transactions=true
+EOF
+else
+  cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
 graphdb.external-url=http://$${NODE_DNS}:7200/
 graphdb.rpc.address=$${NODE_DNS}:7300
 EOF
 
-cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
+  cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
 graphdb.external-url=https://${graphdb_external_address_fqdn}
@@ -55,6 +64,7 @@ graphdb.vhosts=https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7201
 graphdb.rpc.address=$${NODE_DNS}:7301
 graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF
+fi
 
 log_with_timestamp "Calculating 85 percent of total memory"
 # Get total memory in kilobytes

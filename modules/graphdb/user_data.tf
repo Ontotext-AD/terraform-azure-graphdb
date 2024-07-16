@@ -66,6 +66,7 @@ data "cloudinit_config" "entrypoint" {
     content = templatefile("${path.module}/templates/04_gdb_conf_overrides.sh.tpl", {
       graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+      node_count : var.node_count
       # App configurations
       app_configuration_endpoint : var.app_configuration_endpoint
       graphdb_license_secret_name : var.graphdb_license_secret_name
