@@ -211,7 +211,6 @@ module "bastion" {
   bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
 
-
 # Configures Azure monitoring
 module "monitoring" {
   count = var.deploy_monitoring ? 1 : 0

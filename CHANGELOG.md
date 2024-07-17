@@ -1,6 +1,12 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 1.2.1
+
+* Fixed the `graphdb.external-url` value when deploying a single node.
+* Changed to create `graphdb-cluster-proxy/graphdb.properties` only when `node_count` > 1
+
 ## 1.2.0
+
 * Support for single node deployment:
   * If `node_count` is 1 and multiple availability zones are specified, only the first AZ will be used.
   * Updated Monitoring module to dynamically adjust properties based on `node_count`.
