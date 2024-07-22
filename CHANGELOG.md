@@ -4,6 +4,7 @@
 
 * Fixed the `graphdb.external-url` value when deploying a single node.
 * Changed to create `graphdb-cluster-proxy/graphdb.properties` only when `node_count` > 1
+* Update default GraphDB version to [10.7.1](https://graphdb.ontotext.com/documentation/10.7/release-notes.html#graphdb-10-7-1)
 
 ## 1.2.0
 
