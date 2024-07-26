@@ -53,11 +53,15 @@ data "cloudinit_config" "entrypoint" {
   }
 
   # 03 DNS setup
-  part {
-    content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/03_dns_provisioning.sh.tpl", {
-      private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
-    })
+  dynamic part {
+    for_each = var.node_count > 1 ? [1] : []
+
+    content {
+      content_type = "text/x-shellscript"
+      content = templatefile("${path.module}/templates/03_dns_provisioning.sh.tpl", {
+        private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+      })
+    }
   }
 
   # 04 GDB config overrides
@@ -106,6 +110,7 @@ data "cloudinit_config" "entrypoint" {
       appi_dependency_sampling_override : var.appi_dependency_sampling_override
       appi_grpc_sampling_override : var.appi_grpc_sampling_override
       appi_repositories_requests_sampling : var.appi_repositories_requests_sampling
+      resource_name_prefix : var.resource_name_prefix
     })
   }
 

@@ -97,6 +97,35 @@ configure_graphdb_security() {
   fi
 }
 
+update_graphdb_admin_password_single_node() {
+  local GRAPHDB_PASSWORD="$1"
+  local GRAPHDB_ADMIN_PASSWORD="$2"
+  local RETRY_DELAY="$3"
+  local APP_CONFIGURATION_ENDPOINT="$4"
+
+  if [[ -e "/var/opt/graphdb/password_creation_time" ]]; then
+    # Gets the existing settings for admin user
+    EXISTING_SETTINGS=$(curl --location -s -u "admin:$GRAPHDB_PASSWORD" 'http://localhost:7200/rest/security/users/admin' | jq -rc '{grantedAuthorities, appSettings}' | sed 's/^{//;s/}$//')
+
+    SET_NEW_PASSWORD=$(
+      curl --location -s -w "%%{http_code}" \
+        --request PATCH 'http://localhost:7200/rest/security/users/admin' \
+        --header 'Content-Type: application/json' \
+        --header 'Accept: text/plain' \
+        -u "admin:$GRAPHDB_PASSWORD" \
+        --data "{\"password\":\"$GRAPHDB_ADMIN_PASSWORD\",$EXISTING_SETTINGS}"
+    )
+    if [[ "$SET_NEW_PASSWORD" == 200 ]]; then
+      log_with_timestamp "Updated GraphDB password successfully"
+      GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint $${APP_CONFIGURATION_ENDPOINT} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+      echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") > /var/opt/graphdb/password_creation_time
+    else
+      log_with_timestamp "Failed updating GraphDB password. Please check the logs!"
+      exit 1
+    fi
+  fi
+}
+
 update_graphdb_admin_password() {
   local GRAPHDB_PASSWORD="$1"
   local GRAPHDB_ADMIN_PASSWORD="$2"

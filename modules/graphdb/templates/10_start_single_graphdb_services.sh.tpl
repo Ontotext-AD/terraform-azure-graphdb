@@ -43,9 +43,19 @@ systemctl start graphdb
 
 log_with_timestamp "Started GraphDB services"
 
-wait_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "${node_count}"
+check_status() {
+  STATUS=$(curl -s -o /dev/null -w "%%{http_code}" "http://localhost:7200/rest/cluster/node/status")
+  if [[ $STATUS -eq 200 || $STATUS -eq 404 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
 
-check_all_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "$RETRY_DELAY"
+# Wait for the status code to be 200 or 404
+until check_status; do
+  sleep 5
+done
 
 echo "###########################################################"
 echo "#    Changing admin user password and enable security     #"
@@ -57,7 +67,7 @@ echo "####################################"
 echo "#    Updating GraphDB password     #"
 echo "####################################"
 
-update_graphdb_admin_password "$GRAPHDB_PASSWORD" "$GRAPHDB_ADMIN_PASSWORD" "$RETRY_DELAY" "${app_configuration_endpoint}" "$${ALL_DNS_RECORDS[@]}"
+update_graphdb_admin_password_single_node "$GRAPHDB_PASSWORD" "$GRAPHDB_ADMIN_PASSWORD" "$RETRY_DELAY" "${app_configuration_endpoint}"
 
 echo "###########################"
 echo "#    Script completed     #"
