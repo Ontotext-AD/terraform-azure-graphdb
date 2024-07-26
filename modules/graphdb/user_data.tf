@@ -53,7 +53,7 @@ data "cloudinit_config" "entrypoint" {
   }
 
   # 03 DNS setup
-  dynamic part {
+  dynamic "part" {
     for_each = var.node_count > 1 ? [1] : []
 
     content {
