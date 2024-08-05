@@ -17,7 +17,11 @@ echo "###########################################"
 echo "#    Configuring Application Insights     #"
 echo "###########################################"
 
-RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
+if [ ! -f /var/opt/graphdb/node_dns_name ]; then
+  RECORD_NAME=${resource_name_prefix}
+else
+  RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
+fi
 
 # Overrides the config file
 cat <<-EOF >/opt/graphdb/applicationinsights.json

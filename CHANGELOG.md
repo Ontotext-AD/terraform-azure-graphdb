@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 1.3.0
+
+* Improved the single node setup time by removing use and checks for Private DNS zone address.
+
 ## 1.2.1
 
 * Fixed the `graphdb.external-url` value when deploying a single node.

@@ -23,7 +23,6 @@ echo "#######################################"
 
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 DNS_ZONE_NAME=${private_dns_zone_name}
-RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
 APP_CONFIG_ENDPOINT=${app_configuration_endpoint}
 
 log_with_timestamp "Getting secrets"
@@ -32,11 +31,6 @@ secrets=$(az appconfig kv list --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode log
 log_with_timestamp "Getting GraphDB license"
 az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_license_secret_name} | jq -r .value | base64 -d >/etc/graphdb/graphdb.license
 
-log_with_timestamp "Getting the cluster token"
-graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
-
-log_with_timestamp "Getting the full DNS record for current instance"
-NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
 log_with_timestamp "Writing configuration files"
 
@@ -49,6 +43,14 @@ graphdb.external-url=https://${graphdb_external_address_fqdn}
 graphdb.external-url.enforce.transactions=true
 EOF
 else
+  RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
+
+  log_with_timestamp "Getting the cluster token"
+  graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
+
+  log_with_timestamp "Getting the full DNS record for current instance"
+  NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
+
   cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
