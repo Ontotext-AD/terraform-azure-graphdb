@@ -3,6 +3,7 @@
 ## 1.3.0
 
 * Improved the single node setup time by removing use and checks for Private DNS zone address.
+* Updated default GraphDB version to 10.7.2
 
 ## 1.2.1
 
