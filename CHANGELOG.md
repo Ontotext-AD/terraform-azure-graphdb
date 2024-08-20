@@ -1,9 +1,13 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 1.3.1
+
+* Update default GraphDB version to [10.7.3](https://graphdb.ontotext.com/documentation/10.7/release-notes.html#graphdb-10-7-3)
+
 ## 1.3.0
 
 * Improved the single node setup time by removing use and checks for Private DNS zone address.
-* Updated default GraphDB version to 10.7.2
+* Update default GraphDB version to [10.7.2](https://graphdb.ontotext.com/documentation/10.7/release-notes.html#graphdb-10-7-2)
 
 ## 1.2.1
 
