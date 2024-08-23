@@ -16,6 +16,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "graphdb" {
+  count    = var.resource_group_name == null ? 1 : 0
   name     = "rg-${var.resource_name_prefix}"
   location = var.location
   tags     = local.tags
@@ -26,33 +27,57 @@ resource "azurerm_resource_group" "graphdb" {
   }
 }
 
+data "azurerm_resource_group" "existing_graphdb_rg" {
+  count = var.resource_group_name == null ? 0 : 1
+  name  = var.resource_group_name
+}
+
+locals {
+  resource_group_id   = var.resource_group_name != null ? data.azurerm_resource_group.existing_graphdb_rg[0].id : azurerm_resource_group.graphdb[0].id
+  resource_group_name = var.resource_group_name != null ? data.azurerm_resource_group.existing_graphdb_rg[0].name : azurerm_resource_group.graphdb[0].name
+}
+
 resource "azurerm_management_lock" "graphdb_rg_lock" {
   count      = var.lock_resources ? 1 : 0
-  name       = "${var.resource_name_prefix}-rg"
-  scope      = azurerm_resource_group.graphdb.id
+  name       = "${var.resource_name_prefix}-rg-lock"
+  scope      = local.resource_group_id
   lock_level = "CanNotDelete"
   notes      = "Prevents from deleting the resource group"
 }
 
 resource "azurerm_virtual_network" "graphdb" {
+  count = var.virtual_network_name == null ? 1 : 0
+
   name                = "vnet-${var.resource_name_prefix}"
-  resource_group_name = azurerm_resource_group.graphdb.name
-  location            = azurerm_resource_group.graphdb.location
+  resource_group_name = local.resource_group_name
+  location            = var.location
   address_space       = var.virtual_network_address_space
+}
+
+data "azurerm_virtual_network" "existing_vnet" {
+  count = var.virtual_network_name == null ? 0 : 1
+
+  name                = var.virtual_network_name
+  resource_group_name = local.resource_group_name
+}
+
+locals {
+  virtual_network_id   = var.virtual_network_name != null ? data.azurerm_virtual_network.existing_vnet[0].id : azurerm_virtual_network.graphdb[0].id
+  virtual_network_name = var.virtual_network_name != null ? data.azurerm_virtual_network.existing_vnet[0].name : azurerm_virtual_network.graphdb[0].name
 }
 
 resource "azurerm_subnet" "graphdb_gateway" {
   name                 = "snet-${var.resource_name_prefix}-gateway"
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  virtual_network_name = azurerm_virtual_network.graphdb.name
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = local.virtual_network_name
   address_prefixes     = var.gateway_subnet_address_prefixes
   service_endpoints    = ["Microsoft.KeyVault"]
 }
 
 resource "azurerm_subnet" "graphdb_vmss" {
   name                 = "snet-${var.resource_name_prefix}-vmss"
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  virtual_network_name = azurerm_virtual_network.graphdb.name
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = local.virtual_network_name
   address_prefixes     = var.graphdb_subnet_address_prefixes
   service_endpoints    = ["Microsoft.Storage"]
 }
@@ -67,7 +92,7 @@ module "vault" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
 
   nacl_subnet_ids = [azurerm_subnet.graphdb_gateway.id]
   nacl_ip_rules   = var.management_cidr_blocks
@@ -76,7 +101,6 @@ module "vault" {
   key_vault_soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-  log_analytics_workspace_id  = module.monitoring[0].la_workspace_id
 }
 
 # Creates a Storage Account for storing GraphDB backups
@@ -85,7 +109,7 @@ module "backup" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
 
   nacl_subnet_ids = [azurerm_subnet.graphdb_vmss.id]
   nacl_ip_rules   = var.management_cidr_blocks
@@ -105,14 +129,12 @@ module "appconfig" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
 
   app_config_enable_purge_protection    = var.app_config_enable_purge_protection
   app_config_soft_delete_retention_days = var.app_config_soft_delete_retention_days
 
   admin_security_principle_id = local.admin_security_principle_id
-
-  log_analytics_workspace_id = module.monitoring[0].la_workspace_id
 }
 
 # Creates a TLS certificate secret in the Key Vault and related identity (if file is provided)
@@ -123,7 +145,7 @@ module "tls" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
 
   key_vault_id             = module.vault[0].key_vault_id
   tls_certificate          = filebase64(var.tls_certificate_path)
@@ -139,14 +161,20 @@ module "application_gateway" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
   zones                = var.zones
+  node_count           = var.node_count
 
-  virtual_network_name             = azurerm_virtual_network.graphdb.name
+  virtual_network_name             = local.virtual_network_name
   gateway_subnet_id                = azurerm_subnet.graphdb_gateway.id
   gateway_subnet_address_prefixes  = azurerm_subnet.graphdb_gateway.address_prefixes
   gateway_allowed_address_prefix   = var.inbound_allowed_address_prefix
   gateway_allowed_address_prefixes = var.inbound_allowed_address_prefixes
+
+  # Health probe settings
+  gateway_probe_interval  = var.gateway_probe_interval
+  gateway_probe_timeout   = var.gateway_probe_timeout
+  gateway_probe_threshold = var.gateway_probe_threshold
 
   # Public / Private toggle
   gateway_enable_private_access = var.gateway_enable_private_access
@@ -181,9 +209,9 @@ module "bastion" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
 
-  virtual_network_name                     = azurerm_virtual_network.graphdb.name
+  virtual_network_name                     = local.virtual_network_name
   bastion_subnet_address_prefixes          = var.bastion_subnet_address_prefixes
   bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
@@ -195,12 +223,14 @@ module "monitoring" {
   source = "./modules/monitoring"
 
   resource_name_prefix = var.resource_name_prefix
-  resource_group_name  = azurerm_resource_group.graphdb.name
+  resource_group_name  = local.resource_group_name
   location             = var.location
+  node_count           = var.node_count
 
   web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
   web_test_geo_locations            = var.web_test_geo_locations
   web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
+  graphdb_external_address_fqdn     = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
 
   monitor_reader_principal_id = var.monitor_reader_principal_id
 
@@ -214,6 +244,16 @@ module "monitoring" {
   la_workspace_retention_in_days = var.la_workspace_retention_in_days
 
   ag_notifications_email_list = var.notification_recipients_email_list
+
+  # Diagnostic settings
+  app_configuration_id                 = module.appconfig.app_configuration_id
+  key_vault_id                         = var.tls_certificate_id != null ? null : module.vault[0].key_vault_id
+  create_key_vault_diagnostic_settings = var.tls_certificate_id == null ? true : false
+}
+
+locals {
+  # If node_count is 1 take the first zone only, if node_count > 1 use all provided zones.
+  adjusted_zones = var.node_count == 1 ? [element(var.zones, 0)] : var.zones
 }
 
 # Creates a VM scale set for GraphDB and GraphDB cluster proxies
@@ -222,12 +262,12 @@ module "graphdb" {
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
-  resource_group_id    = azurerm_resource_group.graphdb.id
-  resource_group_name  = azurerm_resource_group.graphdb.name
-  zones                = var.zones
+  resource_group_id    = local.resource_group_id
+  resource_group_name  = local.resource_group_name
+  zones                = local.adjusted_zones
 
   # Networking
-  virtual_network_id                   = azurerm_virtual_network.graphdb.id
+  virtual_network_id                   = local.virtual_network_id
   graphdb_subnet_id                    = azurerm_subnet.graphdb_vmss.id
   graphdb_inbound_address_prefixes     = var.gateway_subnet_address_prefixes
   graphdb_ssh_inbound_address_prefixes = var.deploy_bastion ? var.bastion_subnet_address_prefixes : []
@@ -238,8 +278,8 @@ module "graphdb" {
   application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
 
   # App Configuration
-  app_configuration_id   = module.appconfig.app_configuration_id
-  app_configuration_name = module.appconfig.app_configuration_name
+  app_configuration_id       = module.appconfig.app_configuration_id
+  app_configuration_endpoint = module.appconfig.app_configuration_endpoint
 
   # GraphDB Configurations
   graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
@@ -261,9 +301,11 @@ module "graphdb" {
   graphdb_image_id = var.graphdb_image_id
 
   # VMSS
-  instance_type = var.instance_type
-  node_count    = var.node_count
-  ssh_key       = var.ssh_key
+  instance_type         = var.instance_type
+  node_count            = var.node_count
+  ssh_key               = var.ssh_key
+  user_supplied_scripts = var.user_supplied_scripts
+  vmss_dns_servers      = var.vmss_dns_servers
 
   # Managed Disks
   disk_iops_read_write       = var.disk_iops_read_write

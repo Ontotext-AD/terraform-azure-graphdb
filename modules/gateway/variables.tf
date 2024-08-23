@@ -13,7 +13,6 @@ variable "location" {
 variable "zones" {
   description = "Availability zones for the public IP address."
   type        = list(number)
-  default     = [1, 2, 3]
 }
 
 variable "resource_group_name" {
@@ -74,12 +73,6 @@ variable "gateway_ssl_policy_profile" {
   default     = "AppGwSslPolicy20220101S"
 }
 
-variable "gateway_backend_port" {
-  description = "Backend port for the Application Gateway rules"
-  type        = number
-  default     = 7201
-}
-
 variable "gateway_backend_path" {
   description = "Backend path for the Application Gateway rules"
   type        = string
@@ -100,34 +93,19 @@ variable "gateway_backend_request_timeout" {
 
 # HTTP probe specifics
 
-variable "gateway_probe_path" {
-  description = "The endpoint to check for GraphDB's health status"
-  type        = string
-  default     = "/rest/cluster/node/status"
-}
-
-variable "gateway_probe_port" {
-  description = "Backend port for the health probe checks"
-  type        = number
-  default     = 7200
-}
-
 variable "gateway_probe_interval" {
   description = "Interval in seconds between the health probe checks"
   type        = number
-  default     = 10
 }
 
 variable "gateway_probe_timeout" {
   description = "Timeout in seconds for the health probe checks"
   type        = number
-  default     = 1
 }
 
 variable "gateway_probe_threshold" {
   description = "Number of consecutive health checks to consider the probe passing or failing"
   type        = number
-  default     = 2
 }
 
 # TLS certificate
@@ -178,4 +156,9 @@ variable "gateway_global_request_buffering_enabled" {
 variable "gateway_global_response_buffering_enabled" {
   description = "Whether Application Gateway's Response buffer is enabled."
   type        = bool
+}
+
+variable "node_count" {
+  description = "Number of GraphDB nodes to deploy in ASG"
+  type        = number
 }

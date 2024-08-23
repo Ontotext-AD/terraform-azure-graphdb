@@ -1,6 +1,7 @@
 # GraphDB Azure Terraform Module
 
 [![CI](https://github.com/Ontotext-AD/terraform-azure-graphdb/actions/workflows/ci.yml/badge.svg)](https://github.com/Ontotext-AD/terraform-azure-graphdb/actions/workflows/ci.yml)
+![GitHub Release](https://img.shields.io/github/v/release/Ontotext-AD/terraform-azure-graphdb?display_name=tag)
 
 This repository contains a set of [Terraform](https://www.terraform.io/) modules for
 deploying [Ontotext GraphDB](https://www.ontotext.com/products/graphdb/)
@@ -10,8 +11,9 @@ HA cluster on [Microsoft Azure](https://azure.microsoft.com/).
 
 - [About GraphDB](#about-graphdb)
 - [Features](#features)
+- [Versioning](#versioning)
 - [Prerequisites](#prerequisites)
-- [Configurations](#configurations)
+- [Inputs](#inputs)
 - [Usage](#usage)
 - [Examples](#examples)
 - [Local Development](#local-development)
@@ -33,9 +35,8 @@ Ontotext GraphDB is a highly efficient, scalable and robust graph database with 
 integration with external search applications, compatibility with industry standards, and both community and commercial support, GraphDB is the
 preferred database choice of both small independent developers and big enterprises.
 
-<!---
-TODO link to azure marketplace?
--->
+GraphDB is available on the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps?search=Ontotext%20AD)
+in several listings depending on your needs.
 
 ## Features
 
@@ -44,6 +45,7 @@ zones using a VM scale set. Key features of the module include:
 
 - Azure VM scale set across multiple Availability Zones
 - Azure Application Gateway for load balancing and TLS termination
+- Azure Private Link with private Application Gateway
 - Azure NAT gateway for outbound connections
 - Automated backups in Azure Blob Storage
 - Azure Private DNS for internal GraphDB cluster communication
@@ -52,10 +54,36 @@ zones using a VM scale set. Key features of the module include:
 - User assigned identities for RBAC authorization with the least privilege principle
 - and more
 
+## Modules Overview
+
+| Modules                    | Purpose                                                                                                           | Features                                                                                                                                                          |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Vault Module               | Creates a Key Vault for storing TLS certificates and secrets                                                      | - Enables purge protection for Key Vault.<br/> - Sets soft delete retention days for Key Vault.                                                                   |
+| Backup Module              | Sets up a Storage Account for storing GraphDB backups.                                                            | - Configures storage account tier and replication type.<br/> - Defines retention policies for storage blobs and containers.                                       |
+| AppConfig Module           | Establishes an App Configuration store for managing GraphDB configurations.                                       | - Enables purge protection for App Configuration. <br/> - Sets soft delete retention days for App Configuration.                                                  |
+| TLS Module                 | Manages TLS certificate secrets in Key Vault and their related identities.                                        | - Creates TLS certificate secrets in Key Vault.<br/> - Configures identity related to the TLS certificate.                                                        |
+| Application Gateway Module | Sets up a public IP address and Application Gateway for forwarding internet traffic to GraphDB proxies/instances. | - Configures TLS certificate for the gateway.<br/> - Enables private access and private link service.<br/> - Defines global buffer settings.                      |
+| Bastion Module             | Deploys an Azure Bastion host for secure remote connections.                                                      | - Configures the bastion host within the specified virtual network.                                                                                               |
+| Monitoring Module          | Configures Azure monitoring for the deployed resources.                                                           | - Sets up Application Insights for the GraphDB scale set.<br/> - Sets up web test availability monitoring.<br/> - Defines retention policies for monitoring data. |
+| GraphDB Module             | Deploys a VM scale set for GraphDB and its cluster proxies.                                                       | - Configures networking settings.<br/> - Sets up GraphDB configurations and licenses.<br/> - Defines backup storage, VM image, and managed disk settings.         |
+
 <!---
 TODO list the key features of the module as well as the purpose of the modules + maybe some diagram?
 See https://github.com/hashicorp/terraform-aws-consul
 -->
+
+## Versioning
+
+The Terraform module follows the [Semantic Versioning 2.0.0](https://semver.org/) rules and has a release lifecycle separate from the GraphDB
+versions. The next table shows the version compatability between GraphDB and the Terraform module.
+
+| GraphDB Terraform | GraphDB        |
+|-------------------|----------------|
+| Version 1.x.x     | Version 10.6.x |
+| Version 1.2.x     | Version 10.7.x |
+
+You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
+the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
 
 ## Prerequisites
 
@@ -71,14 +99,14 @@ Additional steps include:
 
 - Enable [VM Encryption At Host](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)
 - Register AppConfiguration with `az provider register --namespace "Microsoft.AppConfiguration"`
-- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if 
+- Register AllowApplicationGatewayPrivateLink with `az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network` if
   you are planning on using Private Link
 
-The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace. 
+The Terraform module deploys a VM scale set based on a VM image published in the Azure Marketplace.
 This requires you to accept the terms which can be accomplished with Azure CLI:
 
 ```bash
-az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
+az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher ontotextad1692361256062
 ```
 
 <!-- BEGIN_TF_DOCS -->
@@ -86,26 +114,33 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| resource\_group\_name | The name of the existing resource group to use. If not provided, a new resource group will be created. | `string` | `null` | no |
+| virtual\_network\_name | The name of the existing vnet to use. If not provided, a new virtual network will be created. | `string` | `null` | no |
 | resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a | yes |
 | location | Azure geographical location where resources will be deployed | `string` | n/a | yes |
 | zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
 | tags | Common resource tags. | `map(string)` | `{}` | no |
 | lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
+| vmss\_dns\_servers | List of DNS servers for the VMSS | `list(string)` | `[]` | no |
 | graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null` | no |
 | virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
 | gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
 | graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
 | gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
 | management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
-| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
-| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
 | inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
 | outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |
 | outbound\_allowed\_address\_prefixes | Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
+| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
+| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
+| gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
+| gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
+| gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
+| gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
 | tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
@@ -115,7 +150,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.6.1"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.3"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -126,6 +161,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
+| user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]` | no |
 | storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
 | storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
@@ -135,7 +171,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
-| deploy\_monitoring | Deploy monitoring module | `bool` | `false` | no |
+| deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
 | disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
@@ -151,7 +187,7 @@ az vm image accept-terms --offer graphdb-ee --plan graphdb-byol --publisher onto
 | appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true` | no |
 | web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false` | no |
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
-| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | n/a | yes |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null` | no |
 | notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
 <!-- END_TF_DOCS -->
 
@@ -162,7 +198,7 @@ To use the GraphDB module, create a new Terraform project or add to an existing 
 ```hcl
 module "graphdb" {
   source  = "Ontotext-AD/graphdb/azure"
-  version = "1.0.0"
+  version = "~> 1.0"
 
   resource_name_prefix = "graphdb"
   location             = "East US"
@@ -201,20 +237,41 @@ Once deployed, you should be able to access the environment at the generated FQD
 
 ## Examples
 
+**GraphDB Secrets**
+
+Instead of generating a random administrator password, you can provide one with:
+
+```hcl
+graphdb_password = "s3cr37P@$w0rD"
+```
+
+It's the same with the shared GraphDB cluster secret, to override the randomly generated password, use:
+
+```hcl
+graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
+```
+
+**GraphDB Configurations**
+
+The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.7/directories-and-config-properties.html#configuration):
+
+```hcl
+graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
+```
+
+Or by setting the `GDB_JAVA_OPTS` environment variable with `graphdb_java_options`. For example, if you want to print the command line flags, use:
+
+```hcl
+graphdb_java_options = "-XX:+PrintCommandLineFlags"
+```
+
 **Bastion**
 
 To enable the deployment of Azure Bastion, you simply need to enable the following flag:
 
 ```hcl
 deploy_bastion = true
-```
-
-**GraphDB admin password**
-
-Instead of generating a random administrator password, you can provide one with:
-
-```hcl
-graphdb_password = "s3cr37P@$w0rD"
 ```
 
 **Private Gateway with Private Link**
@@ -226,10 +283,10 @@ gateway_enable_private_access       = true
 gateway_enable_private_link_service = true
 ```
 
-See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal) 
+See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal)
 for further information on configuring and using Application Gateway Private Link.
 
-**Providing TLS certificate**
+**Providing a TLS certificate**
 
 There are two options for setting up the Application Gateway with a TLS certificate.
 
@@ -247,7 +304,7 @@ There are two options for setting up the Application Gateway with a TLS certific
 
 **Purge Protection**
 
-Resources that support purge protection and soft delete have them enabled by default. 
+Resources that support purge protection and soft delete have them enabled by default.
 You can override the default configurations with the following variables:
 
 ```hcl
@@ -265,6 +322,33 @@ storage_container_soft_delete_retention_policy = 7 # From 1 to 365 days
 storage_blob_soft_delete_retention_policy      = 7 # From 1 to 365 days
 ```
 
+**Managed Disks**
+
+Depending on the amount of data, expected statements or other factors, you might want to reconfigure the default options used for provisioning managed
+disks for persistent storage.
+
+```hcl
+disk_size_gb         = 1250
+disk_iops_read_write = 16000
+disk_mbps_read_write = 1000
+```
+
+**Monitoring**
+
+Resources related to the monitoring (Application Insights) are deployed by default, you can change this with
+
+```hcl
+deploy_monitoring = false
+```
+
+**Custom GraphDB VM Image**
+
+You can provide the VMSS with a custom VM image by specifying `graphdb_image_id`, for example:
+
+```hcl
+graphdb_image_id = "/subscriptions/<subscription_id>/resourceGroups/<resource_group_name>/providers/Microsoft.Compute/galleries/<gallery_name>/images/<image_definition_name>/versions/<image_version>"
+```
+
 <!---
 TODO Add more examples
 -->
@@ -275,10 +359,38 @@ TODO Add more examples
 TODO Configure security, provisioning etc. links for loading data? backend for state
 -->
 
+**Deploying in Existing Resource Group and Virtual Network**
+
+To deploy in already existing Resource Group and Virtual Network you just need to specify their names, for example:
+
+```hcl
+resource_group_name  = "existing_rg"
+virtual_network_name = "existing_vnet"
+```
+
 ## Local Development
 
 Instead of using the module as dependency, you can create a local variables file named `terraform.tfvars` and provide configuration overrides there.
 Then simply follow the same steps as in the [Usage](#usage) section.
+
+## Single Node Deployment
+
+This Terraform module has the ability to deploy a single instance of GraphDB.
+To deploy a single instance you just need to set `node_count` to 1, everything else happens automatically.
+
+### Migrating from a Single Node Deployment to Cluster Deployment
+
+Here is the procedure for migrating your single node deployment to cluster e.g., from one node to 3 nodes
+
+1. Create a backup of your data.
+2. Change the `node_count` to 3 or more, depending on the cluster size you desire.
+3. Run `terraform import 'module.graphdb.azurerm_managed_disk.managed_disks[\"<DISK_NAME>\"]' /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP_NAME>/providers/Microsoft.Compute/disks/<DISK_NAME>`
+   * **IMPORTANT!** Resource names are case-sensitive and mismatch will lead to resource recreation and data loss.
+   * The CLI syntax differs depending on the OS please refer to the [documentation](https://developer.hashicorp.com/terraform/cli/commands/import).
+4. Validate the import is successful by checking the `terraform.tfstate` file, should contain `azurerm_managed_disk`
+   resource with the name of the disk you've imported.
+5. Run `terraform plan` and review the plan carefully if everything seems fine run `terraform apply`
+
 
 ## Release History
 

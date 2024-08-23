@@ -2,6 +2,12 @@
 # Linux VMs scale set for GraphDB
 #
 
+# Ensures the VMSS will always resolve addresses in the Private DNS Zone.
+# https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16
+locals {
+  dns_servers = setunion(var.vmss_dns_servers, ["168.63.129.16"])
+}
+
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   name                = "vmss-${var.resource_name_prefix}"
   resource_group_name = var.resource_group_name
@@ -38,7 +44,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   sku           = var.instance_type
   instances     = var.node_count
   zones         = var.zones
-  zone_balance  = true
+  zone_balance  = false
   upgrade_mode  = "Manual"
   overprovision = false
 
@@ -80,8 +86,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   }
 
   network_interface {
-    name    = "nic-${var.resource_name_prefix}-vmss"
-    primary = true
+    name        = "nic-${var.resource_name_prefix}-vmss"
+    primary     = true
+    dns_servers = local.dns_servers
 
     ip_configuration {
       name                                         = "${var.resource_name_prefix}-ip-config"
@@ -102,27 +109,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     username   = "graphdb"
   }
 
-  # Wait for dependent resources (until we add retry mechanism in the user data script)
   depends_on = [
-    # DNS
-    azurerm_private_dns_zone.graphdb,
-    azurerm_private_dns_zone_virtual_network_link.graphdb,
-    # NAT
-    azurerm_nat_gateway.graphdb,
-    azurerm_nat_gateway_public_ip_association.graphdb_nat_gateway,
-    azurerm_subnet_nat_gateway_association.graphdb_nat_gateway,
-    # Disks
-    azurerm_managed_disk.managed_disks,
-    # NSG
-    azurerm_network_security_group.graphdb_vmss,
-    azurerm_subnet_network_security_group_association.graphdb_vmss,
-    # TODO: wait for internal and outbound rules?
-    # Configurations
-    azurerm_app_configuration_key.graphdb_cluster_token,
-    azurerm_app_configuration_key.graphdb_java_options,
-    azurerm_app_configuration_key.graphdb_license,
-    azurerm_app_configuration_key.graphdb_password,
-    azurerm_app_configuration_key.graphdb_properties
+    azurerm_managed_disk.managed_disks
   ]
 }
 

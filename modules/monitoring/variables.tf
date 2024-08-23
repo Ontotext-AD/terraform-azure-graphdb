@@ -1,5 +1,10 @@
 # General configurations
 
+variable "node_count" {
+  description = "Number of GraphDB nodes deployed in ASG"
+  type        = number
+}
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming AWS resources"
   type        = string
@@ -120,12 +125,6 @@ variable "ag_notifications_email_list" {
   type        = list(string)
 }
 
-variable "ag_arm_role_receiver_role_id" {
-  description = "Principal(Object) ID of the role which will receive e-mails. Defaults to the owner built-in role"
-  type        = string
-  default     = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
-}
-
 variable "enable_alerts" {
   description = "Should the alerts be enabled"
   type        = bool
@@ -142,4 +141,24 @@ variable "al_low_memory_warning_threshold" {
   description = "Percentage of available used heap memory to monitor for"
   type        = number
   default     = 90
+}
+
+variable "app_configuration_id" {
+  description = "ID of the Application Config resource, required for diagnostic settings"
+  type        = string
+}
+
+variable "key_vault_id" {
+  description = "ID of the Key Vault resource, required for diagnostic settings"
+  type        = string
+}
+
+variable "create_key_vault_diagnostic_settings" {
+  description = "Boolean variable to determine whether to create Key Vault diagnostic settings."
+  type        = bool
+}
+
+variable "graphdb_external_address_fqdn" {
+  description = "Public FQDN where GraphDB can be addressed"
+  type        = string
 }

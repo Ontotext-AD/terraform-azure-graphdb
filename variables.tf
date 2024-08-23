@@ -1,5 +1,17 @@
 # General configurations
 
+variable "resource_group_name" {
+  description = "The name of the existing resource group to use. If not provided, a new resource group will be created."
+  type        = string
+  default     = null
+}
+
+variable "virtual_network_name" {
+  description = "The name of the existing vnet to use. If not provided, a new virtual network will be created."
+  type        = string
+  default     = null
+}
+
 variable "resource_name_prefix" {
   description = "Resource name prefix used for tagging and naming Azure resources"
   type        = string
@@ -34,6 +46,12 @@ variable "lock_resources" {
 }
 
 # Networking
+
+variable "vmss_dns_servers" {
+  description = "List of DNS servers for the VMSS"
+  type        = list(string)
+  default     = []
+}
 
 variable "graphdb_external_address_fqdn" {
   description = "External FQDN address for the deployment"
@@ -70,19 +88,6 @@ variable "management_cidr_blocks" {
   type        = list(string)
 }
 
-# Application Gateway Global Proxy buffer configurations
-variable "gateway_global_request_buffering_enabled" {
-  description = "Whether Application Gateway's Request buffer is enabled."
-  type        = bool
-  default     = true
-}
-
-variable "gateway_global_response_buffering_enabled" {
-  description = "Whether Application Gateway's Response buffer is enabled."
-  type        = bool
-  default     = true
-}
-
 # Inbound/Outbound network security rules
 # Note that these should be taken into considerations when gateway_enable_private_access=true
 
@@ -112,6 +117,19 @@ variable "outbound_allowed_address_prefixes" {
 
 # Application Gateway & Private Link Configurations
 
+# Application Gateway Global Proxy buffer configurations
+variable "gateway_global_request_buffering_enabled" {
+  description = "Whether Application Gateway's Request buffer is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "gateway_global_response_buffering_enabled" {
+  description = "Whether Application Gateway's Response buffer is enabled."
+  type        = bool
+  default     = true
+}
+
 variable "gateway_enable_private_access" {
   description = "Enable or disable private access to the application gateway"
   type        = bool
@@ -128,6 +146,30 @@ variable "gateway_private_link_service_network_policies_enabled" {
   description = "Enable or disable private link service network policies"
   type        = string
   default     = false
+}
+
+variable "gateway_backend_port" {
+  description = "Backend port for the Application Gateway rules"
+  type        = number
+  default     = 7201
+}
+
+variable "gateway_probe_interval" {
+  description = "Interval in seconds between the health probe checks"
+  type        = number
+  default     = 10
+}
+
+variable "gateway_probe_timeout" {
+  description = "Timeout in seconds for the health probe checks"
+  type        = number
+  default     = 1
+}
+
+variable "gateway_probe_threshold" {
+  description = "Number of consecutive health checks to consider the probe passing or failing"
+  type        = number
+  default     = 2
 }
 
 # TLS
@@ -214,7 +256,7 @@ variable "admin_security_principle_id" {
 variable "graphdb_version" {
   description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.6.1"
+  default     = "10.7.3"
 }
 
 variable "graphdb_sku" {
@@ -279,6 +321,13 @@ variable "ssh_key" {
   description = "Public key for accessing the GraphDB instances"
   type        = string
   default     = null
+}
+
+# Customer provided user data scripts
+variable "user_supplied_scripts" {
+  description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."
+  type        = list(string)
+  default     = []
 }
 
 # Storage account, primarily used for GraphDB backups
@@ -354,7 +403,7 @@ variable "bastion_subnet_address_prefixes" {
 variable "deploy_monitoring" {
   description = "Deploy monitoring module"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Managed disks
@@ -455,6 +504,7 @@ variable "web_test_geo_locations" {
 variable "monitor_reader_principal_id" {
   description = "Principal(Object) ID of a user/group which would receive notifications from alerts."
   type        = string
+  default     = null
 }
 
 variable "notification_recipients_email_list" {
@@ -462,4 +512,3 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
-
