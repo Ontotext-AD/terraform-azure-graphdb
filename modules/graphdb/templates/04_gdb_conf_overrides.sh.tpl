@@ -36,13 +36,23 @@ log_with_timestamp "Writing configuration files"
 
 # graphdb.external-url.enforce.transactions: determines whether it is necessary to rewrite the Location header when no proxy is configured.
 # This is required because when working with the GDB transaction endpoint it returns an erroneous URL with HTTP protocol instead of HTTPS
+CLEAN_CONTEXT_PATH=$(echo "${context_path}" | sed 's#^/*##' | sed 's#/*$##')
+
 if [ "${node_count}" -eq 1 ]; then
+
+  if [ -n "${context_path}" ]; then
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}"
+  else
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}"
+  fi
+
   cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.connector.port=7200
-graphdb.external-url=https://${graphdb_external_address_fqdn}
+graphdb.external-url=$${EXTERNAL_URL}
 graphdb.external-url.enforce.transactions=true
 EOF
 else
+
   RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
 
   log_with_timestamp "Getting the cluster token"
@@ -51,18 +61,29 @@ else
   log_with_timestamp "Getting the full DNS record for current instance"
   NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
+  if [ -n "${context_path}" ]; then
+  VHOSTS_VALUE="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}/,http://$${NODE_DNS}:7200"
+  else
+  VHOSTS_VALUE="https://${graphdb_external_address_fqdn}/,http://$${NODE_DNS}:7200"
+  fi
+
   cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
+graphdb.vhosts=$${VHOSTS_VALUE}
 graphdb.external-url=http://$${NODE_DNS}:7200/
 graphdb.rpc.address=$${NODE_DNS}:7300
 EOF
 
+  if [ -n "${context_path}" ]; then
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}/"
+  else
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}/"
+  fi
   cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
-graphdb.external-url=https://${graphdb_external_address_fqdn}
-graphdb.vhosts=https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7201
+graphdb.external-url=$${EXTERNAL_URL}
 graphdb.rpc.address=$${NODE_DNS}:7301
 graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF

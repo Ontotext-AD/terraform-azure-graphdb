@@ -48,6 +48,27 @@ terraform.rc
 *.pem
 *.p12
 *.pub
+*.pfx
+*.crt
 
 #Licenses
 *.license
+
+#Private key
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+privatekey.key
+=======
+privatekey.key
+>>>>>>> 3884dac (Add the rest of the changes)
+=======
+privatekey.key
+>>>>>>> 50ed20e (Fix comments from Viktor)
+=======
+privatekey.key
+>>>>>>> 3884dac (Add the rest of the changes)
+=======
+privatekey.key
+>>>>>>> 50ed20e (Fix comments from Viktor)

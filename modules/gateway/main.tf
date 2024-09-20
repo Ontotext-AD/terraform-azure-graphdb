@@ -17,6 +17,7 @@ locals {
   gateway_private_link_configuration_name        = "${var.resource_name_prefix}-private-link-configuration"
   gateway_private_link_ip_configuration_name     = "${var.resource_name_prefix}-private-link-ip-configuration"
   gateway_frontend_private_ip_configuration_name = "${var.resource_name_prefix}-private-ip"
+  clean_context_path                             = trim(var.context_path, "/")
 }
 
 # Public Application Gateway
@@ -147,14 +148,49 @@ resource "azurerm_application_gateway" "graphdb-public" {
     redirect_configuration_name = local.gateway_redirect_rule_name
   }
 
-  # HTTPS request routing rule
-  request_routing_rule {
-    name                       = local.gateway_https_request_routing_rule_name
-    priority                   = 10
-    rule_type                  = "Basic"
-    http_listener_name         = local.gateway_https_listener_name
-    backend_address_pool_name  = local.gateway_backend_address_pool_name
-    backend_http_settings_name = local.gateway_backend_http_settings_name
+  # HTTPS request - Path-Based routing rule
+  # Conditionally create a request routing rule based on the var.context_path
+  dynamic "request_routing_rule" {
+
+    for_each = var.context_path != null && var.context_path != "" ? [1] : []
+    content {
+      name               = local.gateway_https_request_routing_rule_name
+      priority           = 10
+      rule_type          = "PathBasedRouting"
+      http_listener_name = local.gateway_https_listener_name
+      url_path_map_name  = "path-map"
+    }
+  }
+
+  # HTTPS request Basic routing rule
+  # Fallback to a Basic Rule when var.context_path is empty
+  dynamic "request_routing_rule" {
+
+    for_each = var.context_path == null || var.context_path == "" ? [1] : []
+    content {
+      name                       = local.gateway_https_request_routing_rule_name
+      priority                   = 10
+      rule_type                  = "Basic"
+      http_listener_name         = local.gateway_https_listener_name
+      backend_address_pool_name  = local.gateway_backend_address_pool_name
+      backend_http_settings_name = local.gateway_backend_http_settings_name
+    }
+  }
+  dynamic "url_path_map" {
+    
+    for_each = var.context_path != null && var.context_path != "" ? [1] : []
+    content {
+      name                               = "path-map"
+      default_backend_address_pool_name  = local.gateway_backend_address_pool_name
+      default_backend_http_settings_name = local.gateway_backend_http_settings_name
+
+      path_rule {
+        name                       = "context-path-rule"
+        paths                      = ["/${local.clean_context_path}/*"]
+        backend_address_pool_name  = local.gateway_backend_address_pool_name
+        backend_http_settings_name = local.gateway_backend_http_settings_name
+      }
+    }
   }
 }
 
