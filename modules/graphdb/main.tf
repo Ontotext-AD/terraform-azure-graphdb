@@ -91,11 +91,14 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     dns_servers = local.dns_servers
 
     ip_configuration {
-      name                                         = "${var.resource_name_prefix}-ip-config"
-      primary                                      = true
-      subnet_id                                    = var.graphdb_subnet_id
-      application_gateway_backend_address_pool_ids = var.application_gateway_backend_address_pool_ids
-      application_security_group_ids               = [azurerm_application_security_group.graphdb_vmss.id]
+      name      = "${var.resource_name_prefix}-ip-config"
+      primary   = true
+      subnet_id = var.graphdb_subnet_id
+
+      application_gateway_backend_address_pool_ids = var.disable_agw ? [] : compact(var.application_gateway_backend_address_pool_ids)
+
+      # Ensure no null values by using coalesce or compact
+      application_security_group_ids = var.disable_agw ? [] : compact([azurerm_application_security_group.graphdb_vmss.id])
     }
   }
 

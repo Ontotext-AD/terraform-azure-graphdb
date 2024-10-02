@@ -158,6 +158,7 @@ module "tls" {
 # Creates a public IP address and an Application Gateway for forwarding internet traffic to the GraphDB proxies/instances
 module "application_gateway" {
   source = "./modules/gateway"
+  count  = var.disable_agw ? 0 : 1
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
@@ -179,14 +180,11 @@ module "application_gateway" {
   # Public / Private toggle
   gateway_enable_private_access = var.gateway_enable_private_access
 
+  disable_agw = var.disable_agw
+
   # TLS
-<<<<<<< HEAD
-  gateway_tls_certificate_identity_id = var.tls_manage_id != null ? var.tls_manage_id : module.tls.tls_identity_id
-  gateway_tls_certificate_secret_id   = var.tls_certificate != null ? var.tls_certificate : module.tls.tls_certificate_key_vault_secret_id
-=======
   gateway_tls_certificate_secret_id   = var.tls_certificate_id != null ? var.tls_certificate_id : module.tls[0].tls_certificate_id
   gateway_tls_certificate_identity_id = var.tls_certificate_id != null ? var.tls_certificate_identity_id : module.tls[0].tls_identity_id
->>>>>>> a5909aaae4b39df58dd7a317bf50d9dbd232a291
 
   # Private Link
   gateway_enable_private_link_service                   = var.gateway_enable_private_link_service
@@ -227,10 +225,11 @@ module "monitoring" {
   location             = var.location
   node_count           = var.node_count
 
-  web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
-  web_test_geo_locations            = var.web_test_geo_locations
-  web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
-  graphdb_external_address_fqdn     = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
+  web_test_availability_request_url = var.disable_agw ? null : module.application_gateway[0].public_ip_address_fqdn
+  #web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
+  web_test_geo_locations        = var.web_test_geo_locations
+  web_test_ssl_check_enabled    = var.web_test_ssl_check_enabled
+  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
 
   monitor_reader_principal_id = var.monitor_reader_principal_id
 
@@ -275,14 +274,15 @@ module "graphdb" {
   graphdb_outbound_address_prefixes    = var.outbound_allowed_address_prefixes
 
   # Gateway
-  application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
+  #application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
+  application_gateway_backend_address_pool_ids = var.disable_agw ? [] : [module.application_gateway[0].gateway_backend_address_pool_id]
 
   # App Configuration
   app_configuration_id       = module.appconfig.app_configuration_id
   app_configuration_endpoint = module.appconfig.app_configuration_endpoint
 
   # GraphDB Configurations
-  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
+  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : (var.disable_agw ? null : module.application_gateway[0].public_ip_address_fqdn)
   graphdb_password              = var.graphdb_password
   graphdb_license_path          = var.graphdb_license_path
   graphdb_cluster_token         = var.graphdb_cluster_token
