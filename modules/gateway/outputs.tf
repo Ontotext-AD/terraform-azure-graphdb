@@ -34,5 +34,5 @@ output "gateway_backend_address_pool_id" {
     : !var.gateway_enable_private_access && length(azurerm_application_gateway.graphdb-public) > 0 && length(azurerm_application_gateway.graphdb-public[0].backend_address_pool) > 0
     ? one(azurerm_application_gateway.graphdb-public[0].backend_address_pool).id
   : null)
-  }
+}
 
