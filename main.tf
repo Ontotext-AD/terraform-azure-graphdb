@@ -226,10 +226,9 @@ module "monitoring" {
   node_count           = var.node_count
 
   web_test_availability_request_url = var.disable_agw ? null : module.application_gateway[0].public_ip_address_fqdn
-  #web_test_availability_request_url = module.application_gateway.public_ip_address_fqdn
-  web_test_geo_locations        = var.web_test_geo_locations
-  web_test_ssl_check_enabled    = var.web_test_ssl_check_enabled
-  graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
+  web_test_geo_locations            = var.web_test_geo_locations
+  web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
+  graphdb_external_address_fqdn     = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
 
   monitor_reader_principal_id = var.monitor_reader_principal_id
 
@@ -274,7 +273,6 @@ module "graphdb" {
   graphdb_outbound_address_prefixes    = var.outbound_allowed_address_prefixes
 
   # Gateway
-  #application_gateway_backend_address_pool_ids = [module.application_gateway.gateway_backend_address_pool_id]
   application_gateway_backend_address_pool_ids = var.disable_agw ? [] : [module.application_gateway[0].gateway_backend_address_pool_id]
 
   # App Configuration

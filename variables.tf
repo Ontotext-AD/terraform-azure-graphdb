@@ -137,7 +137,7 @@ variable "gateway_enable_private_access" {
 }
 
 variable "disable_agw" {
-  description = "Disables the application gateway"
+  description = "Disables the creation of application gateway by the terraform module."
   type        = bool
   default     = false
 }
