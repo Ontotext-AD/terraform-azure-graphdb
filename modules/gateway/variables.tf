@@ -55,6 +55,12 @@ variable "gateway_enable_private_access" {
   type        = bool
 }
 
+variable "disable_agw" {
+  description = "Disables the application gateway"
+  type        = bool
+  default     = false
+}
+
 variable "gateway_min_capacity" {
   description = "Minimum capacity for the Application Gateway autoscaling"
   type        = number

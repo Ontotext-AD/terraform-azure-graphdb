@@ -306,3 +306,8 @@ variable "user_supplied_scripts" {
   type        = list(string)
 }
 
+variable "disable_agw" {
+  description = "Disables the application gateway"
+  type        = bool
+  default     = false
+}
