@@ -306,3 +306,8 @@ variable "user_supplied_scripts" {
   type        = list(string)
 }
 
+variable "disable_agw" {
+  description = "Disables the creation of application gateway from the terraform module."
+  type        = bool
+  default     = false
+}
