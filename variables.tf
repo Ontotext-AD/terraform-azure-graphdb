@@ -136,6 +136,12 @@ variable "gateway_enable_private_access" {
   default     = false
 }
 
+variable "disable_agw" {
+  description = "Disables the creation of application gateway by the terraform module."
+  type        = bool
+  default     = false
+}
+
 variable "gateway_enable_private_link_service" {
   description = "Set to true to enable Private Link service, false to disable it."
   type        = bool
@@ -176,13 +182,11 @@ variable "gateway_probe_threshold" {
 variable "tls_certificate_path" {
   description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls_certificate_path or tls_certificate_id must be provided."
   type        = string
-  default     = null
 }
 
 variable "tls_certificate_password" {
   description = "TLS certificate password for password-protected certificates."
   type        = string
-  default     = null
 }
 
 variable "tls_certificate_id" {
