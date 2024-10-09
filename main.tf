@@ -158,7 +158,8 @@ module "tls" {
 # Creates a public IP address and an Application Gateway for forwarding internet traffic to the GraphDB proxies/instances
 module "application_gateway" {
   source = "./modules/gateway"
-  count  = var.disable_agw ? 0 : 1
+
+  count = var.disable_agw ? 0 : 1
 
   resource_name_prefix = var.resource_name_prefix
   location             = var.location
