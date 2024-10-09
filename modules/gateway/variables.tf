@@ -48,7 +48,7 @@ variable "gateway_allowed_address_prefixes" {
   default     = []
 }
 
-# Application gateway specific configurations 
+# Application gateway specific configurations
 
 variable "gateway_enable_private_access" {
   description = "Enable or disable private access to the application gateway"
