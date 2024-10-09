@@ -174,12 +174,12 @@ variable "gateway_probe_threshold" {
 
 # TLS
 variable "tls_certificate_path" {
-  description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB."
+  description = "Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls_certificate_path or tls_certificate_password must be provided."
   type        = string
 }
 
 variable "tls_certificate_password" {
-  description = "TLS certificate password for password protected certificates."
+  description = "TLS certificate password for password-protected certificates. Either tls_certificate_password or tls_certificate_path must be provided"
   type        = string
 }
 
