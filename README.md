@@ -369,14 +369,14 @@ resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
 
-**Deploying without Application Gateway**
+**Deploying with external Application Gateway**
 
-You can deploy GraphDB without creating Application Gateway in order to use your own. To do that there are some steps to do:
+You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. To do this, follow these steps:
 
 _Prerequisites:_
-Resource Group: A resource group should already be created.
-Virtual Network: A Virtual Network (VNet) should be set up and ready.
-Application Gateway: Ensure your Application Gateway is deployed and fully operational.
+• Resource Group: A resource group should already be created.
+• Virtual Network: A Virtual Network (VNet) should be set up and ready.
+• Application Gateway: Ensure your Application Gateway is deployed and fully operational.
 
 _Example Configuration:_
 ```hcl
@@ -387,15 +387,15 @@ graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
 
 _Post-Deployment Actions:_
-After applying the Terraform code, you must perform the following steps:
+• After applying the Terraform code, you must perform the following steps:
 
-Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
+• Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
 
-Upgrade VMs: Ensure your VMs are upgraded so that the Application Gateway can recognize them as valid targets.
+• Upgrade VMs: Ensure your VMs are upgraded so that the Application Gateway can recognize them as valid targets.
 
-Network Security Group (NSG) Configuration: 
+• Network Security Group (NSG) Configuration: 
 
-Ensure that the VMSS has the necessary access to the Application Gateway by configuring the Network Security Group (NSG) rules to allow traffic between them.
+• Ensure that the VMSS has the necessary access to the Application Gateway by configuring the Network Security Group (NSG) rules to allow traffic between them.
 
 ## Local Development
 
