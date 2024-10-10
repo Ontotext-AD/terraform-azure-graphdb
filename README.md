@@ -135,14 +135,15 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| disable\_agw | Disables the creation of application gateway by the terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | `null` | no |
-| tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | `null` | no |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
+| tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | n/a | yes |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
 | tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
 | key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
@@ -150,7 +151,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.4"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.3"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -367,6 +368,34 @@ To deploy in already existing Resource Group and Virtual Network you just need t
 resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
+
+**Deploying with external Application Gateway**
+
+You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. To do this, follow these steps:
+
+_Prerequisites:_
+• Resource Group: A resource group should already be created.
+• Virtual Network: A Virtual Network (VNet) should be set up and ready.
+• Application Gateway: Ensure your Application Gateway is deployed and fully operational.
+
+_Example Configuration:_
+```hcl
+disable_agw                 = true
+virtual_network_name        = "your-VNet"
+resource_group_name         = "your-resource-group"
+graphdb_external_address_fqdn = "your-fqdn-or-ip"
+```
+
+_Post-Deployment Actions:_
+• After applying the Terraform code, you must perform the following steps:
+
+• Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
+
+• Upgrade VMs: Ensure your VMs are upgraded so that the Application Gateway can recognize them as valid targets.
+
+• Network Security Group (NSG) Configuration: 
+
+• Ensure that the VMSS has the necessary access to the Application Gateway by configuring the Network Security Group (NSG) rules to allow traffic between them.
 
 ## Local Development
 
