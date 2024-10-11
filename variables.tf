@@ -181,6 +181,7 @@ variable "tls_certificate_path" {
 variable "tls_certificate_password" {
   description = "TLS certificate password for password-protected certificates. Either tls_certificate_password or tls_certificate_path must be provided"
   type        = string
+  default     = null
 }
 
 variable "tls_certificate_id" {
