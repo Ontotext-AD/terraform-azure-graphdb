@@ -387,7 +387,7 @@ graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
 
 _Post-Deployment Actions:_
-• After applying the Terraform code, you must perform the following steps:
+After applying the Terraform code, you must perform the following steps:
 
 • Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
 
