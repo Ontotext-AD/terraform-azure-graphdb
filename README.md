@@ -141,7 +141,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_password must be provided. | `string` | n/a | yes |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | n/a | yes |
 | tls\_certificate\_password | TLS certificate password for password-protected certificates. Either tls\_certificate\_password or tls\_certificate\_path must be provided | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
 | tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
