@@ -185,7 +185,7 @@ variable "tls_certificate_password" {
 }
 
 variable "tls_certificate_id" {
-  description = "Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls_certificate_path. Either tls_certificate_id ortls_certificate_path must be provided."
+  description = "Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls_certificate_path. Either tls_certificate_id or tls_certificate_path must be provided."
   type        = string
   default     = null
 }
