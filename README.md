@@ -135,7 +135,6 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
-| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |

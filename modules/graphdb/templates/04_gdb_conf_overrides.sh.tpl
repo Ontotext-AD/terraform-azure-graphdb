@@ -80,6 +80,7 @@ EOF
   else
   EXTERNAL_URL="https://${graphdb_external_address_fqdn}/"
   fi
+  
   cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
