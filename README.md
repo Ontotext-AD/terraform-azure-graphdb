@@ -391,7 +391,7 @@ Post-Deployment Actions:
 After applying the Terraform code, you must perform the following steps:
 
 Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
-Upgrade VMs: Ensure your VMs are upgraded so that the Application Gateway can recognize them as valid targets.
+Upgrade VMs: Ensure the VMs in the VMSS are upgraded to the latest model. This is needed so that the Application Gateway can recognize them as valid targets.
 Network Security Group (NSG) Configuration: Ensure that the VMSS has the necessary access to the Application Gateway by configuring the Network Security Group (NSG) rules to allow traffic between them.
 
 ## Local Development

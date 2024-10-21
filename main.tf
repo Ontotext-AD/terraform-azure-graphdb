@@ -181,7 +181,8 @@ module "application_gateway" {
   # Public / Private toggle
   gateway_enable_private_access = var.gateway_enable_private_access
 
-  disable_agw = var.disable_agw
+  disable_agw  = var.disable_agw
+  context_path = var.context_path
 
   # TLS
   gateway_tls_certificate_secret_id   = var.tls_certificate_id != null ? var.tls_certificate_id : module.tls[0].tls_certificate_id
@@ -226,7 +227,7 @@ module "monitoring" {
   location             = var.location
   node_count           = var.node_count
 
-  web_test_availability_request_url = var.disable_agw ? null : module.application_gateway[0].public_ip_address_fqdn
+  web_test_availability_request_url = var.disable_agw ? var.graphdb_external_address_fqdn : module.application_gateway[0].public_ip_address_fqdn
   web_test_geo_locations            = var.web_test_geo_locations
   web_test_ssl_check_enabled        = var.web_test_ssl_check_enabled
   graphdb_external_address_fqdn     = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : module.application_gateway.public_ip_address_fqdn
@@ -275,6 +276,7 @@ module "graphdb" {
 
   # Gateway
   application_gateway_backend_address_pool_ids = var.disable_agw ? [] : [module.application_gateway[0].gateway_backend_address_pool_id]
+  context_path                                 = var.context_path
 
   # App Configuration
   app_configuration_id       = module.appconfig.app_configuration_id
@@ -321,5 +323,6 @@ module "graphdb" {
   appi_connection_string = var.deploy_monitoring ? module.monitoring[0].appi_connection_string : ""
 
   # Wait for the configurations to be created in the App Configuration store
-  depends_on = [module.appconfig]
+  depends_on  = [module.appconfig]
+  disable_agw = var.disable_agw
 }

@@ -137,7 +137,7 @@ variable "gateway_enable_private_access" {
 }
 
 variable "disable_agw" {
-  description = "Disables the creation of application gateway by the terraform module."
+  description = "Disables the creation of Application Gateway by the terraform module."
   type        = bool
   default     = false
 }
@@ -176,6 +176,18 @@ variable "gateway_probe_threshold" {
   description = "Number of consecutive health checks to consider the probe passing or failing"
   type        = number
   default     = 2
+}
+
+variable "context_path" {
+  description = "The context path"
+  type        = string
+
+  validation {
+    condition = (
+      startswith(var.context_path, "/") && !endswith(var.context_path, "/")
+    )
+    error_message = "The context path must start with '/' and must not end with '/'."
+  }
 }
 
 # TLS

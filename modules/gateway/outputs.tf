@@ -28,9 +28,9 @@ output "gateway_id" {
 }
 
 # Gateway Backend Adress Pool ID:
-# Check if application gateway is enabled and private access is true. If both are available, checks for backend adress pool and retrieves the ID of the first one. Otherwise returns Null.
-# If private access is not enabled, if a public gateway exists with a backend address pool and retrieves its ID if present.
-# If none of these conditions are met, the output value is set to null.
+# Checks if the Application Gateway and Private access are enabled, if true then retrieves the first backend address pool ID, if false return null.
+# If Private access is disabled and there is a Public Gateway, retrieves the first backend address pool ID.
+# If none of these conditions are satisfied, the output is set to null.
 
 output "gateway_backend_address_pool_id" {
   description = "Identifier of the application gateway backend address pool"
