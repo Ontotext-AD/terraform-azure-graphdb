@@ -374,43 +374,42 @@ virtual_network_name = "existing_vnet"
 
 You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
 
-Prerequisites:
-Resource Group: A resource group should already be created.
-Virtual Network: A Virtual Network (VNet) should be set up and ready.
-Application Gateway: Ensure your Application Gateway is deployed and fully operational.
+**_Prerequisites_**:
+- *Resource Group*: A resource group should already be created.
+- *Virtual Network*: A Virtual Network (VNet) should be set up and ready.
+- *Application Gateway*: Ensure your Application Gateway is deployed and fully operational.
 
-Example Configuration:
+_Example Configuration:_
 ```hcl
-context_path                  = "/api"
+context_path                  = "/graphdb"
 disable_agw                   = true
 virtual_network_name          = "your-VNet"
 resource_group_name           = "your-resource-group"
 graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
 
-Notes:
--Setting disable_agw to true allows you to use your existing Application Gateway.
--The context_path variable sets the custom context path for your application.
--The context_path variable only works when disable_agw is true!
+_Notes_:
+- Setting disable_agw to true allows you to use your existing Application Gateway.
+- The context_path variable sets the custom context path for your application.
+- The context_path variable only works when disable_agw is true!
 
-Post-Deployment Actions:
+**_Post-Deployment Actions_**:
 After applying the Terraform code, you must perform the following steps:
 
-1. Configure the Application Gateway:
+**1.** Configure the Application Gateway:
+  - Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if ```hcl context_path = "/graphdb"```, the path-based rule should be ```hcl/graphdb/*```.
+    
+  _Note_:
+  - You can use your External Application Gateway without the context path.
+    
+**2.** Add VMs or VMSS to Backend Pool:
+  - Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
 
-  Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if context_path = "/api", the path-based rule should be "/api/*".
-  Note: You can use your External Application Gateway without the context path.
-2. Add VMs or VMSS to Backend Pool:
+**3.** Upgrade VM Instances:
+  - After adding the VMSS to the backend pool and ensuring the Application Gateway has access to the VMSS, upgrade your VM instances to the latest model/version. This step is crucial for the Application Gateway to recognize them as valid targets in the backend pool.
 
-  Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
-
-3. Upgrade VM Instances:
-
-  After adding the VMSS to the backend pool and ensuring the Application Gateway has access to the VMSS, upgrade your VM instances to the latest model/version. This step is crucial for the Application Gateway to recognize them as valid targets in the backend pool.
-
-4. Network Security Group (NSG) Configuration:
-
-  Ensure that the Application Gateway has the neccesery access to the VMSS by configuring NSG rules to allow traffic between them.
+**4.** Network Security Group (NSG) Configuration:
+  - Ensure that the Application Gateway has the necesery access to the VMSS by configuring NSG rules to allow traffic between them.
 
 ## Local Development
 
