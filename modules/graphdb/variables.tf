@@ -312,7 +312,7 @@ variable "disable_agw" {
 }
 
 variable "context_path" {
-  description = "The context path. The context path must start with '/' and must not end with '/'."
+  description = "The context path for the external Application Gateway. The context path must start with '/' and must not end with '/'."
   type        = string
 
   validation {

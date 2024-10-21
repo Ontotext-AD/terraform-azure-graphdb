@@ -179,7 +179,7 @@ variable "gateway_probe_threshold" {
 }
 
 variable "context_path" {
-  description = "The context path"
+  description = "The context path for the external Application Gateway. The context path must start with '/' and must not end with '/'."
   type        = string
 
   validation {

@@ -142,16 +142,16 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null` | no |
-| tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null` | no |
-| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null` | no |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. | `string` | n/a | yes |
+| tls\_certificate\_password | TLS certificate password for password protected certificates. | `string` | n/a | yes |
+| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path | `string` | `null` | no |
 | tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
 | key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | key\_vault\_soft\_delete\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.6"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.3"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -302,7 +302,6 @@ There are two options for setting up the Application Gateway with a TLS certific
     tls_certificate_id          = "key-vault-certificate-secret-id"
     tls_certificate_identity_id = "managed-identity-id"
     ```
-    Note: One of the two options must be used as tls is required!
 
 **Purge Protection**
 
@@ -370,9 +369,9 @@ resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
 
-**Deploying without Application Gateway**
+**Deploying GraphDB with External Application Gateway and Custom Context Path**
 
-You can deploy GraphDB without creating Application Gateway in order to use your own. To do that there are some steps to do:
+You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
 
 Prerequisites:
 Resource Group: A resource group should already be created.
@@ -381,18 +380,36 @@ Application Gateway: Ensure your Application Gateway is deployed and fully opera
 
 Example Configuration:
 ```hcl
-disable_agw                 = true
-virtual_network_name        = "your-VNet"
-resource_group_name         = "your-resource-group"
+context_path                  = "/api"
+disable_agw                   = true
+virtual_network_name          = "your-VNet"
+resource_group_name           = "your-resource-group"
 graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
+
+Notes:
+-Setting disable_agw to true allows you to use your existing Application Gateway.
+-The context_path variable sets the custom context path for your application.
+-The context_path variable only works when disable_agw is true!
 
 Post-Deployment Actions:
 After applying the Terraform code, you must perform the following steps:
 
-Add VMs or VMSS to Backend Pool: Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
-Upgrade VMs: Ensure the VMs in the VMSS are upgraded to the latest model. This is needed so that the Application Gateway can recognize them as valid targets.
-Network Security Group (NSG) Configuration: Ensure that the VMSS has the necessary access to the Application Gateway by configuring the Network Security Group (NSG) rules to allow traffic between them.
+1. Configure the Application Gateway:
+
+  Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if context_path = "/api", the path-based rule should be "/api/*".
+  Note: You can use your External Application Gateway without the context path.
+2. Add VMs or VMSS to Backend Pool:
+
+  Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
+
+3. Upgrade VM Instances:
+
+  After adding the VMSS to the backend pool and ensuring the Application Gateway has access to the VMSS, upgrade your VM instances to the latest model/version. This step is crucial for the Application Gateway to recognize them as valid targets in the backend pool.
+
+4. Network Security Group (NSG) Configuration:
+
+  Ensure that the Application Gateway has the neccesery access to the VMSS by configuring NSG rules to allow traffic between them.
 
 ## Local Development
 
