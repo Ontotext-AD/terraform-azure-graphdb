@@ -48,6 +48,11 @@ terraform.rc
 *.pem
 *.p12
 *.pub
+*.pfx
+*.crt
 
 #Licenses
 *.license
+
+#Private key
+privatekey.key

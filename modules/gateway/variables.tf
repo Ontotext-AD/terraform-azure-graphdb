@@ -55,6 +55,23 @@ variable "gateway_enable_private_access" {
   type        = bool
 }
 
+variable "disable_agw" {
+  description = "Disables the creation of Application Gateway by the terraform module."
+  type        = bool
+}
+
+variable "context_path" {
+  description = "The context path for the external Application Gateway. The context path must start with '/' and must not end with '/'."
+  type        = string
+
+  validation {
+    condition = (
+      startswith(var.context_path, "/") && !endswith(var.context_path, "/")
+    )
+    error_message = "The context path must start with '/' and must not end with '/'."
+  }
+}
+
 variable "gateway_min_capacity" {
   description = "Minimum capacity for the Application Gateway autoscaling"
   type        = number

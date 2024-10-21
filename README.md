@@ -135,14 +135,16 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| disable\_agw | Disables the creation of Application Gateway by the terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null` | no |
-| tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null` | no |
+| context\_path | The context path for the external Application Gateway. The context path must start with '/' and must not end with '/'. | `string` | n/a | yes |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | n/a | yes |
+| tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | n/a | yes |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null` | no |
 | tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
 | key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
@@ -301,7 +303,6 @@ There are two options for setting up the Application Gateway with a TLS certific
     tls_certificate_id          = "key-vault-certificate-secret-id"
     tls_certificate_identity_id = "managed-identity-id"
     ```
-    Note: One of the two options must be used as tls is required!
 
 **Purge Protection**
 
@@ -368,6 +369,47 @@ To deploy in already existing Resource Group and Virtual Network you just need t
 resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
+
+**Deploying GraphDB with External Application Gateway and Custom Context Path**
+
+You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
+
+**_Prerequisites_**:
+- *Resource Group*: A resource group should already be created.
+- *Virtual Network*: A Virtual Network (VNet) should be set up and ready.
+- *Application Gateway*: Ensure your Application Gateway is deployed and fully operational.
+
+_Example Configuration:_
+```hcl
+context_path                  = "/graphdb"
+disable_agw                   = true
+virtual_network_name          = "your-VNet"
+resource_group_name           = "your-resource-group"
+graphdb_external_address_fqdn = "your-fqdn-or-ip"
+```
+
+_Notes_:
+- Setting disable_agw to true allows you to use your existing Application Gateway.
+- The context_path variable sets the custom context path for your application.
+- The context_path variable only works when disable_agw is true!
+
+**_Post-Deployment Actions_**:
+After applying the Terraform code, you must perform the following steps:
+
+**1.** Configure the Application Gateway:
+  - Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if ```hcl context_path = "/graphdb"```, the path-based rule should be ```hcl/graphdb/*```.
+    
+  _Note_:
+  - You can use your External Application Gateway without the context path.
+    
+**2.** Add VMs or VMSS to Backend Pool:
+  - Manually add your Virtual Machines (VMs) or Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
+
+**3.** Upgrade VM Instances:
+  - After adding the VMSS to the backend pool and ensuring the Application Gateway has access to the VMSS, upgrade your VM instances to the latest model/version. This step is crucial for the Application Gateway to recognize them as valid targets in the backend pool.
+
+**4.** Network Security Group (NSG) Configuration:
+  - Ensure that the Application Gateway has the necesery access to the VMSS by configuring NSG rules to allow traffic between them.
 
 ## Local Development
 
