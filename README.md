@@ -135,7 +135,6 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
-| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
@@ -194,8 +193,8 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true` | no |
 | web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false` | no |
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
-| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null`                                                                                              | no |
-| notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]`                                                                                                | no |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null` | no |
+| notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
@@ -437,7 +436,6 @@ Here is the procedure for migrating your single node deployment to cluster e.g.,
 4. Validate the import is successful by checking the `terraform.tfstate` file, should contain `azurerm_managed_disk`
    resource with the name of the disk you've imported.
 5. Run `terraform plan` and review the plan carefully if everything seems fine run `terraform apply`
-
 ## Release History
 
 All notable changes between version are tracked and documented at [CHANGELOG.md](CHANGELOG.md).
