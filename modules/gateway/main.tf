@@ -151,8 +151,8 @@ resource "azurerm_application_gateway" "graphdb-public" {
   # HTTPS request - Path-Based routing rule
   # Conditionally create a request routing rule based on the var.context_path
   dynamic "request_routing_rule" {
-
     for_each = var.context_path != null && var.context_path != "" ? [1] : []
+
     content {
       name               = local.gateway_https_request_routing_rule_name
       priority           = 10
@@ -165,8 +165,8 @@ resource "azurerm_application_gateway" "graphdb-public" {
   # HTTPS request Basic routing rule
   # Fallback to a Basic Rule when var.context_path is empty
   dynamic "request_routing_rule" {
-
     for_each = var.context_path == null || var.context_path == "" ? [1] : []
+
     content {
       name                       = local.gateway_https_request_routing_rule_name
       priority                   = 10
@@ -177,8 +177,8 @@ resource "azurerm_application_gateway" "graphdb-public" {
     }
   }
   dynamic "url_path_map" {
-    
     for_each = var.context_path != null && var.context_path != "" ? [1] : []
+
     content {
       name                               = "path-map"
       default_backend_address_pool_name  = local.gateway_backend_address_pool_name
