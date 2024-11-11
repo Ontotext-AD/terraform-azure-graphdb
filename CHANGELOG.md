@@ -1,4 +1,8 @@
 # GraphDB Azure Terraform Module Changelog
+## 1.4.0
+
+* Introduced support for deployment with an external Application Gateway.
+* Added an option to configure the context path.
 
 ## 1.3.4
 
