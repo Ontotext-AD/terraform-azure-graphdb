@@ -81,6 +81,8 @@ versions. The next table shows the version compatability between GraphDB and the
 |-------------------|----------------|
 | Version 1.x.x     | Version 10.6.x |
 | Version 1.2.x     | Version 10.7.x |
+| Version 1.3.x     | Version 10.7.x |
+| Version 1.4.x     | Version 10.8.x |
 
 You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
 the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
@@ -135,6 +137,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
@@ -151,7 +154,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.7.6"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.8.0"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
@@ -255,7 +258,7 @@ graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
 **GraphDB Configurations**
 
 The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
-supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.7/directories-and-config-properties.html#configuration):
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/10.8/directories-and-config-properties.html#configuration):
 
 ```hcl
 graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
@@ -388,8 +391,8 @@ graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
 
 _Notes_:
-- Setting `disable_agw` to true allows you to use your existing Application Gateway.
-- When using `disable_agw` you need to set `graphdb_external_adress_fqdn` as well.
+- Setting `disable_agw` to true disable the creation of Application Gateway from the Terraform Module.
+- You need provide `graphdb_external_adress_fqdn` when using `disable_agw`.
 - The `context_path` variable sets the custom context path for your application.
 
 **_Post-Deployment Actions_**:
@@ -399,13 +402,13 @@ After applying the Terraform code, you must perform the following steps:
   - Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if `context_path = "/graphdb"`, the path-based rule should be `/graphdb/*`.
     
   _Note_:
-  - You can use your External Application Gateway without the context path.
+  - You can use your external Application Gateway without the context path.
     
 **2.** Add VMs or VMSS to Backend Pool:
   - Manually add your Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
 
-**3.** Upgrade VM Instances:
-  - After assigning the VMSS to the backend pool and verifying that the Application Gateway can access the VMSS, upgrade your VM instances to the latest model or version. This is essential for the Application Gateway to identify them as valid targets within the backend pool.
+**3.** Upgrade VMSS Instances:
+  - After assigning the VMSS to the backend pool and verifying that the Application Gateway can access the VMSS, upgrade your VMSS instances to the latest model or version. This is essential for the Application Gateway to identify them as valid targets within the backend pool.
 **4.** Network Security Group (NSG) Configuration:
   - Configure NSG rules to allow traffic between the Application Gateway and the VMSS, ensuring the necessary access is in place.
 

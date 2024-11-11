@@ -1,8 +1,12 @@
 # GraphDB Azure Terraform Module Changelog
-## 1.4.0
+## 1.5.0
 
 * Introduced support for deployment with an external Application Gateway.
 * Added an option to configure the context path.
+
+## 1.4.0
+
+* Update default GraphDB version to [10.8.0](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-0)
 
 ## 1.3.4
 
