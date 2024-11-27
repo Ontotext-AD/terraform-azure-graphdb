@@ -30,8 +30,6 @@ resource "azurerm_storage_account" "graphdb_backup" {
   account_replication_type          = var.storage_account_replication_type
   enable_https_traffic_only         = true
   allow_nested_items_to_be_public   = false
-  shared_access_key_enabled         = false
-  min_tls_version                   = "TLS1_2"
   infrastructure_encryption_enabled = true
   allowed_copy_scope                = var.storage_account_allowed_copy_scope
 
