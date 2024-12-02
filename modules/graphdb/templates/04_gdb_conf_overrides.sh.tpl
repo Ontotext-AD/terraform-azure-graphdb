@@ -31,38 +31,58 @@ secrets=$(az appconfig kv list --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode log
 log_with_timestamp "Getting GraphDB license"
 az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_license_secret_name} | jq -r .value | base64 -d >/etc/graphdb/graphdb.license
 
-
 log_with_timestamp "Writing configuration files"
+
+CLEAN_CONTEXT_PATH=$(echo "${context_path}" | sed 's#^/*##' | sed 's#/*$##')
 
 # graphdb.external-url.enforce.transactions: determines whether it is necessary to rewrite the Location header when no proxy is configured.
 # This is required because when working with the GDB transaction endpoint it returns an erroneous URL with HTTP protocol instead of HTTPS
 if [ "${node_count}" -eq 1 ]; then
-  cat <<EOF >/etc/graphdb/graphdb.properties
+if [ -n "${context_path}" ]; then
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}"
+else
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}"
+fi
+
+cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.connector.port=7200
-graphdb.external-url=https://${graphdb_external_address_fqdn}
+graphdb.external-url=$${EXTERNAL_URL}
 graphdb.external-url.enforce.transactions=true
 EOF
 else
   RECORD_NAME=$(cat /var/opt/graphdb/node_dns_name)
 
   log_with_timestamp "Getting the cluster token"
-  graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d)
+  graphdb_cluster_token=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_cluster_token_name} | jq -r .value | base64 -d )
+  log_with_timestamp "Getting the full DNS Record for current instance"
 
-  log_with_timestamp "Getting the full DNS record for current instance"
   NODE_DNS=$(az network private-dns record-set a show --resource-group $RESOURCE_GROUP --zone-name $DNS_ZONE_NAME --name $RECORD_NAME --output tsv --query "fqdn" | rev | cut -c 2- | rev)
 
-  cat <<EOF >/etc/graphdb/graphdb.properties
+if [ -n "${context_path}" ]; then
+  VHOSTS_VALUE="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH},http://$${NODE_DNS}:7200"
+else
+  VHOSTS_VALUE="https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7200"
+fi
+
+cat <<EOF >/etc/graphdb/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7200
-graphdb.external-url=http://$${NODE_DNS}:7200/
+graphdb.vhosts=$${VHOSTS_VALUE}
+graphdb.external-url=http://$${NODE_DNS}:7200
 graphdb.rpc.address=$${NODE_DNS}:7300
 EOF
 
-  cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
+if [ -n "${context_path}" ]; then
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}"
+else
+  EXTERNAL_URL="https://${graphdb_external_address_fqdn}"
+fi
+
+cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
-graphdb.external-url=https://${graphdb_external_address_fqdn}
-graphdb.vhosts=https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7201
+graphdb.vhosts=$${VHOSTS_VALUE}
+graphdb.external-url=$${EXTERNAL_URL}
 graphdb.rpc.address=$${NODE_DNS}:7301
 graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF
@@ -71,9 +91,8 @@ fi
 log_with_timestamp "Calculating 85 percent of total memory"
 # Get total memory in kilobytes
 total_memory_kb=$(grep -i "MemTotal" /proc/meminfo | awk '{print $2}')
-# Convert total memory to gigabytes
+# Convert total memory into gigabytes
 total_memory_gb=$(echo "scale=2; $total_memory_kb / 1024 / 1024" | bc)
-# Calculate 85% of total VM memory
 jvm_max_memory=$(echo "$total_memory_gb * 0.85" | bc | cut -d'.' -f1)
 
 mkdir -p /etc/systemd/system/graphdb.service.d/
@@ -83,20 +102,17 @@ cat <<EOF >/etc/systemd/system/graphdb.service.d/overrides.conf
 Environment="GDB_HEAP_SIZE=$${jvm_max_memory}g"
 EOF
 
-# TODO: overrides for the proxy?
-# Appends configuration overrides to graphdb.properties
 if [[ $secrets == *"${graphdb_properties_secret_name}"* ]]; then
   log_with_timestamp "Using graphdb.properties overrides"
   az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_properties_secret_name} | jq -r .value | base64 -d >>/etc/graphdb/graphdb.properties
 fi
 
-# Appends environment overrides to GDB_JAVA_OPTS
 if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   log_with_timestamp "Using GDB_JAVA_OPTS overrides"
   extra_graphdb_java_options=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
   (
-    source /etc/graphdb/graphdb.env
-    echo "GDB_JAVA_OPTS=\"$GDB_JAVA_OPTS $extra_graphdb_java_options\"" >>/etc/graphdb/graphdb.env
+  source /etc/graphdb/graphdb.env
+  echo "GDB_JAVA_OPTS=\"$GDB_JAVA_OPTS $extra_graphdb_java_options\"" >>/etc/graphdb/graphdb.env
   )
 fi
 

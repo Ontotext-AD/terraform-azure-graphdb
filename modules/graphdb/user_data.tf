@@ -78,6 +78,8 @@ data "cloudinit_config" "entrypoint" {
       graphdb_password_secret_name : var.graphdb_password_secret_name
       graphdb_properties_secret_name : var.graphdb_properties_secret_name
       graphdb_java_options_secret_name : var.graphdb_java_options_secret_name
+      context_path : var.context_path
+      disable_agw : var.disable_agw
     })
   }
 

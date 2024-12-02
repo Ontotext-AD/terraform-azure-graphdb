@@ -55,6 +55,16 @@ variable "gateway_enable_private_access" {
   type        = bool
 }
 
+variable "disable_agw" {
+  description = "Disables the creation of Application Gateway by the Terraform module."
+  type        = bool
+}
+
+variable "context_path" {
+  description = "The context path for the Application Gateway."
+  type        = string
+}
+
 variable "gateway_min_capacity" {
   description = "Minimum capacity for the Application Gateway autoscaling"
   type        = number
