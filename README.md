@@ -83,6 +83,7 @@ versions. The next table shows the version compatability between GraphDB and the
 | Version 1.2.x     | Version 10.7.x |
 | Version 1.3.x     | Version 10.7.x |
 | Version 1.4.x     | Version 10.8.x |
+| Version 1.5.x     | Version 10.8.x |
 
 You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
 the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
@@ -137,12 +138,14 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
 | gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
 | gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
 | gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
+| context\_path | The context path for the Application Gateway. | `string` | `""` | no |
 | tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null` | no |
@@ -370,6 +373,44 @@ To deploy in already existing Resource Group and Virtual Network you just need t
 resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
+
+**Deploying GraphDB with External Application Gateway and Custom Context Path**
+
+You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
+
+**_Prerequisites_**:
+- *Resource Group*: A resource group should already be created.
+- *Virtual Network*: A Virtual Network (VNet) should be set up and ready.
+- *Application Gateway*: Ensure your Application Gateway is deployed and fully operational.
+
+_Example Configuration:_
+```hcl
+context_path                  = "/graphdb"
+disable_agw                   = true
+virtual_network_name          = "your-VNet"
+resource_group_name           = "your-resource-group"
+graphdb_external_address_fqdn = "your-fqdn-or-ip"
+```
+
+_Notes_:
+- Setting `disable_agw` to true disable the creation of Application Gateway from the Terraform Module.
+- You need provide `graphdb_external_adress_fqdn` when using `disable_agw`.
+- The `context_path` variable sets the custom context path for your application.
+
+**_Post-Deployment Actions_**:
+After applying the Terraform code, you must perform the following steps:
+
+**1.** Configure the Application Gateway:
+- Path-Based Routing Rule: Set up a path-based routing rule on your Application Gateway to listen to the same context path. For example, if `context_path = "/graphdb"`, the path-based rule should be `/graphdb/*`.
+You can use your external Application Gateway without the context path.
+
+**2.** Add VMs or VMSS to Backend Pool:
+- Manually add your Virtual Machine Scale Sets (VMSS) to the Application Gateway’s backend pool as targets.
+
+**3.** Upgrade VMSS Instances:
+- After assigning the VMSS to the backend pool and verifying that the Application Gateway can access the VMSS, upgrade your VMSS instances to the latest model or version. This is essential for the Application Gateway to identify them as valid targets within the backend pool.
+**4.** Network Security Group (NSG) Configuration:
+- Configure NSG rules to allow traffic between the Application Gateway and the VMSS, ensuring the necessary access is in place.
 
 ## Local Development
 

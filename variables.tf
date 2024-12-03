@@ -136,6 +136,12 @@ variable "gateway_enable_private_access" {
   default     = false
 }
 
+variable "disable_agw" {
+  description = "Disables the creation of Application Gateway by the Terraform module."
+  type        = bool
+  default     = false
+}
+
 variable "gateway_enable_private_link_service" {
   description = "Set to true to enable Private Link service, false to disable it."
   type        = bool
@@ -170,6 +176,12 @@ variable "gateway_probe_threshold" {
   description = "Number of consecutive health checks to consider the probe passing or failing"
   type        = number
   default     = 2
+}
+
+variable "context_path" {
+  description = "The context path for the Application Gateway."
+  type        = string
+  default     = ""
 }
 
 # TLS
