@@ -212,11 +212,14 @@ module "graphdb" {
     Environment : "dev"
   }
 
-  instance_type          = "Standard_E8as_v5"
-  graphdb_license_path   = "path-to-graphdb-license"
-  ssh_key                = "your-public-key"
-  management_cidr_blocks = ["your-ip-address"]
-  tls_certificate_path   = "path-to-your-tls-certificate"
+  instance_type            = "Standard_E8as_v5"
+  graphdb_license_path     = "path-to-graphdb-license"
+  ssh_key                  = "your-public-key"
+  management_cidr_blocks   = ["your-ip-address"]
+  tls_certificate_path     = "path-to-your-tls-certificate"
+  
+  # OPTIONAL: Required only if the password for the certificate is set
+  tls_certificate_password = "password-for-your-tls-certificate" 
 }
 ```
 
@@ -298,7 +301,9 @@ There are two options for setting up the Application Gateway with a TLS certific
 1. Provide local certificate file in PFX format with:
     ```hcl
     tls_certificate_path     = "path-to-your-tls-certificate"
-    tls_certificate_password = "tls-certificate-password"     # Optional
+    
+    # OPTIONAL: Required only if the password for the certificate is set
+    tls_certificate_password = "tls-certificate-password"
     ```
    Note: This will create a dedicated Key Vault for storing the certificate.
 2. Or provide a reference to an existing TLS certificate with:
