@@ -118,6 +118,7 @@ variable "web_test_timeout" {
 variable "monitor_reader_principal_id" {
   description = "Principal(Object) ID of a user/group which would receive notifications from alerts."
   type        = string
+  default     = null
 }
 
 variable "ag_notifications_email_list" {
