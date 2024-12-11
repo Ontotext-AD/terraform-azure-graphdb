@@ -25,8 +25,8 @@ resource "azurerm_monitor_action_group" "notification_group" {
 # Role assignments
 
 resource "azurerm_role_assignment" "monitoring_reader" {
-  principal_id = var.monitor_reader_principal_id
-  # TODO test this out, not sure if this is the proper scope
+  count                = var.monitor_reader_principal_id != null ? 1 : 0
+  principal_id         = var.monitor_reader_principal_id
   scope                = azurerm_application_insights.graphdb_insights.id
   role_definition_name = "Monitoring Reader"
 }
