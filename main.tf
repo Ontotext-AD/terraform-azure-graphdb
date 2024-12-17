@@ -13,6 +13,18 @@ locals {
     CreatedOn  = time_static.current.rfc3339
   }, var.tags)
   admin_security_principle_id = var.admin_security_principle_id != null ? var.admin_security_principle_id : data.azurerm_client_config.current.object_id
+
+  resources_to_lock = {
+    "vnet"                       = azurerm_virtual_network.graphdb[0].id,
+    "application_gateway_subnet" = var.disable_agw ? null : azurerm_subnet.graphdb_gateway.id,
+    "subnets"                    = azurerm_subnet.graphdb_vmss.id,
+    "backup"                     = module.backup.storage_account_id,
+    "monitoring"                 = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null,
+    "appconfig"                  = module.appconfig.app_configuration_id,
+    "application_gateway"        = var.disable_agw ? null : module.application_gateway[0].gateway_id,
+    "vault"                      = module.vault[0].key_vault_id
+    "vmss"                       = module.graphdb.vmss_resource_id
+  }
 }
 
 resource "azurerm_resource_group" "graphdb" {
@@ -38,9 +50,13 @@ locals {
 }
 
 resource "azurerm_management_lock" "graphdb_rg_lock" {
-  count      = var.lock_resources ? 1 : 0
-  name       = "${var.resource_name_prefix}-rg-lock"
-  scope      = local.resource_group_id
+  for_each = var.lock_resources ? {
+    for key, value in local.resources_to_lock : key => value
+    if value != null && value != ""
+  } : {}
+
+  name       = "${var.resource_name_prefix}-lock-${each.key}"
+  scope      = each.value
   lock_level = "CanNotDelete"
   notes      = "Prevents from deleting the resource group"
 }
