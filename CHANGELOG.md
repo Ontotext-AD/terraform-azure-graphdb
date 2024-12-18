@@ -4,6 +4,8 @@
 
 * Introduced support for deployment with an external Application Gateway.
 * Added an option to configure the context path.
+* Introduced changes to the Management lock policies [Resource group lock prevents node instances from being redeployed/reimaged](https://github.com/Ontotext-AD/terraform-azure-graphdb/issues/98)
+* Updated GraphDB Version to [10.8.2](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-2)
 
 ## 1.4.1
 
