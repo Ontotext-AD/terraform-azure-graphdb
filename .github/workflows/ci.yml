@@ -54,7 +54,7 @@ jobs:
           hide-progress: false
           format: sarif
           output: trivy.sarif
-        #TODO Remove this when fix is available for the error regarding the
+        # TODO Remove this when fix is available for the error regarding the
         # unknown state of some of the resources during plan phase
         continue-on-error: true # Allows the job to continue even if this step fails
 
