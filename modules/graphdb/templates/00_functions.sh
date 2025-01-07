@@ -11,6 +11,72 @@ log_with_timestamp() {
   echo "$(date '+%Y-%m-%d %H:%M:%S'): $1"
 }
 
+wait_for_vmss_nodes() {
+  local VMSS_NAME="$1"
+  local RESOURCE_GROUP="$2"
+  local RETRY_DELAY=10
+  local MAX_RETRIES=65
+  local RETRY_COUNT=0
+
+  # Get the desired capacity of the VMSS
+  local NODE_COUNT
+  NODE_COUNT=$(az vmss show \
+               --name "$VMSS_NAME" \
+               --resource-group "$RESOURCE_GROUP" \
+               --query "sku.capacity" \
+               --output tsv)
+
+  # Check if NODE_COUNT is numeric and greater than 0
+  if [ "$NODE_COUNT" -eq "$NODE_COUNT" ] 2>/dev/null && [ "$NODE_COUNT" -ge 0 ]; then
+    echo "Node count is valid: $NODE_COUNT"
+  else
+    echo "Invalid node count: $NODE_COUNT"
+    exit 1
+  fi
+
+  echo "Checking VMSS node count for $VMSS_NAME with desired node count: $NODE_COUNT"
+
+  while true; do
+    # Get the count of running instances
+    RUNNING_NODE_COUNT=$(az vmss list-instances \
+                           --resource-group "$RESOURCE_GROUP" \
+                           --name "$VMSS_NAME" \
+                           --expand instanceView \
+                           --query "[?instanceView.statuses[?code=='PowerState/running']].instanceId" \
+                           --output tsv | wc -l)
+
+    # Get the count of deleting instances
+    DELETING_NODE_COUNT=$(az vmss list-instances \
+                            --resource-group "$RESOURCE_GROUP" \
+                            --name "$VMSS_NAME" \
+                            --query "[?provisioningState=='Deleting'].instanceId" \
+                            --output tsv | wc -l)
+
+    echo "Running: $RUNNING_NODE_COUNT, Deleting: $DELETING_NODE_COUNT, Desired: $NODE_COUNT"
+
+    # Validate conditions: If retry count is exhausted
+    if [[ "$RUNNING_NODE_COUNT" -ne "$NODE_COUNT" ]] && [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+      echo "Error: Running nodes count ($RUNNING_NODE_COUNT) does not match the desired node count ($NODE_COUNT) after $MAX_RETRIES retries. Exiting..."
+      exit 1
+    fi
+
+    # If the conditions are met, break out of the loop
+    if [[ "$RUNNING_NODE_COUNT" -ge "$NODE_COUNT" ]] && [[ "$DELETING_NODE_COUNT" -eq 0 ]]; then
+      echo "Conditions met: Running instances >= $NODE_COUNT, no Deleting instances. Proceeding..."
+      break
+    else
+      if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+        echo "Error: Maximum retry attempts reached. Exiting..."
+        exit 1
+      fi
+
+      echo "Conditions not met. Waiting... (Running: $RUNNING_NODE_COUNT, Deleting: $DELETING_NODE_COUNT)"
+      sleep "$RETRY_DELAY"
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+    fi
+  done
+}
+
 check_gdb() {
   if [ -z "$1" ]; then
     log_with_timestamp "Error: IP address or hostname is not provided."

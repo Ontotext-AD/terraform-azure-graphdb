@@ -35,6 +35,9 @@ data "cloudinit_config" "entrypoint" {
       app_configuration_endpoint : var.app_configuration_endpoint
       app_configuration_id : var.app_configuration_id
       storage_account_name : var.backup_storage_account_name
+      node_count : var.node_count
+      vmss_name : "vmss-${var.resource_name_prefix}"
+      resource_group : var.resource_group_name
     })
   }
 

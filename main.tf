@@ -14,17 +14,46 @@ locals {
   }, var.tags)
   admin_security_principle_id = var.admin_security_principle_id != null ? var.admin_security_principle_id : data.azurerm_client_config.current.object_id
 
+  static_keys = {
+    vnet                       = "virtual_network"
+    application_gateway_subnet = "gateway_subnet"
+    subnets                    = "vmss_subnet"
+    backup                     = "backup_storage"
+    monitoring                 = "monitoring_workspace"
+    appconfig                  = "app_configuration"
+    application_gateway        = "application_gateway"
+    vault                      = "key_vault"
+    vmss                       = "vmss"
+  }
+
   resources_to_lock = {
-    "vnet"                       = azurerm_virtual_network.graphdb[0].id,
-    "application_gateway_subnet" = var.disable_agw ? null : azurerm_subnet.graphdb_gateway.id,
-    "subnets"                    = azurerm_subnet.graphdb_vmss.id,
-    "backup"                     = module.backup.storage_account_id,
-    "monitoring"                 = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null,
-    "appconfig"                  = module.appconfig.app_configuration_id,
-    "application_gateway"        = var.disable_agw ? null : module.application_gateway[0].gateway_id,
+    "vnet"                       = azurerm_virtual_network.graphdb[0].id
+    "application_gateway_subnet" = azurerm_subnet.graphdb_gateway.id
+    "subnets"                    = azurerm_subnet.graphdb_vmss.id
+    "backup"                     = module.backup.storage_account_id
+    "monitoring"                 = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null
+    "appconfig"                  = module.appconfig.app_configuration_id
+    "application_gateway"        = var.disable_agw ? null : module.application_gateway[0].gateway_id
     "vault"                      = module.vault[0].key_vault_id
     "vmss"                       = module.graphdb.vmss_resource_id
   }
+
+  resources_to_lock_filtered = {
+    for key, value in local.static_keys :
+    key => try(local.resources_to_lock[key], null)
+    if(key != "monitoring" || var.deploy_monitoring) &&
+    (key != "application_gateway" && key != "application_gateway_subnet" || !var.disable_agw) &&
+    value != null && value != ""
+  }
+}
+
+# Management Lock for Resources
+resource "azurerm_management_lock" "graphdb_rg_lock" {
+  for_each = var.lock_resources ? local.resources_to_lock_filtered : {}
+
+  name       = each.key
+  scope      = each.value
+  lock_level = "CanNotDelete"
 }
 
 resource "azurerm_resource_group" "graphdb" {
@@ -47,18 +76,6 @@ data "azurerm_resource_group" "existing_graphdb_rg" {
 locals {
   resource_group_id   = var.resource_group_name != null ? data.azurerm_resource_group.existing_graphdb_rg[0].id : azurerm_resource_group.graphdb[0].id
   resource_group_name = var.resource_group_name != null ? data.azurerm_resource_group.existing_graphdb_rg[0].name : azurerm_resource_group.graphdb[0].name
-}
-
-resource "azurerm_management_lock" "graphdb_rg_lock" {
-  for_each = var.lock_resources ? {
-    for key, value in local.resources_to_lock : key => value
-    if value != null && value != ""
-  } : {}
-
-  name       = "${var.resource_name_prefix}-lock-${each.key}"
-  scope      = each.value
-  lock_level = "CanNotDelete"
-  notes      = "Prevents from deleting the resource group"
 }
 
 resource "azurerm_virtual_network" "graphdb" {

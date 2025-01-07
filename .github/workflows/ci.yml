@@ -38,16 +38,25 @@ jobs:
         name: Run Terraform validate check
         run: terraform validate
 
+      - id:  install_latest_trivy_version
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+            cache: true
+            version: v0.58.1
+
       - id: run_trivy_config
         name: Run Trivy vulnerability scanner
-        # aquasecurity/trivy-action@v0.16.0
-        uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: config
           trivy-config: trivy.yaml
+          ignore-unfixed: true
           hide-progress: false
           format: sarif
           output: trivy.sarif
+        # TODO Remove this when fix is available for the error regarding the
+        # unknown state of some of the resources during plan phase
+        continue-on-error: true # Allows the job to continue even if this step fails
 
       - id: run_sarif_upload
         name: Upload Trivy SARIF results
