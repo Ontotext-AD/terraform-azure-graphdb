@@ -6,6 +6,9 @@
 * Added an option to configure the context path.
 * Introduced changes to the Management lock policies [Resource group lock prevents node instances from being redeployed/reimaged](https://github.com/Ontotext-AD/terraform-azure-graphdb/issues/98)
 * Updated GraphDB Version to [10.8.2](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-2)
+* Added wait condition for DNS Records and nodes
+* Fixed handling for Monitor Reader Principal ID being null
+* Updated `run_backup.sh` so that the storage account name and container name are passed as script arguments.
 
 ## 1.4.1
 
