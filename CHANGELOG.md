@@ -8,6 +8,7 @@
 * Added wait condition for DNS Records and nodes
 * Fixed handling for Monitor Reader Principal ID being null
 * Updated `run_backup.sh` so that the storage account name and container name are passed as script arguments.
+* Fixed duplicated public IP address in outputs.tf
 
 ## 1.4.2
 
