@@ -164,4 +164,22 @@ data "cloudinit_config" "entrypoint" {
       content      = file(part.value)
     }
   }
+
+  # 12 Execute additional rendered templates
+  dynamic "part" {
+    for_each = var.user_supplied_rendered_templates
+    content {
+      content_type = "text/x-shellscript"
+      content      = part.value
+    }
+  }
+
+  # 13 Execute additional templates
+  dynamic "part" {
+    for_each = var.user_supplied_templates
+    content {
+      content_type = "text/x-shellscript"
+      content      = templatefile(part.value["path"], part.value["variables"])
+    }
+  }
 }
