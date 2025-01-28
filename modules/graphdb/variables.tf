@@ -306,6 +306,16 @@ variable "user_supplied_scripts" {
   type        = list(string)
 }
 
+variable "user_supplied_rendered_templates" {
+  description = "Array of additional rendered templates to execute sequentially after the templated user data shell scripts"
+  type        = list(string)
+}
+
+variable "user_supplied_templates" {
+  description = "Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts"
+  type        = list(string)
+}
+
 variable "disable_agw" {
   description = "Disables the creation of Application Gateway by the Terraform module."
   type        = bool

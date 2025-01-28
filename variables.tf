@@ -332,6 +332,18 @@ variable "user_supplied_scripts" {
   default     = []
 }
 
+variable "user_supplied_rendered_templates" {
+  description = "Array of additional rendered templates to execute sequentially after the templated user data shell scripts"
+  type        = list(string)
+  default     = []
+}
+
+variable "user_supplied_templates" {
+  description = "Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts. Accepts template and variables as part of the templatefile Function"
+  type        = list(string)
+  default     = []
+}
+
 # Storage account, primarily used for GraphDB backups
 
 variable "storage_account_tier" {

@@ -337,11 +337,13 @@ module "graphdb" {
   graphdb_image_id = var.graphdb_image_id
 
   # VMSS
-  instance_type         = var.instance_type
-  node_count            = var.node_count
-  ssh_key               = var.ssh_key
-  user_supplied_scripts = var.user_supplied_scripts
-  vmss_dns_servers      = var.vmss_dns_servers
+  instance_type                    = var.instance_type
+  node_count                       = var.node_count
+  ssh_key                          = var.ssh_key
+  user_supplied_scripts            = var.user_supplied_scripts
+  user_supplied_templates          = var.user_supplied_templates
+  user_supplied_rendered_templates = var.user_supplied_rendered_templates
+  vmss_dns_servers                 = var.vmss_dns_servers
 
   # Managed Disks
   disk_iops_read_write       = var.disk_iops_read_write
