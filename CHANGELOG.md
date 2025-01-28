@@ -9,6 +9,7 @@
 * Fixed handling for Monitor Reader Principal ID being null
 * Updated `run_backup.sh` so that the storage account name and container name are passed as script arguments.
 * Fixed duplicated public IP address in outputs.tf
+* Added ability to provide user_supplied_rendered_templates and user_supplied_templates to the VMSS instances
 
 ## 1.4.2
 
