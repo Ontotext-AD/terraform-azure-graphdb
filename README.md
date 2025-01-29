@@ -354,6 +354,24 @@ Resources related to the monitoring (Application Insights) are deployed by defau
 deploy_monitoring = false
 ```
 
+When deploying the Monitoring module you should specify the following values:
+
+* Grant Access to Monitoring
+
+Define the `monitor_reader_principal_id` to provide access to a user or group for monitoring purposes.
+This can be an user or group, and it allows the designated principal to read monitoring data.
+
+  ```hcl
+  monitor_reader_principal_id = "arn:aws:iam::account-id:role/monitoring-role"
+  ```
+
+* Set Notification Recipients
+  Specify the notification_recipients_email_list to define the email addresses that will receive monitoring notifications.
+  This ensures that the relevant people are alerted when important events or thresholds are reached.
+
+  ```hcl
+  notification_recipients_email_list = ["user1@example.com", "user2@example.com"]
+  ```
 **Custom GraphDB VM Image**
 
 You can provide the VMSS with a custom VM image by specifying `graphdb_image_id`, for example:
