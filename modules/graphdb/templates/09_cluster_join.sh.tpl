@@ -20,7 +20,7 @@ set -o pipefail
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
-GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 CURRENT_NODE_NAME=$(cat /var/opt/graphdb/node_dns_name)
 RAFT_DIR="/var/opt/graphdb/node/data/raft"
 LEADER_NODE=""
@@ -33,7 +33,7 @@ readarray -t NODES <<<"$(az network private-dns record-set list \
 
 # This function should be used only after the Leader node is found
 get_cluster_state() {
-  curl_response=$(curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s -u "admin:$GRAPHDB_ADMIN_PASSWORD")
+  curl_response=$(curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s -u "admin:$GRAPHDB_PASSWORD")
   nodes_in_cluster=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_cluster \K\d+')
   nodes_in_sync=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_sync \K\d+')
   echo "$nodes_in_cluster $nodes_in_sync"
@@ -77,7 +77,7 @@ join_cluster() {
       log_with_timestamp "Checking leader status for $node.$${DNS_ZONE_NAME}"
 
       # Gets the address of the node if nodeState is LEADER, grpc port is returned therefor we replace port 7300 to 7200
-      LEADER_ADDRESS=$(curl -s "$endpoint" -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" | jq -r '.[] | select(.nodeState == "LEADER") | .address' | sed 's/7300/7200/')
+      LEADER_ADDRESS=$(curl -s "$endpoint" -u "admin:$${GRAPHDB_PASSWORD}" | jq -r '.[] | select(.nodeState == "LEADER") | .address' | sed 's/7300/7200/')
       if [ -n "$${LEADER_ADDRESS}" ]; then
         LEADER_NODE=$LEADER_ADDRESS
         log_with_timestamp "Found leader address $LEADER_ADDRESS"
@@ -99,7 +99,7 @@ join_cluster() {
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
     -w "%%{http_code}" \
-    -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+    -u "admin:$${GRAPHDB_PASSWORD}" \
     -d "{\"nodes\": [\"$${CURRENT_NODE_NAME}.$${DNS_ZONE_NAME}:7300\"]}" \
     "http://$${LEADER_NODE}/rest/cluster/config/node" || true
 
@@ -123,7 +123,7 @@ join_cluster() {
         -H 'Content-Type: application/json' \
         -H 'Accept: application/json' \
         -w "%%{http_code}" \
-        -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+        -u "admin:$${GRAPHDB_PASSWORD}" \
         -d"{\"nodes\": [\"$${CURRENT_NODE_NAME}.$${DNS_ZONE_NAME}:7300\"]}" \
         "http://$${LEADER_NODE}/rest/cluster/config/node"
     )
