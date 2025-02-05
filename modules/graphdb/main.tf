@@ -5,7 +5,8 @@
 # Ensures the VMSS will always resolve addresses in the Private DNS Zone.
 # https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16
 locals {
-  dns_servers = setunion(var.vmss_dns_servers, ["168.63.129.16"])
+  dns_servers              = setunion(var.vmss_dns_servers, ["168.63.129.16"])
+  healthcheck_request_path = var.node_count != 1 ? "/rest/cluster/node/status" : "/protocol"
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
@@ -57,13 +58,13 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     name                       = "ConsulHealthExtension"
     publisher                  = "Microsoft.ManagedServices"
     type                       = "ApplicationHealthLinux"
-    type_handler_version       = "1.0"
+    type_handler_version       = "2.0"
     auto_upgrade_minor_version = false
 
     settings = jsonencode({
       protocol    = "http"
       port        = 7200
-      requestPath = "/rest/cluster/node/status"
+      requestPath = local.healthcheck_request_path
     })
   }
 
@@ -71,7 +72,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     name                 = "AzureMonitorLinuxAgent"
     publisher            = "Microsoft.Azure.Monitor"
     type                 = "AzureMonitorLinuxAgent"
-    type_handler_version = "1.0"
+    type_handler_version = "1.33"
   }
 
   # Explicitly setting instance repair to false.

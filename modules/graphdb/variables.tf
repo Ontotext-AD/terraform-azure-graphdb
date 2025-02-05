@@ -198,7 +198,6 @@ variable "graphdb_image_id" {
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
   type        = number
-  default     = 3
 }
 
 variable "instance_type" {
