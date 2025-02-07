@@ -1,4 +1,5 @@
 provider "azurerm" {
+  subscription_id = var.azure_subscription_id
   features {
     managed_disk {
       expand_without_downtime = true

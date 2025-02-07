@@ -20,6 +20,11 @@ output "public_ip_address_fqdn" {
   value       = azurerm_public_ip.graphdb_public_ip_address.fqdn
 }
 
+output "private_ip_address" {
+  description = "The private IPv4 address"
+  value       = var.gateway_enable_private_access ? azurerm_application_gateway.graphdb-private[0].frontend_ip_configuration[1].private_ip_address : ""
+}
+
 # Gateway
 
 output "gateway_id" {

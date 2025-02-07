@@ -1,5 +1,11 @@
 # General configurations
 
+variable "azure_subscription_id" {
+  description = "Define Subscription ID for authentication (Required)"
+  type        = string
+  default     = ""
+}
+
 variable "resource_group_name" {
   description = "The name of the existing resource group to use. If not provided, a new resource group will be created."
   type        = string
