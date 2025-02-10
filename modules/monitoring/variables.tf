@@ -163,3 +163,8 @@ variable "graphdb_external_address_fqdn" {
   description = "Public FQDN where GraphDB can be addressed"
   type        = string
 }
+
+variable "gateway_enable_private_access" {
+  description = "Enable or disable private access to the application gateway"
+  type        = bool
+}

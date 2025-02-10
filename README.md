@@ -117,6 +117,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| azure\_subscription\_id | Define Subscription ID for authentication (Required) | `string` | `""` | no |
 | resource\_group\_name | The name of the existing resource group to use. If not provided, a new resource group will be created. | `string` | `null` | no |
 | virtual\_network\_name | The name of the existing vnet to use. If not provided, a new virtual network will be created. | `string` | `null` | no |
 | resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a | yes |
@@ -200,6 +201,12 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 
 ## Usage
 
+**Important:** Starting from **v4.x** of the **AzureRM Terraform provider**, it's mandatory to specify the **Subscription ID** to ensure successful module deployment. You can define the **Subscription ID** in terraform.tfvars file:
+
+```hcl
+azure_subscription_id = "XXXXX-XXXXX-XXXXX-XXXXX"
+```
+
 To use the GraphDB module, create a new Terraform project or add to an existing one the following module block:
 
 ```hcl
@@ -207,21 +214,24 @@ module "graphdb" {
   source  = "Ontotext-AD/graphdb/azure"
   version = "~> 1.0"
 
-  resource_name_prefix = "graphdb"
-  location             = "East US"
-  zones                = [1, 2, 3]
-  tags                 = {
-    Environment : "dev"
+  resource_name_prefix       = "graphdb"
+  location                   = "East US"
+  zones                      = [1, 2, 3]
+
+  tags = {
+    Environment = "dev"
   }
 
-  instance_type            = "Standard_E8as_v5"
-  graphdb_license_path     = "path-to-graphdb-license"
-  ssh_key                  = "your-public-key"
-  management_cidr_blocks   = ["your-ip-address"]
-  tls_certificate_path     = "path-to-your-tls-certificate"
+  instance_type              = "Standard_E8as_v5"
+  graphdb_license_path       = "path-to-graphdb-license"
+  ssh_key                    = "your-public-key"
+  management_cidr_blocks     = ["your-ip-address"]
+  tls_certificate_path       = "path-to-your-tls-certificate"
+  # Mandatory since version 4.x of the AzureRM Provider
+  azure_subscription_id      = "XXXXX-XXXXX-XXXXX-XXXXX"
 
   # OPTIONAL: Required only if the password for the certificate is set
-  tls_certificate_password = "password-for-your-tls-certificate"
+  tls_certificate_password   = "password-for-your-tls-certificate"
 }
 ```
 

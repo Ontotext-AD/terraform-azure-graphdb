@@ -5,7 +5,7 @@ locals {
 }
 
 resource "azurerm_application_insights_standard_web_test" "at-cluster-health" {
-  enabled = var.appi_web_test_availability_enabled
+  count = var.appi_web_test_availability_enabled && !var.gateway_enable_private_access ? 1 : 0
 
   name                    = "at-${var.resource_name_prefix}-cluster-health"
   resource_group_name     = var.resource_group_name

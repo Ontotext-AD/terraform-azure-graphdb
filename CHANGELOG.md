@@ -10,6 +10,14 @@
 * Updated `run_backup.sh` so that the storage account name and container name are passed as script arguments.
 * Fixed duplicated public IP address in outputs.tf
 * Added ability to provide user_supplied_rendered_templates and user_supplied_templates to the VMSS instances
+* Added check if node count is greater than 1 to use /rest/cluster/node/status health endpoint if not, use /protocol
+* Added ability to use private IP as a FQDN if the application gateway is deployed in private mode
+* Updated AzureRM provider to version 4.17
+* Changed storage_account_name to storage_account_id in modules/backup/main.tf since it will be removed in version 5.0 of the Provider.
+* Removed enable_https_only in modules/backup/main.tf since it is not supported anymore since v4.x of the AzureRM Provider.
+* Updated AzureMonitorLinuxAgent extension for the VMSS to from 1.0 to 1.33
+* Added fix for VMSS scale up
+* Removed min_tls_version since now defaults to 1_2
 
 ## 1.4.2
 

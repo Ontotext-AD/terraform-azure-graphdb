@@ -58,7 +58,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
     name                       = "ConsulHealthExtension"
     publisher                  = "Microsoft.ManagedServices"
     type                       = "ApplicationHealthLinux"
-    type_handler_version       = "2.0"
+    type_handler_version       = "1.0"
     auto_upgrade_minor_version = false
 
     settings = jsonencode({
@@ -78,7 +78,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   # Explicitly setting instance repair to false.
   # Re-creating a GraphDB instance would not solve any issues in most cases.
   automatic_instance_repair {
-    enabled = false
+    enabled      = false
+    grace_period = "PT10M" # Even though it is optional, if not specified the deployment crashes
   }
 
   scale_in {
