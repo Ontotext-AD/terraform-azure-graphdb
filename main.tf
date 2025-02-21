@@ -34,7 +34,7 @@ locals {
     "monitoring"                 = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null
     "appconfig"                  = module.appconfig.app_configuration_id
     "application_gateway"        = var.disable_agw ? null : module.application_gateway[0].gateway_id
-    "vault"                      = module.vault[0].key_vault_id
+    "vault"                      = var.tls_certificate_id == null ? module.vault[0].key_vault_id : null
     "vmss"                       = module.graphdb.vmss_resource_id
   }
 
