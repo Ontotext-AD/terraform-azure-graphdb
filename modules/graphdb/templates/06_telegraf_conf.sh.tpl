@@ -35,6 +35,8 @@ cat <<-EOF >/etc/telegraf/telegraf.conf
     region = "$REGION_ID"
     resource_id = "$RESOURCE_ID"
 EOF
+# Prevent any other user (except root) from reading the telegraf config. Apply recursively for entire dir
+chmod -R og-rwx /etc/telegraf
 
 systemctl restart telegraf
 
