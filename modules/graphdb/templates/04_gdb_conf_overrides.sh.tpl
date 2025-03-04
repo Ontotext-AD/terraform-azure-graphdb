@@ -122,4 +122,8 @@ if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   fi
 fi
 
+# Remove sudo privileges for all local users - they don't need this permission and is a high security risk
+log_with_timestamp "Re-configure user permissions"
+[[ -f /etc/sudoers.d/90-cloud-init-users ]] && rm /etc/sudoers.d/90-cloud-init-users
+
 log_with_timestamp "Completed applying overrides"
