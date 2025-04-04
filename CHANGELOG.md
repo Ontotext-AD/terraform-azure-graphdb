@@ -1,9 +1,5 @@
 # GraphDB Azure Terraform Module Changelog
 
-## 1.5.1
-
-* Update default GraphDB version to [10.8.5](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-5)
-
 ## 1.5.0
 
 * Introduced support for deployment with an external Application Gateway.
@@ -22,6 +18,10 @@
 * Updated AzureMonitorLinuxAgent extension for the VMSS to from 1.0 to 1.33
 * Added fix for VMSS scale up
 * Removed min_tls_version since now defaults to 1_2
+
+## 1.4.5
+
+* Update default GraphDB version to [10.8.5](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-5)
 
 ## 1.4.4
 
