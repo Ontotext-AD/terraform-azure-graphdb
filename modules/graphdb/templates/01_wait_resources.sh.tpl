@@ -23,9 +23,14 @@ PRIVATE_DNS_ZONE_LINK_ID="${private_dns_zone_link_id}"
 APP_CONFIGURATION_ENDPOINT="${app_configuration_endpoint}"
 APP_CONFIGURATION_ID="${app_configuration_id}"
 STORAGE_ACCOUNT_NAME=${storage_account_name}
-GRAPHDB_NODE_COUNT=${node_count}
 VMSS_NAME=${vmss_name}
 RESOURCE_GROUP=${resource_group}
+GRAPHDB_NODE_COUNT="$(az appconfig kv show \
+  --endpoint ${app_configuration_endpoint} \
+  --auth-mode login \
+  --key node_count \
+  | jq -r .value)"
+
 
 # Only run the wait_vmss_nodes function if graphdb_node_count is more than 1
 if [ "$GRAPHDB_NODE_COUNT" -gt 1 ]; then

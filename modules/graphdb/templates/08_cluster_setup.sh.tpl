@@ -28,6 +28,11 @@ DNS_ZONE_NAME=${private_dns_zone_name}
 GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
 VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
+GRAPHDB_NODE_COUNT="$(az appconfig kv show \
+  --endpoint ${app_configuration_endpoint} \
+  --auth-mode login \
+  --key node_count \
+  | jq -r .value)"
 
 # To update the password if changed we need to save the creation date of the config.
 # If a file is found, it will treat the password from Application config as the latest and update it.
@@ -95,7 +100,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
   echo "#    Beginning cluster setup     #"
   echo "##################################"
 
-  wait_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "${node_count}"
+  wait_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "$GRAPHDB_NODE_COUNT"
   check_all_dns_records "$DNS_ZONE_NAME" "$RESOURCE_GROUP" "$RETRY_DELAY"
 
   for ((i = 1; i <= $MAX_RETRIES; i++)); do

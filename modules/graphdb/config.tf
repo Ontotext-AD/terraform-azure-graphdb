@@ -56,3 +56,10 @@ resource "azurerm_app_configuration_key" "graphdb_java_options" {
   value                  = base64encode(var.graphdb_java_options)
   content_type           = "text/plain"
 }
+
+resource "azurerm_app_configuration_key" "graphdb_node_count" {
+  configuration_store_id = var.app_configuration_id
+  key                    = var.node_count_name
+  value                  = var.node_count
+  content_type           = "text/plain"
+}

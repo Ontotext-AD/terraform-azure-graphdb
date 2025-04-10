@@ -24,6 +24,11 @@ echo "#######################################"
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 DNS_ZONE_NAME=${private_dns_zone_name}
 APP_CONFIG_ENDPOINT=${app_configuration_endpoint}
+GRAPHDB_NODE_COUNT="$(az appconfig kv show \
+  --endpoint ${app_configuration_endpoint} \
+  --auth-mode login \
+  --key node_count \
+  | jq -r .value)"
 
 log_with_timestamp "Getting secrets"
 secrets=$(az appconfig kv list --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login | jq .[].key)
@@ -37,7 +42,7 @@ CLEAN_CONTEXT_PATH=$(echo "${context_path}" | sed 's#^/*##' | sed 's#/*$##')
 
 # graphdb.external-url.enforce.transactions: determines whether it is necessary to rewrite the Location header when no proxy is configured.
 # This is required because when working with the GDB transaction endpoint it returns an erroneous URL with HTTP protocol instead of HTTPS
-if [ "${node_count}" -eq 1 ]; then
+if [ "$GRAPHDB_NODE_COUNT" -eq 1 ]; then
 if [ -n "${context_path}" ]; then
   EXTERNAL_URL="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH}"
 else

@@ -35,7 +35,6 @@ data "cloudinit_config" "entrypoint" {
       app_configuration_endpoint : var.app_configuration_endpoint
       app_configuration_id : var.app_configuration_id
       storage_account_name : var.backup_storage_account_name
-      node_count : var.node_count
       vmss_name : "vmss-${var.resource_name_prefix}"
       resource_group : var.resource_group_name
     })
@@ -73,7 +72,6 @@ data "cloudinit_config" "entrypoint" {
     content = templatefile("${path.module}/templates/04_gdb_conf_overrides.sh.tpl", {
       graphdb_external_address_fqdn : var.graphdb_external_address_fqdn
       private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
-      node_count : var.node_count
       # App configurations
       app_configuration_endpoint : var.app_configuration_endpoint
       graphdb_license_secret_name : var.graphdb_license_secret_name
@@ -127,7 +125,6 @@ data "cloudinit_config" "entrypoint" {
       content = templatefile("${path.module}/templates/08_cluster_setup.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
         private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
-        node_count : var.node_count
       })
     }
   }
@@ -151,7 +148,6 @@ data "cloudinit_config" "entrypoint" {
       content = templatefile("${path.module}/templates/10_start_single_graphdb_services.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
         private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
-        node_count : var.node_count
       })
     }
   }
