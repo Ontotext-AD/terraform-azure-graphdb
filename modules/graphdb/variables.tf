@@ -195,6 +195,12 @@ variable "graphdb_image_id" {
 
 # GraphDB VM
 
+variable "node_count_name" {
+  description = "Name for the node_count property in App Configuration"
+  type        = string
+  default     = "node_count"
+}
+
 variable "node_count" {
   description = "Number of GraphDB nodes to deploy in ASG"
   type        = number

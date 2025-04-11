@@ -201,7 +201,9 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 
 ## Usage
 
-**Important:** Starting from **v4.x** of the **AzureRM Terraform provider**, it's mandatory to specify the **Subscription ID** to ensure successful module deployment. You can define the **Subscription ID** in terraform.tfvars file:
+**Important:** Starting from **v4.x** of the **AzureRM Terraform provider**,
+it's mandatory to specify the **Subscription ID** to ensure successful module deployment.
+You can define the **Subscription ID** in `terraform.tfvars` file:
 
 ```hcl
 azure_subscription_id = "XXXXX-XXXXX-XXXXX-XXXXX"
@@ -469,6 +471,11 @@ Here is the procedure for migrating your single node deployment to cluster e.g.,
 4. Validate the import is successful by checking the `terraform.tfstate` file, should contain `azurerm_managed_disk`
    resource with the name of the disk you've imported.
 5. Run `terraform plan` and review the plan carefully if everything seems fine run `terraform apply`
+
+## Scaling out a cluster
+
+To expand your cluster—increasing the `node_count` from 3 to 5 or beyond, simply modify the `node_count` parameter
+and execute `terraform apply`.
 
 
 ## Release History
