@@ -264,7 +264,7 @@ variable "admin_security_principle_id" {
 variable "graphdb_version" {
   description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.8.5"
+  default     = "11.0.0"
 }
 
 variable "graphdb_sku" {
