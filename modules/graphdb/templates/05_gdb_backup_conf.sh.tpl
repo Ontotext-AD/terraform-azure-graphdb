@@ -17,6 +17,10 @@ echo "#################################################"
 echo "#    Configuring the GraphDB backup cron job    #"
 echo "#################################################"
 
+echo "Creating the backup user"
+echo "Creating the backup user"
+useradd -r -M -s /usr/sbin/nologin gdb-backup
+
 cat <<EOF >/usr/bin/run_backup.sh
 #!/bin/bash
 
@@ -38,6 +42,9 @@ graphdb_password="\$(az appconfig kv show \
 EOF
 
 chmod +x /usr/bin/run_backup.sh
-echo "${backup_schedule} graphdb /usr/bin/run_backup.sh ${backup_storage_account_name} ${backup_storage_container_name}" > /etc/cron.d/graphdb_backup
-
+echo "${backup_schedule} gdb-backup /usr/bin/run_backup.sh ${backup_storage_account_name} ${backup_storage_container_name}" > /etc/cron.d/graphdb_backup
+chmod og-rwx /etc/cron.d/graphdb_backup
+# Set ownership of az-cli to backup user
+  chown -R gdb-backup:gdb-backup /opt/az /usr/bin/az /opt/microsoft
+  chmod -R og-rwx /opt/az /opt/microsoft /usr/bin/az
 log_with_timestamp "Cron job created"
