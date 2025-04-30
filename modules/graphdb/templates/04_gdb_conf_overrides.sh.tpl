@@ -116,7 +116,7 @@ if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   log_with_timestamp "Using GDB_JAVA_OPTS overrides"
   extra_graphdb_java_options=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
   if grep GDB_JAVA_OPTS &>/dev/null /etc/graphdb/graphdb.env; then
-    sed -ie "s/GDB_JAVA_OPTS=\"\(.*\)\"/GDB_JAVA_OPTS=\"\1 $extra_graphdb_java_options\"/g" /etc/graphdb/graphdb.env
+    sed -ie "s|GDB_JAVA_OPTS=\"\(.*\)\"|GDB_JAVA_OPTS=\"\1 $extra_graphdb_java_options\"|g" /etc/graphdb/graphdb.env
   else
     echo "GDB_JAVA_OPTS=$extra_graphdb_java_options" > /etc/graphdb/graphdb.env
   fi
