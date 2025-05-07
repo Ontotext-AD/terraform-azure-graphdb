@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 2.0.1
+
+* Update default GraphDB version to [11.0.1](https://graphdb.ontotext.com/documentation/11.0/release-notes.html#graphdb-11-0-1)
+
 ## 2.0.0
 
 * Update default GraphDB version to [11.0.0](https://graphdb.ontotext.com/documentation/11.0/release-notes.html#graphdb-11-0-0)
