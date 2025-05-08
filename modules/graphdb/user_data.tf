@@ -178,4 +178,12 @@ data "cloudinit_config" "entrypoint" {
       content      = templatefile(part.value["path"], part.value["variables"])
     }
   }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<-EOF
+        #!/bin/bash
+        [[ -f /etc/sudoers.d/90-cloud-init-users ]] && rm /etc/sudoers.d/90-cloud-init-users
+      EOF
+  }
 }
