@@ -3,6 +3,9 @@
 ## 2.0.2
 
 * Update default GraphDB version to [11.0.2](https://graphdb.ontotext.com/documentation/11.0/release-notes.html#graphdb-11-0-2)
+* Remove sudoers.d/90-cloud-init-users
+* Create gdb_backup user for backups (access to cli as well)
+* Create backup user home directory
 
 ## 2.0.1
 
@@ -11,6 +14,14 @@
 ## 2.0.0
 
 * Update default GraphDB version to [11.0.0](https://graphdb.ontotext.com/documentation/11.0/release-notes.html#graphdb-11-0-0)
+
+## 1.5.2
+
+* Update default GraphDB version to [10.8.8](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-8)
+
+## 1.5.1
+
+* Update default GraphDB version to [10.8.7](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-7)
 
 ## 1.5.0
 
