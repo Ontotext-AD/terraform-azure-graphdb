@@ -300,9 +300,8 @@ variable "scaleset_actions_recipients_email_list" {
 # Public IP configurations
 
 variable "nat_gateway_pip_idle_timeout" {
-  description = "Specifies the timeout for the TCP idle connection"
+  description = "TCP idle timeout in minutes for the NAT Gateway Public IP"
   type        = number
-  default     = 5
 }
 
 # Customer provided user data scripts

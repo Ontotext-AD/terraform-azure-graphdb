@@ -217,6 +217,9 @@ module "application_gateway" {
   disable_agw  = var.disable_agw
   context_path = var.context_path
 
+  # Public IP idle timeout settings
+  gateway_pip_idle_timeout = var.app_gateway_pip_idle_timeout
+
   # TLS
   gateway_tls_certificate_secret_id   = var.tls_certificate_id != null ? var.tls_certificate_id : module.tls[0].tls_certificate_id
   gateway_tls_certificate_identity_id = var.tls_certificate_id != null ? var.tls_certificate_identity_id : module.tls[0].tls_identity_id
@@ -308,6 +311,9 @@ module "graphdb" {
   graphdb_ssh_inbound_address_prefixes = var.deploy_bastion ? var.bastion_subnet_address_prefixes : []
   graphdb_outbound_address_prefix      = var.outbound_allowed_address_prefix
   graphdb_outbound_address_prefixes    = var.outbound_allowed_address_prefixes
+
+  # Public IP idle timeout settings
+  nat_gateway_pip_idle_timeout = var.nat_gateway_pip_idle_timeout
 
   # Gateway
   application_gateway_backend_address_pool_ids = var.disable_agw ? [] : [module.application_gateway[0].gateway_backend_address_pool_id]
