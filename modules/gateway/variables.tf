@@ -152,9 +152,8 @@ variable "gateway_private_link_service_network_policies_enabled" {
 # Public IP configurations
 
 variable "gateway_pip_idle_timeout" {
-  description = "Specifies the timeout for the TCP idle connection"
+  description = "TCP idle timeout in minutes for the Application Gateway Public IP"
   type        = number
-  default     = 5
 }
 
 # Proxy buffer configurations
