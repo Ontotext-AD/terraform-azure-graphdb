@@ -1,5 +1,12 @@
 # GraphDB Azure Terraform Module Changelog
 
+
+## 1.5.4
+* Update default GraphDB version to [10.8.10](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-10)
+* Added ability to provide `idle_timeout_in_minutes` for the Application Gateway Public IP
+* Added ability to provide `idle_timeout_in_minutes` for the NAT Gateway Public IP
+* Removed obsolete variable `gateway_backend_port` since the backend port is now automatically set based on the `node_count`
+
 ## 1.5.3
 
 * Update default GraphDB version to [10.8.9](https://graphdb.ontotext.com/documentation/10.8/release-notes.html#graphdb-10-8-9)

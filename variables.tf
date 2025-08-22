@@ -160,12 +160,6 @@ variable "gateway_private_link_service_network_policies_enabled" {
   default     = false
 }
 
-variable "gateway_backend_port" {
-  description = "Backend port for the Application Gateway rules"
-  type        = number
-  default     = 7201
-}
-
 variable "gateway_probe_interval" {
   description = "Interval in seconds between the health probe checks"
   type        = number
@@ -184,10 +178,34 @@ variable "gateway_probe_threshold" {
   default     = 2
 }
 
+variable "app_gateway_pip_idle_timeout" {
+  description = "TCP Idle timeout in minutes for the client connection to the Application Gateway Public IP"
+  type        = number
+  default     = 4
+
+  validation {
+    condition     = var.app_gateway_pip_idle_timeout >= 4 && var.app_gateway_pip_idle_timeout <= 30
+    error_message = "Application Gateway Public IP idle timeout should be between 4 and 30 minutes (inclusive)"
+  }
+}
+
 variable "context_path" {
   description = "The context path for the Application Gateway."
   type        = string
   default     = ""
+}
+
+# NAT Gateway
+
+variable "nat_gateway_pip_idle_timeout" {
+  description = "TCP Idle timeout in minutes for the client connection to the NAT Gateway Public IP"
+  type        = number
+  default     = 4
+
+  validation {
+    condition     = var.nat_gateway_pip_idle_timeout >= 4 && var.nat_gateway_pip_idle_timeout <= 30
+    error_message = "NAT Gateway Public IP idle timeout should be between 4 and 30 minutes (inclusive)"
+  }
 }
 
 # TLS
@@ -227,6 +245,7 @@ variable "key_vault_soft_delete_retention_days" {
   description = "Retention period in days during which soft deleted secrets are kept"
   type        = number
   default     = 30
+
   validation {
     condition     = var.key_vault_soft_delete_retention_days >= 7 && var.key_vault_soft_delete_retention_days <= 90
     error_message = "Key Vault soft delete retention days must be between 7 and 90 (inclusive)"
@@ -245,6 +264,7 @@ variable "app_config_soft_delete_retention_days" {
   description = "Retention period in days during which soft deleted keys are kept"
   type        = number
   default     = 7
+
   validation {
     condition     = var.app_config_soft_delete_retention_days >= 1 && var.app_config_soft_delete_retention_days <= 7
     error_message = "App Configuration soft delete retention days must be between 1 and 7 (inclusive)"
@@ -264,7 +284,7 @@ variable "admin_security_principle_id" {
 variable "graphdb_version" {
   description = "GraphDB version from the marketplace offer"
   type        = string
-  default     = "10.8.9"
+  default     = "10.8.10"
 }
 
 variable "graphdb_sku" {
@@ -380,6 +400,7 @@ variable "storage_container_soft_delete_retention_policy" {
   description = "Number of days for retaining the storage container from actual deletion"
   type        = number
   default     = 31
+
   validation {
     condition     = var.storage_container_soft_delete_retention_policy >= 1 && var.storage_container_soft_delete_retention_policy <= 365
     error_message = "Storage container soft delete retention days must be between 1 and 365 (inclusive)"
@@ -390,6 +411,7 @@ variable "storage_blob_soft_delete_retention_policy" {
   description = "Number of days for retaining storage blobs from actual deletion"
   type        = number
   default     = 31
+
   validation {
     condition     = var.storage_blob_soft_delete_retention_policy >= 1 && var.storage_blob_soft_delete_retention_policy <= 365
     error_message = "Storage blobs soft delete retention days must be between 1 and 365 (inclusive)"
