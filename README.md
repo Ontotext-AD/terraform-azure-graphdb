@@ -85,6 +85,7 @@ versions. The next table shows the version compatability between GraphDB and the
 | Version 1.4.x     | Version 10.8.x |
 | Version 1.5.x     | Version 10.8.x |
 | Version 2.x.x     | Version 11.0.x |
+| Version 2.2.x     | Version 11.1.x |
 
 You can track the particular version updates of GraphDB in the [changelog](CHANGELOG.md) or
 the [release notes](https://github.com/Ontotext-AD/terraform-azure-graphdb/releases).
@@ -278,7 +279,7 @@ graphdb_cluster_secret = "V6'vj|G]fpQ1_^9_,AE(r}Ct9yKuF&"
 **GraphDB Configurations**
 
 The GraphDB instances can be customized either by providing a custom `graphdb.properties` file that could contain any of the
-supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/11.0/directories-and-config-properties.html#configuration):
+supported [GraphDB configurations properties](https://graphdb.ontotext.com/documentation/11.1/directories-and-config-properties.html#configuration):
 
 ```hcl
 graphdb_properties_path = "<path_to_custom_graphdb_properties_file>"
