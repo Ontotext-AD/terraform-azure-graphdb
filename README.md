@@ -159,7 +159,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"11.1.0"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"11.1.1"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
