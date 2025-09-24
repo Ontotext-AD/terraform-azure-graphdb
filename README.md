@@ -115,88 +115,89 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 <!-- BEGIN_TF_DOCS -->
 ## Inputs
 
-| Name | Description | Type | Default                                                                                             | Required |
-|------|-------------|------|-----------------------------------------------------------------------------------------------------|:--------:|
-| azure\_subscription\_id | Define Subscription ID for authentication (Required) | `string` | `""`                                                                                                | no |
-| resource\_group\_name | The name of the existing resource group to use. If not provided, a new resource group will be created. | `string` | `null`                                                                                              | no |
-| virtual\_network\_name | The name of the existing vnet to use. If not provided, a new virtual network will be created. | `string` | `null`                                                                                              | no |
-| resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a                                                                                                 | yes |
-| location | Azure geographical location where resources will be deployed | `string` | n/a                                                                                                 | yes |
-| zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]```                                                                                   | no |
-| tags | Common resource tags. | `map(string)` | `{}`                                                                                                | no |
-| lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true`                                                                                              | no |
-| vmss\_dns\_servers | List of DNS servers for the VMSS | `list(string)` | `[]`                                                                                                | no |
-| graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null`                                                                                              | no |
-| virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]```                                                                             | no |
-| gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]```                                                                             | no |
-| graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]```                                                                             | no |
-| gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]```                                                                             | no |
-| management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a                                                                                                 | yes |
-| inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"`                                                                                        | no |
-| inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]`                                                                                                | no |
-| outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"`                                                                                        | no |
-| outbound\_allowed\_address\_prefixes | Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound\_allowed\_address\_prefix | `list(string)` | `[]`                                                                                                | no |
-| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true`                                                                                              | no |
-| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true`                                                                                              | no |
-| gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false`                                                                                             | no |
-| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false`                                                                                             | no |
-| gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false`                                                                                             | no |
-| gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false`                                                                                             | no |
-| gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201`                                                                                              | no |
-| gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10`                                                                                                | no |
-| gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1`                                                                                                 | no |
-| gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2`                                                                                                 | no |
-| context\_path | The context path for the Application Gateway. | `string` | `""`                                                                                                | no |
-| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null`                                                                                              | no |
-| tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null`                                                                                              | no |
-| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null`                                                                                              | no |
-| tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null`                                                                                              | no |
-| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true`                                                                                              | no |
-| key\_vault\_soft\_delete\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30`                                                                                                | no |
-| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true`                                                                                              | no |
-| app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7`                                                                                                 | no |
-| admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null`                                                                                              | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.8.11"`                                                                                         | no |
-| graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"`                                                                                    | no |
-| graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null`                                                                                              | no |
-| graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a                                                                                                 | yes |
-| graphdb\_cluster\_token | Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared. | `string` | `null`                                                                                              | no |
-| graphdb\_password | Secret token used to access GraphDB cluster. | `string` | `null`                                                                                              | no |
-| graphdb\_properties\_path | Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM. | `string` | `null`                                                                                              | no |
-| graphdb\_java\_options | GraphDB options to pass to GraphDB with GRAPHDB\_JAVA\_OPTS environment variable. | `string` | `null`                                                                                              | no |
-| node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3`                                                                                                 | no |
-| instance\_type | Azure instance type | `string` | n/a                                                                                                 | yes |
-| ssh\_key | Public key for accessing the GraphDB instances | `string` | `null`                                                                                              | no |
-| user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]`                                                                                                | no |
-| user\_supplied\_rendered\_templates | Array of additional rendered templates to execute sequentially after the templated user data shell scripts | `list(string)` | `[]`                                                                                                | no |
-| user\_supplied\_templates | Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts. Accepts template and variables as part of the templatefile Function | `list(string)` | `[]`                                                                                                | no |
-| storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"`                                                                                        | no |
-| storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"`                                                                                             | no |
-| storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31`                                                                                                | no |
-| storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3`                                                                                                 | no |
-| storage\_container\_soft\_delete\_retention\_policy | Number of days for retaining the storage container from actual deletion | `number` | `31`                                                                                                | no |
-| storage\_blob\_soft\_delete\_retention\_policy | Number of days for retaining storage blobs from actual deletion | `number` | `31`                                                                                                | no |
-| backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"`                                                                                       | no |
-| deploy\_bastion | Deploy bastion module | `bool` | `false`                                                                                             | no |
-| bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]```                                                                             | no |
-| deploy\_monitoring | Deploy monitoring module | `bool` | `true`                                                                                              | no |
-| disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500`                                                                                               | no |
-| disk\_iops\_read\_write | Data disk IOPS | `number` | `7500`                                                                                              | no |
-| disk\_mbps\_read\_write | Data disk throughput | `number` | `250`                                                                                               | no |
-| disk\_storage\_account\_type | Storage account type for the data disks | `string` | `"PremiumV2_LRS"`                                                                                   | no |
-| disk\_network\_access\_policy | Network accesss policy for the managed disks | `string` | `"DenyAll"`                                                                                         | no |
-| disk\_public\_network\_access | Public network access enabled for the managed disks | `bool` | `false`                                                                                             | no |
-| la\_workspace\_retention\_in\_days | The workspace data retention in days. Possible values are either 7 (Free Tier only) or range between 30 and 730. | `number` | `30`                                                                                                | no |
-| la\_workspace\_sku | Specifies the SKU of the Log Analytics Workspace. Possible values are Free, PerNode, Premium, Standard, Standalone, Unlimited, CapacityReservation, and PerGB2018 (new SKU as of 2018-04-03). Defaults to PerGB2018. | `string` | `"PerGB2018"`                                                                                       | no |
-| appi\_retention\_in\_days | Specifies the retention period in days. | `number` | `30`                                                                                                | no |
-| appi\_daily\_data\_cap\_in\_gb | Specifies the Application Insights component daily data volume cap in GB. | `number` | `1`                                                                                                 | no |
-| appi\_daily\_data\_cap\_notifications\_disabled | Specifies if a notification email will be send when the daily data volume cap is met. | `bool` | `false`                                                                                             | no |
-| appi\_disable\_ip\_masking | By default the real client IP is masked as 0.0.0.0 in the logs. Use this argument to disable masking and log the real client IP | `bool` | `true`                                                                                              | no |
-| appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true`                                                                                              | no |
-| web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false`                                                                                             | no |
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| azure\_subscription\_id | Define Subscription ID for authentication (Required) | `string` | `""` | no |
+| resource\_group\_name | The name of the existing resource group to use. If not provided, a new resource group will be created. | `string` | `null` | no |
+| virtual\_network\_name | The name of the existing vnet to use. If not provided, a new virtual network will be created. | `string` | `null` | no |
+| resource\_name\_prefix | Resource name prefix used for tagging and naming Azure resources | `string` | n/a | yes |
+| location | Azure geographical location where resources will be deployed | `string` | n/a | yes |
+| zones | Availability zones to use for resource deployment and HA | `list(number)` | ```[ 1, 2, 3 ]``` | no |
+| tags | Common resource tags. | `map(string)` | `{}` | no |
+| lock\_resources | Enables a delete lock on the resource group to prevent accidental deletions. | `bool` | `true` | no |
+| vmss\_dns\_servers | List of DNS servers for the VMSS | `list(string)` | `[]` | no |
+| graphdb\_external\_address\_fqdn | External FQDN address for the deployment | `string` | `null` | no |
+| virtual\_network\_address\_space | Virtual network address space CIDRs. | `list(string)` | ```[ "10.0.0.0/16" ]``` | no |
+| gateway\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where the application gateway will reside. | `list(string)` | ```[ "10.0.1.0/24" ]``` | no |
+| graphdb\_subnet\_address\_prefixes | Subnet address prefixes CIDRs where GraphDB VMs will reside. | `list(string)` | ```[ "10.0.2.0/24" ]``` | no |
+| gateway\_private\_link\_subnet\_address\_prefixes | Subnet address prefixes where the Application Gateway Private Link will reside, if enabled | `list(string)` | ```[ "10.0.5.0/24" ]``` | no |
+| management\_cidr\_blocks | CIDR blocks allowed to perform management operations such as connecting to Bastion or Key Vault. | `list(string)` | n/a | yes |
+| inbound\_allowed\_address\_prefix | Source address prefix allowed for connecting to the application gateway | `string` | `"Internet"` | no |
+| inbound\_allowed\_address\_prefixes | Source address prefixes allowed for connecting to the application gateway. Overrides inbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
+| outbound\_allowed\_address\_prefix | Destination address prefix allowed for outbound traffic from GraphDB | `string` | `"Internet"` | no |
+| outbound\_allowed\_address\_prefixes | Destination address prefixes allowed for outbound traffic from GraphDB. Overrides outbound\_allowed\_address\_prefix | `list(string)` | `[]` | no |
+| gateway\_global\_request\_buffering\_enabled | Whether Application Gateway's Request buffer is enabled. | `bool` | `true` | no |
+| gateway\_global\_response\_buffering\_enabled | Whether Application Gateway's Response buffer is enabled. | `bool` | `true` | no |
+| gateway\_enable\_private\_access | Enable or disable private access to the application gateway | `bool` | `false` | no |
+| disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
+| gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
+| gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
+| gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
+| gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
+| gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
+| app\_gateway\_pip\_idle\_timeout | TCP Idle timeout in minutes for the client connection to the Application Gateway Public IP | `number` | `4` | no |
+| context\_path | The context path for the Application Gateway. | `string` | `""` | no |
+| nat\_gateway\_pip\_idle\_timeout | TCP Idle timeout in minutes for the client connection to the NAT Gateway Public IP | `number` | `4` | no |
+| tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null` | no |
+| tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null` | no |
+| tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null` | no |
+| tls\_certificate\_identity\_id | Identifier of a managed identity giving access to the TLS certificate specified with tls\_certificate\_id | `string` | `null` | no |
+| key\_vault\_enable\_purge\_protection | Prevents purging the key vault and its contents by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| key\_vault\_soft\_delete\_retention\_days | Retention period in days during which soft deleted secrets are kept | `number` | `30` | no |
+| app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
+| app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
+| admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.8.11"` | no |
+| graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
+| graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
+| graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
+| graphdb\_cluster\_token | Secret token used to secure the internal GraphDB cluster communication. Will generate one if left undeclared. | `string` | `null` | no |
+| graphdb\_password | Secret token used to access GraphDB cluster. | `string` | `null` | no |
+| graphdb\_properties\_path | Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM. | `string` | `null` | no |
+| graphdb\_java\_options | GraphDB options to pass to GraphDB with GRAPHDB\_JAVA\_OPTS environment variable. | `string` | `null` | no |
+| node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
+| instance\_type | Azure instance type | `string` | n/a | yes |
+| ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
+| user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]` | no |
+| user\_supplied\_rendered\_templates | Array of additional rendered templates to execute sequentially after the templated user data shell scripts | `list(string)` | `[]` | no |
+| user\_supplied\_templates | Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts. Accepts template and variables as part of the templatefile Function | `list(string)` | `[]` | no |
+| storage\_account\_tier | Specify the performance and redundancy characteristics of the Azure Storage Account that you are creating | `string` | `"Standard"` | no |
+| storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
+| storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
+| storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
+| storage\_container\_soft\_delete\_retention\_policy | Number of days for retaining the storage container from actual deletion | `number` | `31` | no |
+| storage\_blob\_soft\_delete\_retention\_policy | Number of days for retaining storage blobs from actual deletion | `number` | `31` | no |
+| backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
+| deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
+| bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
+| deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
+| disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
+| disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
+| disk\_mbps\_read\_write | Data disk throughput | `number` | `250` | no |
+| disk\_storage\_account\_type | Storage account type for the data disks | `string` | `"PremiumV2_LRS"` | no |
+| disk\_network\_access\_policy | Network accesss policy for the managed disks | `string` | `"DenyAll"` | no |
+| disk\_public\_network\_access | Public network access enabled for the managed disks | `bool` | `false` | no |
+| la\_workspace\_retention\_in\_days | The workspace data retention in days. Possible values are either 7 (Free Tier only) or range between 30 and 730. | `number` | `30` | no |
+| la\_workspace\_sku | Specifies the SKU of the Log Analytics Workspace. Possible values are Free, PerNode, Premium, Standard, Standalone, Unlimited, CapacityReservation, and PerGB2018 (new SKU as of 2018-04-03). Defaults to PerGB2018. | `string` | `"PerGB2018"` | no |
+| appi\_retention\_in\_days | Specifies the retention period in days. | `number` | `30` | no |
+| appi\_daily\_data\_cap\_in\_gb | Specifies the Application Insights component daily data volume cap in GB. | `number` | `1` | no |
+| appi\_daily\_data\_cap\_notifications\_disabled | Specifies if a notification email will be send when the daily data volume cap is met. | `bool` | `false` | no |
+| appi\_disable\_ip\_masking | By default the real client IP is masked as 0.0.0.0 in the logs. Use this argument to disable masking and log the real client IP | `bool` | `true` | no |
+| appi\_web\_test\_availability\_enabled | Should the availability web test be enabled | `bool` | `true` | no |
+| web\_test\_ssl\_check\_enabled | Should the SSL check be enabled? | `bool` | `false` | no |
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
-| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null`                                                                                              | no |
-| notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]`                                                                                                | no |
+| monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null` | no |
+| notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
