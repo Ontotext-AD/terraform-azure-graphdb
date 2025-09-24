@@ -142,11 +142,12 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | disable\_agw | Disables the creation of Application Gateway by the Terraform module. | `bool` | `false` | no |
 | gateway\_enable\_private\_link\_service | Set to true to enable Private Link service, false to disable it. | `bool` | `false` | no |
 | gateway\_private\_link\_service\_network\_policies\_enabled | Enable or disable private link service network policies | `string` | `false` | no |
-| gateway\_backend\_port | Backend port for the Application Gateway rules | `number` | `7201` | no |
 | gateway\_probe\_interval | Interval in seconds between the health probe checks | `number` | `10` | no |
 | gateway\_probe\_timeout | Timeout in seconds for the health probe checks | `number` | `1` | no |
 | gateway\_probe\_threshold | Number of consecutive health checks to consider the probe passing or failing | `number` | `2` | no |
+| app\_gateway\_pip\_idle\_timeout | TCP Idle timeout in minutes for the client connection to the Application Gateway Public IP | `number` | `4` | no |
 | context\_path | The context path for the Application Gateway. | `string` | `""` | no |
+| nat\_gateway\_pip\_idle\_timeout | TCP Idle timeout in minutes for the client connection to the NAT Gateway Public IP | `number` | `4` | no |
 | tls\_certificate\_path | Path to a TLS certificate that will be imported in Azure Key Vault and used in the Application Gateway TLS listener for GraphDB. Either tls\_certificate\_path or tls\_certificate\_id must be provided. | `string` | `null` | no |
 | tls\_certificate\_password | TLS certificate password for password-protected certificates. | `string` | `null` | no |
 | tls\_certificate\_id | Resource identifier for a TLS certificate secret from a Key Vault. Overrides tls\_certificate\_path. Either tls\_certificate\_id or tls\_certificate\_path must be provided. | `string` | `null` | no |
@@ -156,7 +157,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | app\_config\_enable\_purge\_protection | Prevents purging the App Configuration and its keys by soft deleting it. It will be deleted once the soft delete retention has passed. | `bool` | `true` | no |
 | app\_config\_soft\_delete\_retention\_days | Retention period in days during which soft deleted keys are kept | `number` | `7` | no |
 | admin\_security\_principle\_id | UUID of a user or service principle that will become data owner or administrator for specific resources that need permissions to insert data during Terraform apply, i.e. KeyVault and AppConfig. If left unspecified, the current user will be used. | `string` | `null` | no |
-| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.8.9"` | no |
+| graphdb\_version | GraphDB version from the marketplace offer | `string` | `"10.8.11"` | no |
 | graphdb\_sku | GraphDB SKU from the marketplace offer | `string` | `"graphdb-byol"` | no |
 | graphdb\_image\_id | GraphDB image ID to use for the scale set VM instances in place of the default marketplace offer | `string` | `null` | no |
 | graphdb\_license\_path | Local path to a file, containing a GraphDB Enterprise license. | `string` | n/a | yes |
