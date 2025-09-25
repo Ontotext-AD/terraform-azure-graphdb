@@ -22,7 +22,7 @@ output "private_ip_address" {
 
 output "public_ip_address_id" {
   description = "The ID of the Public IP Address associated with the Application Gateway"
-  value = (var.disable_agw || var.gateway_enable_private_access) ? null : module.application_gateway[0].public_ip_address_id
+  value       = (var.disable_agw || var.gateway_enable_private_access) ? null : module.application_gateway[0].public_ip_address_id
 }
 
 output "public_ip_address" {
