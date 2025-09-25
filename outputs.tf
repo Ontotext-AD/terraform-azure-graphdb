@@ -15,8 +15,23 @@ output "public_address" {
   )
 }
 
-
 output "private_ip_address" {
   description = "The Private IPv4 address for accessing GraphDB via the Application Gateway"
   value       = var.gateway_enable_private_access ? module.application_gateway[0].private_ip_address : null
 }
+
+output "public_ip_address_id" {
+  description = "The ID of the Public IP Address associated with the Application Gateway"
+  value = (var.disable_agw || var.gateway_enable_private_access) ? null : module.application_gateway[0].public_ip_address_id
+}
+
+output "public_ip_address" {
+  description = "The Public IP address for accessing GraphDB via the Application Gateway"
+  value       = (var.disable_agw || var.gateway_enable_private_access) ? null : module.application_gateway[0].public_ip_address
+}
+
+output "application_gateway_fqdn" {
+  description = "The FQDN of the Application Gateway"
+  value       = (var.disable_agw) ? null : module.application_gateway[0].public_ip_address_fqdn
+}
+
