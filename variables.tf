@@ -554,3 +554,64 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
+
+# External DNS Records
+
+variable "deploy_external_dns_records" {
+  description = "Whether to deploy the external DNS records module"
+  type        = bool
+  default     = false
+}
+
+variable "external_dns_records_private_zone" {
+  description = "Set to true if the DNS zone is private, false if public"
+  type        = bool
+  default     = false
+}
+
+variable "external_dns_records_zone_name" {
+  description = "The DNS zone name to create records in, e.g. example.com"
+  type        = string
+  default     = null
+}
+
+variable "external_dns_private_zone_vnet_links" {
+  description = "Map of VNet links for private DNS zones"
+  type = map(object({
+    virtual_network_id   = string
+    registration_enabled = optional(bool, false)
+  }))
+  default = {}
+}
+
+variable "external_dns_record_ttl" {
+  description = "TTL for auto-created DNS records when using AppGW outputs."
+  type        = number
+  default     = 300
+}
+
+variable "external_dns_records_a_records_list" {
+  type = list(object({
+    name               = string
+    ttl                = number
+    records            = optional(list(string))
+    target_resource_id = optional(string)
+  }))
+  default = []
+}
+
+variable "external_dns_records_cname_records_list" {
+  type = list(object({
+    name               = string
+    ttl                = number
+    record             = string
+    target_resource_id = optional(string)
+  }))
+  default = []
+}
+
+variable "external_dns_record_name" {
+  description = "Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval')."
+  type        = string
+  default     = "@"
+}

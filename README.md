@@ -200,6 +200,20 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | web\_test\_geo\_locations | A list of geo locations the test will be executed from | `list(string)` | ```[ "us-va-ash-azr", "us-il-ch1-azr", "emea-gb-db3-azr", "emea-nl-ams-azr", "apac-hk-hkn-azr" ]``` | no |
 | monitor\_reader\_principal\_id | Principal(Object) ID of a user/group which would receive notifications from alerts. | `string` | `null` | no |
 | notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
+| deploy\_external\_dns\_records | Whether to deploy the external DNS records module | `bool` | `false` | no |
+| external\_dns\_records\_private\_zone | Set to true if the DNS zone is private, false if public | `bool` | `false` | no |
+| external\_dns\_records\_public\_zone | Set to true if the DNS zone is public, false if private | `bool` | `true` | no |
+| external\_dns\_records\_zone\_name | The DNS zone name to create records in, e.g. example.com | `string` | `null` | no |
+| external\_dns\_resource\_group\_location | The location of the resource group in which to create the DNS zone | `string` | `"eastus"` | no |
+| external\_dns\_private\_zone\_vnet\_links | A map of virtual network IDs to link to the private DNS zone. Only used if external\_dns\_records\_private\_zone is true. Example: { vnet1 = { virtual\_network\_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet" registration\_enabled = false } } | ```map(object({ virtual_network_id = string registration_enabled = optional(bool, false) }))``` | `{}` | no |
+| external\_dns\_record\_ttl | TTL for auto-created DNS records when using AppGW outputs. | `number` | `300` | no |
+| external\_dns\_record\_name | Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval'). | `string` | `"@"` | no |
+| external\_dns\_records\_a\_records | A map of A records to create in the DNS zone. | ```map(object({ ttl = number records = optional(list(string), null) target_resource_id = optional(string, null) }))``` | `{}` | no |
+| external\_dns\_records\_cname\_records | A map of CNAME records to create in the DNS zone. | ```map(object({ ttl = number record = optional(string, null) target_resource_id = optional(string, null) }))``` | `{}` | no |
+| external\_dns\_records\_mx\_records | A map of MX records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ preference = number exchange = string })) }))``` | `{}` | no |
+| external\_dns\_records\_txt\_records | A map of TXT records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ value = string })) }))``` | `{}` | no |
+| external\_dns\_records\_ns\_records | A map of NS records to create in the DNS zone. | ```map(object({ ttl = number records = list(string) }))``` | `{}` | no |
+| external\_dns\_records\_srv\_records | A map of SRV records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ priority = number weight = number port = number target = string })) }))``` | `{}` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
@@ -414,6 +428,52 @@ resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
 
+** Deploying a Domain or Subdomain for GraphDB Application Gateway **
+
+If you want to create a domain or a subdomain name that will point to your GraphDB Application Gateway, you can use this module by setting the following variables:
+
+```hcl
+deploy_external_dns_records      = true
+
+resource_group_name              = "existing-rg"
+external_dns_records_zone_name   = "example.com"
+external_dns_records_private_zone = false # true if using a private zone
+
+external_dns_records_a_records_list = [
+  {
+    name               = "@"
+    ttl                = 300
+    target_resource_id = "example-target-resource-id"
+  }
+]
+
+external_dns_records_cname_records_list = [
+  {
+    name   = "www"
+    ttl    = 300
+    record = "example-record"
+  }
+]
+```
+
+If you enable the module but do not explicitly define any DNS records, it will automatically create the required records pointing to your **Application Gateway**.
+
+For example, with only the following variables:
+
+```hcl
+deploy_external_dns_records    = true
+external_dns_records_zone_name = "zhekofftest.com"
+
+# If you want to use private_hosted_zone
+external_dns_records_private_zone = true
+external_dns_private_zone_vnet_links = {
+  vnet1 = {
+    virtual_network_id   = "/subscriptions/.../my-vnet"
+    registration_enabled = false
+  }
+}
+```
+
 **Deploying GraphDB with External Application Gateway and Custom Context Path**
 
 You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
@@ -428,7 +488,6 @@ _Example Configuration:_
 context_path                  = "/graphdb"
 disable_agw                   = true
 virtual_network_name          = "your-VNet"
-resource_group_name           = "your-resource-group"
 graphdb_external_address_fqdn = "your-fqdn-or-ip"
 ```
 
@@ -479,7 +538,6 @@ Here is the procedure for migrating your single node deployment to cluster e.g.,
 
 To expand your cluster—increasing the `node_count` from 3 to 5 or beyond, simply modify the `node_count` parameter
 and execute `terraform apply`.
-
 
 ## Release History
 
