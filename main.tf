@@ -45,6 +45,52 @@ locals {
     (key != "application_gateway" && key != "application_gateway_subnet" || !var.disable_agw) &&
     value != null && value != ""
   }
+
+  # App Gateway outputs
+  _rec_name = trimspace(var.external_dns_record_name) == "" ? "@" : var.external_dns_record_name
+
+  # App GW outputs
+  appgw_public_ip_id = try(module.application_gateway[0].public_ip_address_id, null)
+  appgw_fqdn         = try(module.application_gateway[0].public_ip_address_fqdn, null)
+
+  # CNAME label rule:
+  # - apex (@) -> "www"
+  # - sublabel (e.g. "eval") -> "www.eval"
+  _cname_label = local._rec_name == "@" ? "www" : "www.${local._rec_name}"
+
+  # A records: AppGW first, else var, else {}
+  external_a_records_effective = (
+    local.appgw_public_ip_id != null
+    ? {
+      (local._rec_name) = {
+        ttl                = var.external_dns_record_ttl
+        target_resource_id = local.appgw_public_ip_id
+        records            = null
+      }
+    }
+    : (
+      length(var.external_dns_records_a_records) > 0
+      ? var.external_dns_records_a_records
+      : {}
+    )
+  )
+
+  # CNAME records: AppGW first (to computed www.*), else var, else {}
+  external_cname_records_effective = (
+    local.appgw_fqdn != null
+    ? {
+      (local._cname_label) = {
+        ttl                = var.external_dns_record_ttl
+        record             = local.appgw_fqdn
+        target_resource_id = null
+      }
+    }
+    : (
+      length(var.external_dns_records_cname_records) > 0
+      ? var.external_dns_records_cname_records
+      : {}
+    )
+  )
 }
 
 # Management Lock for Resources
@@ -371,4 +417,23 @@ module "graphdb" {
   disable_agw = var.disable_agw
 
   depends_on = [module.appconfig]
+}
+
+module "external-dns-records" {
+  source = "./modules/external-dns-records"
+
+  count = var.deploy_external_dns_records ? 1 : 0
+
+  resource_group_name     = local.resource_group_name
+  private_zone            = var.external_dns_records_private_zone
+  public_zone             = var.external_dns_records_public_zone
+  zone_name               = var.external_dns_records_zone_name
+  resource_group_location = var.external_dns_resource_group_location
+  private_zone_vnet_links = var.external_dns_private_zone_vnet_links
+  a_records               = local.external_a_records_effective
+  cname_records           = local.external_cname_records_effective
+  mx_records              = var.external_dns_records_mx_records
+  txt_records             = var.external_dns_records_txt_records
+  ns_records              = var.external_dns_records_ns_records
+  srv_records             = var.external_dns_records_srv_records
 }
