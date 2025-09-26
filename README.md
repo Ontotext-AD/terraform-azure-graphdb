@@ -414,6 +414,45 @@ resource_group_name  = "existing_rg"
 virtual_network_name = "existing_vnet"
 ```
 
+** Deploying a Domain or Subdomain for GraphDB Application Gateway **
+
+If you want to create a domain or a subdomain name that will point to your GraphDB Application Gateway, you can use this module by setting the following variables:
+
+```hcl
+deploy_external_dns_records      = true
+
+resource_group_name              = "existing-rg"
+external_dns_records_zone_name   = "example.com"
+external_dns_records_public_zone = true   # or false for private zone
+external_dns_records_private_zone = false # or true if using a private zone
+
+external_dns_records_a_records = {
+  "@" = {
+    ttl                = 300
+    target_resource_id = "example-target-resource-id"
+  }
+}
+
+external_dns_records_cname_records = {
+  "www" = {
+    ttl    = 300
+    record = "example-record"
+  }
+}
+```
+
+If you enable the module but do not explicitly define any DNS records, it will automatically create the required records pointing to your **Application Gateway**.
+
+For example, with only the following variables:
+
+```hcl
+deploy_external_dns_records           = true
+external_dns_records_public_zone      = true
+external_dns_records_zone_name        = "example.com"
+external_dns_record_name              = "@" # or a subdomain name
+external_dns_resource_group_location  = "eastus"
+```
+
 **Deploying GraphDB with External Application Gateway and Custom Context Path**
 
 You can deploy GraphDB without creating a new Application Gateway, allowing you to use your existing one. Additionally, you can configure a custom context path for your application. To do this, follow these steps:
@@ -479,7 +518,6 @@ Here is the procedure for migrating your single node deployment to cluster e.g.,
 
 To expand your cluster—increasing the `node_count` from 3 to 5 or beyond, simply modify the `node_count` parameter
 and execute `terraform apply`.
-
 
 ## Release History
 

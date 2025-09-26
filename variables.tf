@@ -554,3 +554,122 @@ variable "notification_recipients_email_list" {
   type        = list(string)
   default     = []
 }
+
+# External DNS Records
+
+variable "deploy_external_dns_records" {
+  description = "Whether to deploy the external DNS records module"
+  type        = bool
+  default     = false
+}
+
+variable "external_dns_records_private_zone" {
+  description = "Set to true if the DNS zone is private, false if public"
+  type        = bool
+  default     = false
+}
+
+variable "external_dns_records_public_zone" {
+  description = "Set to true if the DNS zone is public, false if private"
+  type        = bool
+  default     = true
+}
+
+variable "external_dns_records_zone_name" {
+  description = "The DNS zone name to create records in, e.g. example.com"
+  type        = string
+  default     = null
+}
+
+variable "external_dns_resource_group_location" {
+  description = "The location of the resource group in which to create the DNS zone"
+  type        = string
+  default     = "eastus"
+}
+
+variable "external_dns_private_zone_vnet_links" {
+  description = "A map of virtual network IDs to link to the private DNS zone. Only used if external_dns_records_private_zone is true. Example: { vnet1 = { virtual_network_id = \"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet\" registration_enabled = false } }"
+  type = map(object({
+    virtual_network_id   = string
+    registration_enabled = optional(bool, false)
+  }))
+  default = {}
+}
+
+variable "external_dns_record_ttl" {
+  description = "TTL for auto-created DNS records when using AppGW outputs."
+  type        = number
+  default     = 300
+}
+
+variable "external_dns_record_name" {
+  description = "Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval')."
+  type        = string
+  default     = "@"
+}
+
+variable "external_dns_records_a_records" {
+  description = "A map of A records to create in the DNS zone."
+  type = map(object({
+    ttl                = number
+    records            = optional(list(string), null)
+    target_resource_id = optional(string, null)
+  }))
+  default = {}
+}
+
+variable "external_dns_records_cname_records" {
+  description = "A map of CNAME records to create in the DNS zone."
+  type = map(object({
+    ttl                = number
+    record             = optional(string, null)
+    target_resource_id = optional(string, null)
+  }))
+  default = {}
+}
+
+variable "external_dns_records_mx_records" {
+  description = "A map of MX records to create in the DNS zone."
+  type = map(object({
+    ttl = number
+    records = list(object({
+      preference = number
+      exchange   = string
+    }))
+  }))
+  default = {}
+}
+
+variable "external_dns_records_txt_records" {
+  description = "A map of TXT records to create in the DNS zone."
+  type = map(object({
+    ttl = number
+    records = list(object({
+      value = string
+    }))
+  }))
+  default = {}
+}
+
+variable "external_dns_records_ns_records" {
+  description = "A map of NS records to create in the DNS zone."
+  type = map(object({
+    ttl     = number
+    records = list(string)
+  }))
+  default = {}
+}
+
+variable "external_dns_records_srv_records" {
+  description = "A map of SRV records to create in the DNS zone."
+  type = map(object({
+    ttl = number
+    records = list(object({
+      priority = number
+      weight   = number
+      port     = number
+      target   = string
+    }))
+  }))
+  default = {}
+}
