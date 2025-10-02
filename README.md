@@ -202,18 +202,12 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | notification\_recipients\_email\_list | List of emails which will be notified via e-mail and/or push notifications | `list(string)` | `[]` | no |
 | deploy\_external\_dns\_records | Whether to deploy the external DNS records module | `bool` | `false` | no |
 | external\_dns\_records\_private\_zone | Set to true if the DNS zone is private, false if public | `bool` | `false` | no |
-| external\_dns\_records\_public\_zone | Set to true if the DNS zone is public, false if private | `bool` | `true` | no |
 | external\_dns\_records\_zone\_name | The DNS zone name to create records in, e.g. example.com | `string` | `null` | no |
-| external\_dns\_resource\_group\_location | The location of the resource group in which to create the DNS zone | `string` | `"eastus"` | no |
-| external\_dns\_private\_zone\_vnet\_links | A map of virtual network IDs to link to the private DNS zone. Only used if external\_dns\_records\_private\_zone is true. Example: { vnet1 = { virtual\_network\_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet" registration\_enabled = false } } | ```map(object({ virtual_network_id = string registration_enabled = optional(bool, false) }))``` | `{}` | no |
+| external\_dns\_private\_zone\_vnet\_links | Map of VNet links for private DNS zones | ```map(object({ virtual_network_id = string registration_enabled = optional(bool, false) }))``` | `{}` | no |
 | external\_dns\_record\_ttl | TTL for auto-created DNS records when using AppGW outputs. | `number` | `300` | no |
+| external\_dns\_records\_a\_records\_list | n/a | ```list(object({ name = string ttl = number records = optional(list(string)) target_resource_id = optional(string) }))``` | `[]` | no |
+| external\_dns\_records\_cname\_records\_list | n/a | ```list(object({ name = string ttl = number record = string target_resource_id = optional(string) }))``` | `[]` | no |
 | external\_dns\_record\_name | Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval'). | `string` | `"@"` | no |
-| external\_dns\_records\_a\_records | A map of A records to create in the DNS zone. | ```map(object({ ttl = number records = optional(list(string), null) target_resource_id = optional(string, null) }))``` | `{}` | no |
-| external\_dns\_records\_cname\_records | A map of CNAME records to create in the DNS zone. | ```map(object({ ttl = number record = optional(string, null) target_resource_id = optional(string, null) }))``` | `{}` | no |
-| external\_dns\_records\_mx\_records | A map of MX records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ preference = number exchange = string })) }))``` | `{}` | no |
-| external\_dns\_records\_txt\_records | A map of TXT records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ value = string })) }))``` | `{}` | no |
-| external\_dns\_records\_ns\_records | A map of NS records to create in the DNS zone. | ```map(object({ ttl = number records = list(string) }))``` | `{}` | no |
-| external\_dns\_records\_srv\_records | A map of SRV records to create in the DNS zone. | ```map(object({ ttl = number records = list(object({ priority = number weight = number port = number target = string })) }))``` | `{}` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
