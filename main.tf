@@ -4,49 +4,6 @@ data "azurerm_client_config" "current" {}
 
 resource "time_static" "current" {}
 
-locals {
-  tags = merge({
-    # Used to easily track all resource managed by Terraform
-    Source     = "Terraform"
-    Deployment = var.resource_name_prefix
-    CreatedBy  = data.azurerm_client_config.current.object_id
-    CreatedOn  = time_static.current.rfc3339
-  }, var.tags)
-  admin_security_principle_id = var.admin_security_principle_id != null ? var.admin_security_principle_id : data.azurerm_client_config.current.object_id
-
-  static_keys = {
-    vnet                       = "virtual_network"
-    application_gateway_subnet = "gateway_subnet"
-    subnets                    = "vmss_subnet"
-    backup                     = "backup_storage"
-    monitoring                 = "monitoring_workspace"
-    appconfig                  = "app_configuration"
-    application_gateway        = "application_gateway"
-    vault                      = "key_vault"
-    vmss                       = "vmss"
-  }
-
-  resources_to_lock = {
-    "vnet"                       = azurerm_virtual_network.graphdb[0].id
-    "application_gateway_subnet" = azurerm_subnet.graphdb_gateway.id
-    "subnets"                    = azurerm_subnet.graphdb_vmss.id
-    "backup"                     = module.backup.storage_account_id
-    "monitoring"                 = var.deploy_monitoring ? module.monitoring[0].la_workspace_id : null
-    "appconfig"                  = module.appconfig.app_configuration_id
-    "application_gateway"        = var.disable_agw ? null : module.application_gateway[0].gateway_id
-    "vault"                      = var.tls_certificate_id == null ? module.vault[0].key_vault_id : null
-    "vmss"                       = module.graphdb.vmss_resource_id
-  }
-
-  resources_to_lock_filtered = {
-    for key, value in local.static_keys :
-    key => try(local.resources_to_lock[key], null)
-    if(key != "monitoring" || var.deploy_monitoring) &&
-    (key != "application_gateway" && key != "application_gateway_subnet" || !var.disable_agw) &&
-    value != null && value != ""
-  }
-}
-
 # Management Lock for Resources
 resource "azurerm_management_lock" "graphdb_rg_lock" {
   for_each = var.lock_resources ? local.resources_to_lock_filtered : {}
@@ -371,4 +328,19 @@ module "graphdb" {
   disable_agw = var.disable_agw
 
   depends_on = [module.appconfig]
+}
+
+module "external_dns_records" {
+  source = "./modules/external_dns_records"
+
+  count = var.deploy_external_dns_records ? 1 : 0
+
+  resource_group_name = local.resource_group_name
+  private_zone        = var.external_dns_records_private_zone
+  zone_name           = var.external_dns_records_zone_name
+
+  private_zone_vnet_links = var.external_dns_private_zone_vnet_links
+
+  a_records_list     = local.a_records_list_effective
+  cname_records_list = local.cname_records_list_effective
 }

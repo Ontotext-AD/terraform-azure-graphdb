@@ -35,3 +35,17 @@ output "application_gateway_fqdn" {
   value       = (var.disable_agw) ? null : module.application_gateway[0].public_ip_address_fqdn
 }
 
+output "dns_zone_name" {
+  description = "The DNS zone name if the external DNS module was deployed"
+  value       = var.deploy_external_dns_records ? module.external_dns_records[0].zone_name : null
+}
+
+output "dns_a_records" {
+  description = "A records created in the DNS zone (if any)"
+  value       = var.deploy_external_dns_records && length(module.external_dns_records[0].a_records) > 0 ? module.external_dns_records[0].a_records : null
+}
+
+output "dns_cname_records" {
+  description = "CNAME records created in the DNS zone (if any)"
+  value       = var.deploy_external_dns_records && length(module.external_dns_records[0].cname_records) > 0 ? module.external_dns_records[0].cname_records : null
+}
