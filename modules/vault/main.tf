@@ -21,7 +21,7 @@ resource "azurerm_key_vault" "graphdb" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   sku_name                   = "standard"
-  enable_rbac_authorization  = true
+  rbac_authorization_enabled = true
   purge_protection_enabled   = var.key_vault_enable_purge_protection
   soft_delete_retention_days = var.key_vault_soft_delete_retention_days
 
