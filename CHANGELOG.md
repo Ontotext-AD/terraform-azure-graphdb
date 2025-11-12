@@ -1,5 +1,13 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 2.3.2
+
+* Update default GraphDB version to [11.1.3](https://graphdb.ontotext.com/documentation/11.1/release-notes.html#graphdb-11-1-3)
+
+## 2.3.1
+
+* Upgraded hashicorp/azurerm to version 4.49.0
+
 ## 2.3.0
 
 * `external_dns_records` module for managing Azure DNS zones (public or private) and creating DNS records (A, CNAME) with optional VNet links for private zones.
