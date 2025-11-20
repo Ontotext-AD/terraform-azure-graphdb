@@ -22,6 +22,7 @@ INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metada
 DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
 GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
 CURRENT_NODE_NAME=$(cat /var/opt/graphdb/node_dns_name)
+EXPECTED_NODE_COUNT="${node_count}"
 RAFT_DIR="/var/opt/graphdb/node/data/raft"
 LEADER_NODE=""
 
@@ -36,7 +37,8 @@ get_cluster_state() {
   curl_response=$(curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s -u "admin:$GRAPHDB_PASSWORD")
   nodes_in_cluster=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_cluster \K\d+')
   nodes_in_sync=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_sync \K\d+')
-  echo "$nodes_in_cluster $nodes_in_sync"
+  disconnected_nodes=$(echo "$curl_response" | grep -oP 'graphdb_nodes_disconnected \K\d+')
+  echo "$nodes_in_cluster $nodes_in_sync $disconnected_nodes"
 }
 
 # Function to wait until total quorum is achieved
@@ -76,8 +78,13 @@ join_cluster() {
       endpoint="http://$node.$${DNS_ZONE_NAME}:7200/rest/cluster/group/status"
       log_with_timestamp "Checking leader status for $node.$${DNS_ZONE_NAME}"
 
-      # Gets the address of the node if nodeState is LEADER, grpc port is returned therefor we replace port 7300 to 7200
-      LEADER_ADDRESS=$(curl -s "$endpoint" -u "admin:$${GRAPHDB_PASSWORD}" | jq -r '.[] | select(.nodeState == "LEADER") | .address' | sed 's/7300/7200/')
+      # Gets the address of the node if nodeState is LEADER, grpc port is returned therefore we replace port 7300 to 7200
+      LEADER_ADDRESS=$(
+        curl -s "$endpoint" -u "admin:$${GRAPHDB_PASSWORD}" \
+        | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
+        | sed 's/7300/7200/'
+      )
+
       if [ -n "$${LEADER_ADDRESS}" ]; then
         LEADER_NODE=$LEADER_ADDRESS
         log_with_timestamp "Found leader address $LEADER_ADDRESS"
@@ -90,6 +97,48 @@ join_cluster() {
     log_with_timestamp "No leader found on any node. Retrying..."
     sleep 5
   done
+
+  #################################################################
+  # Only continue if:
+  #   - graphdb_nodes_disconnected > 0
+  #     OR
+  #   - EXPECTED_NODE_COUNT != nodes_in_cluster
+  #################################################################
+  cluster_metrics=$(get_cluster_state)
+  # cluster_metrics is "nodes_in_cluster nodes_in_sync disconnected_nodes"
+  nodes_in_cluster=$(echo "$cluster_metrics" | awk '{print $1}')
+  disconnected_nodes=$(echo "$cluster_metrics" | awk '{print $3}')
+
+  # Fallback / sanity check: if we can't parse, skip automatic join
+  if ! [[ "$disconnected_nodes" =~ ^[0-9]+$ ]]; then
+    log_with_timestamp "Could not parse graphdb_nodes_disconnected from cluster metrics: '$cluster_metrics'. Skipping automatic join."
+    return 0
+  fi
+
+  if ! [[ "$nodes_in_cluster" =~ ^[0-9]+$ ]]; then
+    log_with_timestamp "Could not parse graphdb_nodes_in_cluster from cluster metrics: '$cluster_metrics'. Skipping automatic join."
+    return 0
+  fi
+
+  should_join=false
+
+  # Case 1: there are disconnected nodes
+  if [ "$disconnected_nodes" -gt 0 ]; then
+    log_with_timestamp "graphdb_nodes_disconnected=$disconnected_nodes (> 0). Will try to join $${CURRENT_NODE_NAME}."
+    should_join=true
+  fi
+
+  # Case 2: cluster size is not what we expect
+  if [[ "$EXPECTED_NODE_COUNT" =~ ^[0-9]+$ ]] && [ "$nodes_in_cluster" -ne "$EXPECTED_NODE_COUNT" ]; then
+    log_with_timestamp "nodes_in_cluster=$nodes_in_cluster differs from EXPECTED_NODE_COUNT=$EXPECTED_NODE_COUNT. Will try to join $${CURRENT_NODE_NAME}."
+    should_join=true
+  fi
+
+  # If neither condition is true, don't touch the cluster
+  if [ "$should_join" = false ]; then
+    log_with_timestamp "No disconnected nodes (graphdb_nodes_disconnected=$disconnected_nodes) and nodes_in_cluster=$nodes_in_cluster matches EXPECTED_NODE_COUNT=$EXPECTED_NODE_COUNT. Skipping join_cluster for $${CURRENT_NODE_NAME}."
+    return 0
+  fi
 
   log_with_timestamp "Trying to delete $CURRENT_NODE_NAME"
   # Removes node if already present in the cluster config
@@ -145,29 +194,16 @@ join_cluster() {
   fi
 }
 
-# The initial provisioning of the VMSS in Azure may take a while
-# therefore we need to be sure that this is not triggered before the first cluster initialization.
-# Wait for 150 seconds, break if the raft folder appears (Handles cluster initialization).
-
-for i in {1..30}; do
-  if [ ! -d "$RAFT_DIR" ]; then
-    log_with_timestamp "Raft directory not found yet. Waiting (attempt $i of 30)..."
-    sleep 5
-    if [ $i == 30 ]; then
-      log_with_timestamp "$RAFT_DIR folder is not found, joining the current node to the cluster"
-      join_cluster
-      break
-    fi
-  else
-    log_with_timestamp "Found Raft directory"
-    if [ -z "$(ls -A $RAFT_DIR)" ]; then
-      log_with_timestamp "Found $RAFT_DIR folder, but it is empty, please check the data folder and proceed by manually adding the node to the cluster"
-      break
-    else
-      break
-    fi
+if [ ! -d "$RAFT_DIR" ]; then
+  log_with_timestamp "Raft directory $RAFT_DIR not found, joining the current node to the cluster"
+  join_cluster
+else
+  log_with_timestamp "Found Raft directory"
+  if [ -z "$(ls -A "$RAFT_DIR")" ]; then
+    log_with_timestamp "Found $RAFT_DIR folder, but it is empty. joining the current node to the cluster"
+    join_cluster
   fi
-done
+fi
 
 echo "###########################"
 echo "#    Script completed     #"
