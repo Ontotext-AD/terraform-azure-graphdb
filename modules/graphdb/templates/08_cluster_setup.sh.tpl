@@ -18,6 +18,57 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# HELPERS
+
+# Function which finds the cluster Leader node and returns the leader node name
+find_leader_node() {
+  local DNS_ZONE_NAME="$1"
+  local RESOURCE_GROUP="$2"
+  local retry_count=0
+  local max_retries=120
+  local leader_node=""
+
+  # Populate DNS records array using the same pattern as 09_cluster_join.sh.tpl
+  readarray -t EXISTING_DNS_RECORDS_ARRAY <<<"$(az network private-dns record-set list \
+    --zone "$DNS_ZONE_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --query "[?contains(name, 'node')].name" \
+    --output tsv
+  )"
+
+  while [ -z "$leader_node" ]; do
+    if [ "$retry_count" -ge "$max_retries" ]; then
+      log_with_timestamp "Max retry limit reached. Leader node not found. Exiting..." >&2
+      return 1
+    fi
+
+    for node in "$${EXISTING_DNS_RECORDS_ARRAY[@]}"; do
+      local endpoint="http://$node.$${DNS_ZONE_NAME}:7200/rest/cluster/group/status"
+      log_with_timestamp "Checking leader status for $node.$${DNS_ZONE_NAME}" >&2
+
+      # Gets the address of the node if nodeState is LEADER, grpc port is returned therefor we replace port 7300 to 7200
+      local leader_address
+      leader_address=$(curl -s "$endpoint" -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+        | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
+        | sed 's/7300/7200/')
+
+      if [ -n "$${leader_address}" ]; then
+        # Extract node name from leader address (e.g., "node-1.dns-zone:7200" -> "node-1")
+        leader_node=$(echo "$leader_address" | cut -d':' -f1 | cut -d'.' -f1)
+        log_with_timestamp "Found leader node: $leader_node (address: $leader_address)" >&2
+        printf '%s\n' "$leader_node"
+        return 0
+      else
+        log_with_timestamp "No leader found at $node" >&2
+      fi
+    done
+
+    log_with_timestamp "No leader found on any node. Retrying..." >&2
+    sleep 5
+    retry_count=$((retry_count + 1))
+  done
+}
+
 echo "###########################"
 echo "#    Starting GraphDB     #"
 echo "###########################"
@@ -140,15 +191,34 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       log_with_timestamp "Something went wrong, returned: $IS_CLUSTER. Check the logs!"
     fi
   done
-
-  # Setting the security should be done on the Leader node only
-  echo "###########################################################"
-  echo "#    Changing admin user password and enable security     #"
-  echo "###########################################################"
-
-  configure_graphdb_security "$GRAPHDB_ADMIN_PASSWORD"
 else
   log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping cluster creation"
+fi
+
+# Setting the security should be done on the Leader node only
+echo "###########################################################"
+echo "#    Changing admin user password and enable security     #"
+echo "###########################################################"
+
+LEADER_NODE_NAME=$(find_leader_node "$DNS_ZONE_NAME" "$RESOURCE_GROUP")
+
+# Get the current node name
+if [ -f "/var/opt/graphdb/node_dns_name" ]; then
+  CURRENT_NODE_NAME=$(cat /var/opt/graphdb/node_dns_name)
+
+  # Extract node name from leader address if it contains port/domain (skip ports and domain)
+  # Leader node name should already be just the node name, but ensure we compare correctly
+  LEADER_NODE_COMPARE=$(echo "$LEADER_NODE_NAME" | cut -d':' -f1 | cut -d'.' -f1)
+  CURRENT_NODE_COMPARE=$(echo "$CURRENT_NODE_NAME" | cut -d':' -f1 | cut -d'.' -f1)
+
+  if [ "$CURRENT_NODE_COMPARE" == "$LEADER_NODE_COMPARE" ]; then
+    log_with_timestamp "Current node ($CURRENT_NODE_COMPARE) is the leader. Proceeding with security configuration."
+    configure_graphdb_security "$GRAPHDB_ADMIN_PASSWORD"
+  else
+    log_with_timestamp "Current node ($CURRENT_NODE_COMPARE) is not the leader ($LEADER_NODE_COMPARE). Skipping security configuration."
+  fi
+else
+  log_with_timestamp "Warning: /var/opt/graphdb/node_dns_name not found. Cannot verify if current node is leader. Skipping security configuration."
 fi
 
 echo "####################################"
