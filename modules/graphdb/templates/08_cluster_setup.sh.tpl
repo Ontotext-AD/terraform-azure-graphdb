@@ -25,7 +25,9 @@ find_leader_node() {
   local DNS_ZONE_NAME="$1"
   local RESOURCE_GROUP="$2"
   local retry_count=0
-  local max_retries=120
+  # Max retries 1440 will results in 2hours waiting for a leader to appear,
+  # should be enough for most cases when replicating data.
+  local max_retries=1440
   local leader_node=""
 
   # Populate DNS records array using the same pattern as 09_cluster_join.sh.tpl

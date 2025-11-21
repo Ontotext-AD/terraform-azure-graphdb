@@ -62,6 +62,7 @@ data "cloudinit_config" "entrypoint" {
       content_type = "text/x-shellscript"
       content = templatefile("${path.module}/templates/03_dns_provisioning.sh.tpl", {
         private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+        node_count : var.node_count
       })
     }
   }
@@ -136,6 +137,7 @@ data "cloudinit_config" "entrypoint" {
       content_type = "text/x-shellscript"
       content = templatefile("${path.module}/templates/09_cluster_join.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
+        node_count : var.node_count
       })
     }
   }
