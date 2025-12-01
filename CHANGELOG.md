@@ -1,7 +1,8 @@
 # GraphDB Azure Terraform Module Changelog
 
-## 2.3.3
+## 2.4.0
 
+* Update default GraphDB version to [11.2.0](https://graphdb.ontotext.com/documentation/11.2/release-notes.html#graphdb-11-2-0)
 * Fixed an issue where GraphDB security enabling sometimes fails due to leader election not being finished.
 * Improved the reliability of the DNS assignment
 * Improved the cluster rejoin logic to wait for data replication during cluster initialization
