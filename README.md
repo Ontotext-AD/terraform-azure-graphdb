@@ -534,6 +534,15 @@ Here is the procedure for migrating your single node deployment to cluster e.g.,
 To expand your cluster—increasing the `node_count` from 3 to 5 or beyond, simply modify the `node_count` parameter
 and execute `terraform apply`.
 
+## Scaling from a cluster to a single node
+
+**!!! CRITICAL DATA LOSS WARNING !!!**
+
+Scaling down from a multi-node cluster to a single node is NOT SUPPORTED.
+
+Doing so will result in the irrevocable loss of ALL DATA.
+Do not attempt this operation on a production system or any system containing data you wish to keep.
+
 ## Release History
 
 All notable changes between version are tracked and documented at [CHANGELOG.md](CHANGELOG.md).
