@@ -94,8 +94,9 @@ resource "azurerm_application_gateway" "graphdb-public" {
   }
 
   frontend_ip_configuration {
-    name                 = local.gateway_frontend_ip_configuration_name
-    public_ip_address_id = azurerm_public_ip.graphdb_public_ip_address.id
+    name                            = local.gateway_frontend_ip_configuration_name
+    public_ip_address_id            = azurerm_public_ip.graphdb_public_ip_address.id
+    private_link_configuration_name = var.gateway_enable_private_link_service ? local.gateway_private_link_configuration_name : null
   }
 
   backend_address_pool {
