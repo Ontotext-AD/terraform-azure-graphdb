@@ -458,7 +458,7 @@ For example, with only the following variables:
 
 ```hcl
 deploy_external_dns_records    = true
-external_dns_records_zone_name = "zhekofftest.com"
+external_dns_records_zone_name = "example.com"
 
 # If you want to use private_hosted_zone
 external_dns_records_private_zone = true
