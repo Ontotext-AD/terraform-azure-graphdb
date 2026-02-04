@@ -38,6 +38,21 @@ resource "azurerm_application_gateway" "graphdb-public" {
     response_buffering_enabled = var.gateway_global_response_buffering_enabled
   }
 
+  dynamic "private_link_configuration" {
+    for_each = var.gateway_enable_private_link_service ? [1] : []
+
+    content {
+      name = local.gateway_private_link_configuration_name
+
+      ip_configuration {
+        name                          = local.gateway_private_link_ip_configuration_name
+        subnet_id                     = azurerm_subnet.graphdb_private_link_subnet[0].id
+        primary                       = true
+        private_ip_address_allocation = "Dynamic"
+      }
+    }
+  }
+
   enable_http2 = true
 
   sku {
