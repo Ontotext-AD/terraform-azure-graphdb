@@ -93,6 +93,20 @@ graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF
 fi
 
+if [[ -n "${m2m_client_secret}" && "${m2m_client_secret}" != "null" ]]; then
+  cat <<EOF >>/etc/graphdb/graphdb.properties
+graphdb.auth.methods=${openid_auth_methods}
+graphdb.auth.database=${openid_auth_database}
+graphdb.auth.openid.issuer=${openid_issuer}
+graphdb.auth.openid.client_id=${openid_client_id}
+graphdb.auth.openid.username_claim=${openid_username_claim}
+graphdb.auth.openid.auth_flow=${openid_auth_flow}
+graphdb.auth.openid.token_type=${openid_token_type}
+graphdb.auth.oauth.roles_claim=${oauth_roles_claim}
+graphdb.auth.oauth.roles_prefix=${oauth_roles_prefix}
+EOF
+fi
+
 log_with_timestamp "Calculating 85 percent of total memory"
 # Get total memory in kilobytes
 total_memory_kb=$(grep -i "MemTotal" /proc/meminfo | awk '{print $2}')
@@ -121,4 +135,5 @@ if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
     echo "GDB_JAVA_OPTS=$extra_graphdb_java_options" > /etc/graphdb/graphdb.env
   fi
 fi
+
 log_with_timestamp "Completed applying overrides"

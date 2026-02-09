@@ -211,6 +211,18 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | external\_dns\_records\_a\_records\_list | n/a | ```list(object({ name = string ttl = number records = optional(list(string)) target_resource_id = optional(string) }))``` | `[]` | no |
 | external\_dns\_records\_cname\_records\_list | n/a | ```list(object({ name = string ttl = number record = string target_resource_id = optional(string) }))``` | `[]` | no |
 | external\_dns\_record\_name | Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval'). | `string` | `"@"` | no |
+| openid\_issuer | The OpenID issuer | `string` | `""` | no |
+| openid\_client\_id | The OpenID client ID | `string` | `""` | no |
+| openid\_username\_claim | The OpenID username claim name | `string` | `"graphdb_username"` | no |
+| oauth\_roles\_claim | The Oauth roles claim name | `string` | `"roles"` | no |
+| oauth\_roles\_prefix | The Oauth roles prefix | `string` | `"GDB_"` | no |
+| openid\_auth\_flow | The OpenID authentication flow | `string` | `"code"` | no |
+| openid\_token\_type | The OpenID token type | `string` | `"id"` | no |
+| gdb\_app\_registration\_client\_id | The GraphDB App registration client ID | `string` | `""` | no |
+| m2m\_app\_registration\_client\_id | The M2M App registration client ID | `string` | `""` | no |
+| m2m\_app\_registration\_client\_secret | The M2M App registration client secret | `string` | `""` | no |
+| m2m\_scope | Optional M2M OAuth scope. If empty, it is fetched from App Configuration key `m2m-app-scope`. | `string` | `null` | no |
+| openid\_tenant\_id | Tenant ID used for M2M token acquisition. | `string` | `""` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
@@ -417,15 +429,8 @@ You can provide the VMSS with a custom VM image by specifying `graphdb_image_id`
 graphdb_image_id = "/subscriptions/<subscription_id>/resourceGroups/<resource_group_name>/providers/Microsoft.Compute/galleries/<gallery_name>/images/<image_definition_name>/versions/<image_version>"
 ```
 
-<!---
-TODO Add more examples
--->
 
-<!---
 ## Next Steps
-
-TODO Configure security, provisioning etc. links for loading data? backend for state
--->
 
 **Deploying in Existing Resource Group and Virtual Network**
 
@@ -518,6 +523,40 @@ You can use your external Application Gateway without the context path.
 - After assigning the VMSS to the backend pool and verifying that the Application Gateway can access the VMSS, upgrade your VMSS instances to the latest model or version. This is essential for the Application Gateway to identify them as valid targets within the backend pool.
 **4.** Network Security Group (NSG) Configuration:
 - Configure NSG rules to allow traffic between the Application Gateway and the VMSS, ensuring the necessary access is in place.
+-
+## Entra ID
+
+- If `m2m_app_registration_client_secret` is set, the cluster and backup scripts **attempt bearer auth first** and fall back to basic auth if bearer fails.
+- When M2M is enabled, the module **does not update or store the GraphDB admin password** during bootstrap.
+- Entra ID (OpenID) overrides are applied to `graphdb.properties` during config overrides when M2M is enabled.
+- The M2M access token is fetched on demand from the client credentials (no helper script is persisted).
+
+When M2M is enabled, the following overrides are appended to `/etc/graphdb/graphdb.properties`:
+
+```
+graphdb.auth.methods=<openid_auth_methods>
+graphdb.auth.database=<openid_auth_database>
+graphdb.auth.openid.issuer=<openid_issuer>
+graphdb.auth.openid.client_id=<openid_client_id>
+graphdb.auth.openid.username_claim=<openid_username_claim>
+graphdb.auth.openid.auth_flow=<openid_auth_flow>
+graphdb.auth.openid.token_type=<openid_token_type>
+graphdb.auth.oauth.roles_claim=<oauth_roles_claim>
+graphdb.auth.oauth.roles_prefix=<oauth_roles_prefix>
+```
+
+Example `terraform.tfvars` to enable Entra ID (M2M):
+
+```
+m2m_app_registration_client_secret = "<your-m2m-client-secret>"
+m2m_app_registration_client_id     = "<your-m2m-client-id>"
+m2m_scope                           = "api://<your-app-id>/.default"
+openid_auth_methods                 = "openid"
+openid_auth_database                = "oauth"
+openid_client_id                    = "<your-openid-client-id>"
+openid_issuer                       = "https://login.microsoftonline.com/<tenant-id>/v2.0"
+openid_tenant_id                    = "<your-tenant-id>"
+```
 
 ## Local Development
 
@@ -567,7 +606,3 @@ Check out the contributors guide [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 This code is released under the Apache 2.0 License. See [LICENSE](LICENSE) for more details.
-
-<!---
-TODO Do we need a copyright statement? Even if the code is released under Apache?
--->

@@ -615,3 +615,92 @@ variable "external_dns_record_name" {
   type        = string
   default     = "@"
 }
+
+# GraphDB OpenID configurations
+
+variable "openid_issuer" {
+  description = "The OpenID issuer"
+  type        = string
+  default     = ""
+}
+
+variable "openid_client_id" {
+  description = "The OpenID client ID"
+  type        = string
+  default     = ""
+}
+
+variable "openid_username_claim" {
+  description = "The OpenID username claim name"
+  type        = string
+  default     = "graphdb_username"
+}
+
+variable "oauth_roles_claim" {
+  description = "The Oauth roles claim name"
+  type        = string
+  default     = "roles"
+}
+
+variable "oauth_roles_prefix" {
+  description = "The Oauth roles prefix"
+  type        = string
+  default     = "GDB_"
+}
+
+variable "openid_auth_flow" {
+  description = "The OpenID authentication flow"
+  type        = string
+  default     = "code"
+}
+
+variable "openid_token_type" {
+  description = "The OpenID token type"
+  type        = string
+  default     = "id"
+}
+
+variable "openid_auth_methods" {
+  description = "The OpenID authentication methods"
+  type        = string
+  default     = null
+}
+
+variable "openid_auth_database" {
+  description = "The OpenID authentication database"
+  type        = string
+  default     = null
+}
+
+variable "openid_tenant_id" {
+  description = "The OpenID tenant ID"
+  type        = string
+  default     = null
+}
+
+# External Entra ID - Required for backup
+
+variable "gdb_app_registration_client_id" {
+  description = "The GraphDB App registration client ID"
+  type        = string
+  default     = null
+}
+
+variable "m2m_app_registration_client_id" {
+  description = "The M2M App registration client ID"
+  type        = string
+  default     = null
+}
+
+variable "m2m_app_registration_client_secret" {
+  description = "The M2M App registration client secret"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "m2m_scope" {
+  description = "The scope for the M2M application"
+  type        = string
+  default     = null
+}

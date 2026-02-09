@@ -1,7 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
-## 2.5.0
+## 3.0.0
 
+* Added Entra ID Support for authentication
+* Removed Telegraf agent configuration
 * Enabled Private Link for Public Application Gateways
 
 ## 2.4.1

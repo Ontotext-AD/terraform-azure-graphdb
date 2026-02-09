@@ -50,7 +50,7 @@ find_leader_node() {
 
       # Gets the address of the node if nodeState is LEADER, grpc port is returned therefor we replace port 7300 to 7200
       local leader_address
-      leader_address=$(curl -s "$endpoint" -u "admin:$${GRAPHDB_ADMIN_PASSWORD}" \
+      leader_address=$(gdb_curl -s "$endpoint" \
         | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
         | sed 's/7300/7200/')
 
@@ -78,8 +78,18 @@ echo "###########################"
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 DNS_ZONE_NAME=${private_dns_zone_name}
-GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
-GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+M2M_ENABLED='${m2m_enabled}'
+M2M_CLIENT_ID='${m2m_client_id}'
+M2M_CLIENT_SECRET='${m2m_client_secret}'
+M2M_TENANT_ID='${tenant_id}'
+M2M_SCOPE='${scope}'
+APP_CONFIGURATION_ENDPOINT='${app_configuration_endpoint}'
+gdb_init_auth
+
+if [[ "$M2M_ENABLED" != "true" ]]; then
+  GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+  GRAPHDB_PASSWORD_CREATION_TIME="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .lastModified)"
+fi
 VMSS_NAME=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/vmScaleSetName?api-version=2021-01-01&format=text")
 GRAPHDB_NODE_COUNT="$(az appconfig kv show \
   --endpoint ${app_configuration_endpoint} \
@@ -89,11 +99,11 @@ GRAPHDB_NODE_COUNT="$(az appconfig kv show \
 
 # To update the password if changed we need to save the creation date of the config.
 # If a file is found, it will treat the password from Application config as the latest and update it.
-if [ ! -e "/var/opt/graphdb/password_creation_time" ]; then
+if [[ "$M2M_ENABLED" != "true" ]] && [ ! -e "/var/opt/graphdb/password_creation_time" ]; then
   # This has to be persisted
   echo $(date -d "$GRAPHDB_PASSWORD_CREATION_TIME" -u +"%Y-%m-%dT%H:%M:%S") >/var/opt/graphdb/password_creation_time
   GRAPHDB_PASSWORD=$GRAPHDB_ADMIN_PASSWORD
-else
+elif [[ "$M2M_ENABLED" != "true" ]]; then
   # Gets the previous password
   PASSWORD_CREATION_DATE=$(cat /var/opt/graphdb/password_creation_time)
   GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password --datetime $PASSWORD_CREATION_DATE | jq -r .value | base64 -d)"
@@ -116,7 +126,7 @@ check_gdb() {
   fi
 
   local gdb_address="$1:7200/rest/monitor/infrastructure"
-  if curl -s --head -u "admin:$${GRAPHDB_PASSWORD}" --fail "$gdb_address" >/dev/null; then
+  if gdb_curl -s --head --fail "$gdb_address" >/dev/null; then
     log_with_timestamp "Success, GraphDB node $gdb_address is available"
     return 0
   else
@@ -158,8 +168,7 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
 
   for ((i = 1; i <= $MAX_RETRIES; i++)); do
     IS_CLUSTER=$(
-      curl -s -o /dev/null \
-        -u "admin:$GRAPHDB_PASSWORD" \
+      gdb_curl -s -o /dev/null \
         -w "%%{http_code}" \
         http://localhost:7200/rest/monitor/cluster
     )
@@ -172,11 +181,10 @@ if [ "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]; then
       EXISTING_DNS_RECORDS=$(az network private-dns record-set list -g $RESOURCE_GROUP -z $DNS_ZONE_NAME --query "[?starts_with(name, 'node')].fqdn")
       CLUSTER_ADDRESS_GRPC=$(echo "$EXISTING_DNS_RECORDS" | jq -r '[ .[] | rtrimstr(".") + ":7300" ]')
       CLUSTER_CREATED=$(
-        curl -X POST -s http://node-1.$DNS_ZONE_NAME:7200/rest/cluster/config \
+        gdb_curl -X POST -s http://node-1.$DNS_ZONE_NAME:7200/rest/cluster/config \
           -w "%%{http_code}" \
           -o "/dev/null" \
           -H 'Content-type: application/json' \
-          -u "admin:$${GRAPHDB_PASSWORD}" \
           -d "{\"nodes\": $CLUSTER_ADDRESS_GRPC}"
       )
 
@@ -214,8 +222,19 @@ if [ -f "/var/opt/graphdb/node_dns_name" ]; then
   CURRENT_NODE_COMPARE=$(echo "$CURRENT_NODE_NAME" | cut -d':' -f1 | cut -d'.' -f1)
 
   if [ "$CURRENT_NODE_COMPARE" == "$LEADER_NODE_COMPARE" ]; then
-    log_with_timestamp "Current node ($CURRENT_NODE_COMPARE) is the leader. Proceeding with security configuration."
-    configure_graphdb_security "$GRAPHDB_ADMIN_PASSWORD"
+    if [[ "$M2M_ENABLED" == "true" ]]; then
+      if [ -f /var/opt/graphdb/security_enabled ]; then
+        log_with_timestamp "M2M enabled; security already enabled. Skipping."
+      else
+        log_with_timestamp "M2M enabled; enabling security once using basic auth."
+        GRAPHDB_ADMIN_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+        configure_graphdb_security_basic "$GRAPHDB_ADMIN_PASSWORD"
+        touch /var/opt/graphdb/security_enabled
+      fi
+    else
+      log_with_timestamp "Current node ($CURRENT_NODE_COMPARE) is the leader. Proceeding with security configuration."
+      configure_graphdb_security "$GRAPHDB_ADMIN_PASSWORD"
+    fi
   else
     log_with_timestamp "Current node ($CURRENT_NODE_COMPARE) is not the leader ($LEADER_NODE_COMPARE). Skipping security configuration."
   fi
@@ -228,7 +247,9 @@ echo "#    Updating GraphDB password     #"
 echo "####################################"
 
 # This will update the GraphDB admin password if this node has the lowest ID and password_creation_time file exists.
-if [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
+if [[ "$M2M_ENABLED" == "true" ]]; then
+  log_with_timestamp "M2M enabled; skipping GraphDB password update"
+elif [[ -e "/var/opt/graphdb/password_creation_time" && "$INSTANCE_ID" == "$${LOWEST_INSTANCE_ID}" ]]; then
   update_graphdb_admin_password "$GRAPHDB_PASSWORD" "$GRAPHDB_ADMIN_PASSWORD" "$RETRY_DELAY" "${app_configuration_endpoint}" "$${ALL_DNS_RECORDS[@]}"
 else
   log_with_timestamp "The current instance: $INSTANCE_ID is not the lowest, skipping password update"

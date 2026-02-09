@@ -82,6 +82,19 @@ data "cloudinit_config" "entrypoint" {
       graphdb_java_options_secret_name : var.graphdb_java_options_secret_name
       context_path : var.context_path
       disable_agw : var.disable_agw
+      m2m_client_secret : var.m2m_app_registration_client_secret
+      m2m_client_id : var.m2m_app_registration_client_id
+      openid_issuer : var.openid_issuer
+      openid_client_id : var.openid_client_id
+      openid_username_claim : var.openid_username_claim
+      oauth_roles_claim : var.oauth_roles_claim
+      oauth_roles_prefix : var.oauth_roles_prefix
+      openid_auth_flow : var.openid_auth_flow
+      openid_token_type : var.openid_token_type
+      openid_auth_methods : var.openid_auth_methods
+      openid_auth_database : var.openid_auth_database
+      tenant_id : var.openid_tenant_id
+      scope : var.m2m_scope
     })
   }
 
@@ -93,21 +106,18 @@ data "cloudinit_config" "entrypoint" {
       backup_schedule : var.backup_schedule
       backup_storage_account_name : var.backup_storage_account_name
       backup_storage_container_name : var.backup_storage_container_name
+      m2m_enabled : var.m2m_app_registration_client_secret != null ? "true" : "false"
+      m2m_client_id : var.m2m_app_registration_client_id
+      m2m_client_secret : var.m2m_app_registration_client_secret
+      m2m_tenant_id : var.openid_tenant_id
+      m2m_scope : var.m2m_scope
     })
   }
 
-  # 06 Telegraf configuration
+  # 06 Application Insights configuration
   part {
     content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/06_telegraf_conf.sh.tpl", {
-      app_configuration_endpoint : var.app_configuration_endpoint
-    })
-  }
-
-  # 07 Application Insights configuration
-  part {
-    content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/templates/07_application_insights_config.sh.tpl", {
+    content = templatefile("${path.module}/templates/06_application_insights_config.sh.tpl", {
       appi_connection_string : var.appi_connection_string
       appi_sampling_percentage : var.appi_sampling_percentage
       appi_logging_level : var.appi_logging_level
@@ -118,43 +128,58 @@ data "cloudinit_config" "entrypoint" {
     })
   }
 
-  # 08 Cluster setup
+  # 07 Cluster setup
   dynamic "part" {
     for_each = var.node_count > 1 ? [1] : []
     content {
       content_type = "text/x-shellscript"
-      content = templatefile("${path.module}/templates/08_cluster_setup.sh.tpl", {
+      content = templatefile("${path.module}/templates/07_cluster_setup.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
         private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+        m2m_enabled : var.m2m_app_registration_client_secret != null ? "true" : "false"
+        m2m_client_id : var.m2m_app_registration_client_id
+        m2m_client_secret : var.m2m_app_registration_client_secret
+        tenant_id : var.openid_tenant_id
+        scope : var.m2m_scope
       })
     }
   }
 
-  # 09 Cluster rejoin
+  # 08 Cluster rejoin
   dynamic "part" {
     for_each = var.node_count > 1 ? [1] : []
     content {
       content_type = "text/x-shellscript"
-      content = templatefile("${path.module}/templates/09_cluster_join.sh.tpl", {
+      content = templatefile("${path.module}/templates/08_cluster_join.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
         node_count : var.node_count
+        m2m_enabled : var.m2m_app_registration_client_secret != null ? "true" : "false"
+        m2m_client_id : var.m2m_app_registration_client_id
+        m2m_client_secret : var.m2m_app_registration_client_secret
+        tenant_id : var.openid_tenant_id
+        scope : var.m2m_scope
       })
     }
   }
 
-  # 10 Start GDB services - Single node
+  # 09 Start GDB services - Single node
   dynamic "part" {
     for_each = var.node_count == 1 ? [1] : []
     content {
       content_type = "text/x-shellscript"
-      content = templatefile("${path.module}/templates/10_start_single_graphdb_services.sh.tpl", {
+      content = templatefile("${path.module}/templates/09_start_single_graphdb_services.sh.tpl", {
         app_configuration_endpoint : var.app_configuration_endpoint
         private_dns_zone_name : azurerm_private_dns_zone.graphdb.name
+        m2m_enabled : var.m2m_app_registration_client_secret != null ? "true" : "false"
+        m2m_client_id : var.m2m_app_registration_client_id
+        m2m_client_secret : var.m2m_app_registration_client_secret
+        tenant_id : var.openid_tenant_id
+        scope : var.m2m_scope
       })
     }
   }
 
-  # 11 Execute additional scripts
+  # 10 Execute additional scripts
   dynamic "part" {
     for_each = var.user_supplied_scripts
     content {
@@ -163,7 +188,7 @@ data "cloudinit_config" "entrypoint" {
     }
   }
 
-  # 12 Execute additional rendered templates
+  # 11 Execute additional rendered templates
   dynamic "part" {
     for_each = var.user_supplied_rendered_templates
     content {
@@ -172,7 +197,7 @@ data "cloudinit_config" "entrypoint" {
     }
   }
 
-  # 13 Execute additional templates
+  # 12 Execute additional templates
   dynamic "part" {
     for_each = var.user_supplied_templates
     content {
