@@ -20,6 +20,8 @@ echo "#################################################"
 echo "Creating the backup user"
 useradd -r -m -s /usr/sbin/nologin gdb-backup
 
+# TODO provision new backup script
+
 cat <<EOF >/usr/bin/run_backup.sh
 #!/bin/bash
 
