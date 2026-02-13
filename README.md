@@ -46,6 +46,7 @@ zones using a VM scale set. Key features of the module include:
 - Azure VM scale set across multiple Availability Zones
 - Azure Application Gateway for load balancing and TLS termination
 - Azure Private Link with private Application Gateway
+- Azure Private Link with public Application Gateway
 - Azure NAT gateway for outbound connections
 - Automated backups in Azure Blob Storage
 - Azure Private DNS for internal GraphDB cluster communication
@@ -309,6 +310,17 @@ To enable the deployment of Azure Bastion, you simply need to enable the followi
 deploy_bastion = true
 ```
 
+**Public Gateway with Private Link**
+
+To enable the Private Link service on a public Application Gateway, you need to enable the following flag:
+
+```hcl
+gateway_enable_private_link_service = true
+```
+
+See [Configure Azure Application Gateway Private Link](https://learn.microsoft.com/en-us/azure/application-gateway/private-link-configure?tabs=portal)
+for further information on configuring and using Application Gateway Private Link.
+
 **Private Gateway with Private Link**
 
 To enable the Private Link service on a private Application Gateway, you need to enable the following flags:
@@ -458,7 +470,7 @@ For example, with only the following variables:
 
 ```hcl
 deploy_external_dns_records    = true
-external_dns_records_zone_name = "zhekofftest.com"
+external_dns_records_zone_name = "example.com"
 
 # If you want to use private_hosted_zone
 external_dns_records_private_zone = true
