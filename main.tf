@@ -327,6 +327,22 @@ module "graphdb" {
   # Wait for the configurations to be created in the App Configuration store
   disable_agw = var.disable_agw
 
+  # Entra ID Integration
+  gdb_app_registration_client_id     = var.gdb_app_registration_client_id
+  oauth_roles_prefix                 = var.oauth_roles_prefix
+  oauth_roles_claim                  = var.oauth_roles_claim
+  openid_auth_flow                   = var.openid_auth_flow
+  openid_username_claim              = var.openid_username_claim
+  openid_token_type                  = var.openid_token_type
+  openid_issuer                      = var.openid_issuer
+  openid_client_id                   = var.openid_client_id
+  openid_auth_methods                = var.openid_auth_methods
+  openid_auth_database               = var.openid_auth_database
+  m2m_app_registration_client_id     = var.m2m_app_registration_client_id
+  m2m_app_registration_client_secret = var.m2m_app_registration_client_secret
+  openid_tenant_id                   = var.openid_tenant_id
+  m2m_scope                          = var.m2m_scope
+
   depends_on = [module.appconfig]
 }
 

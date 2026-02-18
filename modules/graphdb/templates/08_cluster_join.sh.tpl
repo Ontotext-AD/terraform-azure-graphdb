@@ -20,7 +20,17 @@ set -o pipefail
 RESOURCE_GROUP=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2021-01-01&format=text")
 INSTANCE_ID=$(basename $(curl -s -H Metadata:true "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-01-01&format=text"))
 DNS_ZONE_NAME=$(az network private-dns zone list --query "[].name" --output tsv)
-GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+M2M_ENABLED='${m2m_enabled}'
+M2M_CLIENT_ID='${m2m_client_id}'
+M2M_CLIENT_SECRET='${m2m_client_secret}'
+M2M_TENANT_ID='${tenant_id}'
+M2M_SCOPE='${scope}'
+APP_CONFIGURATION_ENDPOINT='${app_configuration_endpoint}'
+gdb_init_auth
+
+if [[ "$M2M_ENABLED" != "true" ]]; then
+  GRAPHDB_PASSWORD="$(az appconfig kv show --endpoint ${app_configuration_endpoint} --auth-mode login --key graphdb-password | jq -r .value | base64 -d)"
+fi
 CURRENT_NODE_NAME=$(cat /var/opt/graphdb/node_dns_name)
 EXPECTED_NODE_COUNT="${node_count}"
 RAFT_DIR="/var/opt/graphdb/node/data/raft"
@@ -34,7 +44,7 @@ readarray -t NODES <<<"$(az network private-dns record-set list \
 
 # This function should be used only after the Leader node is found
 get_cluster_state() {
-  curl_response=$(curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s -u "admin:$GRAPHDB_PASSWORD")
+  curl_response=$(gdb_curl "http://$${LEADER_NODE}/rest/monitor/cluster" -s)
   nodes_in_cluster=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_cluster \K\d+')
   nodes_in_sync=$(echo "$curl_response" | grep -oP 'graphdb_nodes_in_sync \K\d+')
   disconnected_nodes=$(echo "$curl_response" | grep -oP 'graphdb_nodes_disconnected \K\d+')
@@ -80,7 +90,7 @@ join_cluster() {
 
       # Gets the address of the node if nodeState is LEADER, grpc port is returned therefore we replace port 7300 to 7200
       LEADER_ADDRESS=$(
-        curl -s "$endpoint" -u "admin:$${GRAPHDB_PASSWORD}" \
+        gdb_curl -s "$endpoint" \
         | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
         | sed 's/7300/7200/'
       )
@@ -142,13 +152,12 @@ join_cluster() {
 
   log_with_timestamp "Trying to delete $CURRENT_NODE_NAME"
   # Removes node if already present in the cluster config
-  curl -X DELETE -s \
+  gdb_curl -X DELETE -s \
     --fail-with-body \
     -o "/dev/null" \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
     -w "%%{http_code}" \
-    -u "admin:$${GRAPHDB_PASSWORD}" \
     -d "{\"nodes\": [\"$${CURRENT_NODE_NAME}.$${DNS_ZONE_NAME}:7300\"]}" \
     "http://$${LEADER_NODE}/rest/cluster/config/node" || true
 
@@ -166,13 +175,12 @@ join_cluster() {
     CURL_MAX_REQUEST_TIME=21600 # 6 hours
 
     ADD_NODE=$(
-      curl -X POST -s \
+      gdb_curl -X POST -s \
         -m $CURL_MAX_REQUEST_TIME \
         -o "/dev/null" \
         -H 'Content-Type: application/json' \
         -H 'Accept: application/json' \
         -w "%%{http_code}" \
-        -u "admin:$${GRAPHDB_PASSWORD}" \
         -d"{\"nodes\": [\"$${CURRENT_NODE_NAME}.$${DNS_ZONE_NAME}:7300\"]}" \
         "http://$${LEADER_NODE}/rest/cluster/config/node"
     )
