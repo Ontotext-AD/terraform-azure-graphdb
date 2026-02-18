@@ -218,11 +218,13 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | oauth\_roles\_prefix | The Oauth roles prefix | `string` | `"GDB_"` | no |
 | openid\_auth\_flow | The OpenID authentication flow | `string` | `"code"` | no |
 | openid\_token\_type | The OpenID token type | `string` | `"id"` | no |
-| gdb\_app\_registration\_client\_id | The GraphDB App registration client ID | `string` | `""` | no |
-| m2m\_app\_registration\_client\_id | The M2M App registration client ID | `string` | `""` | no |
-| m2m\_app\_registration\_client\_secret | The M2M App registration client secret | `string` | `""` | no |
-| m2m\_scope | Optional M2M OAuth scope. If empty, it is fetched from App Configuration key `m2m-app-scope`. | `string` | `null` | no |
-| openid\_tenant\_id | Tenant ID used for M2M token acquisition. | `string` | `""` | no |
+| openid\_auth\_methods | The OpenID authentication methods | `string` | `null` | no |
+| openid\_auth\_database | The OpenID authentication database | `string` | `null` | no |
+| openid\_tenant\_id | The OpenID tenant ID | `string` | `null` | no |
+| gdb\_app\_registration\_client\_id | The GraphDB App registration client ID | `string` | `null` | no |
+| m2m\_app\_registration\_client\_id | The M2M App registration client ID | `string` | `null` | no |
+| m2m\_app\_registration\_client\_secret | The M2M App registration client secret | `string` | `null` | no |
+| m2m\_scope | The scope for the M2M application | `string` | `null` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
