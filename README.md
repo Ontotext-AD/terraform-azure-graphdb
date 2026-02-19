@@ -211,8 +211,8 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | external\_dns\_records\_a\_records\_list | n/a | ```list(object({ name = string ttl = number records = optional(list(string)) target_resource_id = optional(string) }))``` | `[]` | no |
 | external\_dns\_records\_cname\_records\_list | n/a | ```list(object({ name = string ttl = number record = string target_resource_id = optional(string) }))``` | `[]` | no |
 | external\_dns\_record\_name | Relative DNS record name inside the zone (use '@' for root, or e.g. 'www', 'eval'). | `string` | `"@"` | no |
-| openid\_issuer | The OpenID issuer | `string` | `""` | no |
-| openid\_client\_id | The OpenID client ID | `string` | `""` | no |
+| openid\_issuer | The OpenID issuer | `string` | `null` | no |
+| openid\_client\_id | The OpenID client ID | `string` | `null` | no |
 | openid\_username\_claim | The OpenID username claim name | `string` | `"graphdb_username"` | no |
 | oauth\_roles\_claim | The Oauth roles claim name | `string` | `"roles"` | no |
 | oauth\_roles\_prefix | The Oauth roles prefix | `string` | `"GDB_"` | no |
