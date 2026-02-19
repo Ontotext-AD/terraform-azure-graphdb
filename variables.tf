@@ -621,13 +621,13 @@ variable "external_dns_record_name" {
 variable "openid_issuer" {
   description = "The OpenID issuer"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "openid_client_id" {
   description = "The OpenID client ID"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "openid_username_claim" {
@@ -697,6 +697,23 @@ variable "m2m_app_registration_client_secret" {
   type        = string
   default     = null
   sensitive   = true
+
+  validation {
+    condition = (
+      var.m2m_app_registration_client_secret == null ||
+      trimspace(var.m2m_app_registration_client_secret) == ""
+      ) ? true : (
+      var.openid_issuer != null && trimspace(var.openid_issuer) != "" &&
+      var.openid_client_id != null && trimspace(var.openid_client_id) != "" &&
+      var.openid_auth_methods != null && trimspace(var.openid_auth_methods) != "" &&
+      var.openid_auth_database != null && trimspace(var.openid_auth_database) != "" &&
+      var.openid_tenant_id != null && trimspace(var.openid_tenant_id) != "" &&
+      var.gdb_app_registration_client_id != null && trimspace(var.gdb_app_registration_client_id) != "" &&
+      var.m2m_app_registration_client_id != null && trimspace(var.m2m_app_registration_client_id) != "" &&
+      var.m2m_scope != null && trimspace(var.m2m_scope) != ""
+    )
+    error_message = "When m2m_app_registration_client_secret is set, the GraphDB OpenID and External Entra ID variables must all be set and non-empty: openid_issuer, openid_client_id, openid_auth_methods, openid_auth_database, openid_tenant_id, gdb_app_registration_client_id, m2m_app_registration_client_id, m2m_scope."
+  }
 }
 
 variable "m2m_scope" {
