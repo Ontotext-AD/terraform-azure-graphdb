@@ -535,23 +535,26 @@ You can use your external Application Gateway without the context path.
 
 When M2M is enabled, the following overrides are appended to `/etc/graphdb/graphdb.properties`:
 
-```
-graphdb.auth.methods=<openid_auth_methods>
-graphdb.auth.database=<openid_auth_database>
-graphdb.auth.openid.issuer=<openid_issuer>
-graphdb.auth.openid.client_id=<openid_client_id>
-graphdb.auth.openid.username_claim=<openid_username_claim>
-graphdb.auth.openid.auth_flow=<openid_auth_flow>
-graphdb.auth.openid.token_type=<openid_token_type>
-graphdb.auth.oauth.roles_claim=<oauth_roles_claim>
-graphdb.auth.oauth.roles_prefix=<oauth_roles_prefix>
+You can read more about the needed GraphDB configuration properties in the [GraphDB documentation](https://graphdb.ontotext.com/documentation/11.2/access-control.html#openid-oauth).
+
+```hcl
+graphdb.auth.methods                = "<openid_auth_methods>"
+graphdb.auth.database               = "<openid_auth_database>"
+graphdb.auth.openid.issuer          = "<openid_issuer>"
+graphdb.auth.openid.client_id       = "<openid_client_id>"
+graphdb.auth.openid.username_claim  = "<openid_username_claim>"
+graphdb.auth.openid.auth_flow       = "<openid_auth_flow>"
+graphdb.auth.openid.token_type      = "<openid_token_type>"
+graphdb.auth.oauth.roles_claim      = "<oauth_roles_claim>"
+graphdb.auth.oauth.roles_prefix     = "<oauth_roles_prefix>"
+
 ```
 
 Example `terraform.tfvars` to enable Entra ID (M2M):
 
-```
-m2m_app_registration_client_secret = "<your-m2m-client-secret>"
-m2m_app_registration_client_id     = "<your-m2m-client-id>"
+```hcl
+m2m_app_registration_client_secret  = "<your-m2m-client-secret>"
+m2m_app_registration_client_id      = "<your-m2m-client-id>"
 m2m_scope                           = "api://<your-app-id>/.default"
 openid_auth_methods                 = "openid"
 openid_auth_database                = "oauth"
