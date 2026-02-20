@@ -384,11 +384,6 @@ variable "openid_tenant_id" {
 
 # External Entra ID - Required for backup
 
-variable "gdb_app_registration_client_id" {
-  description = "The GraphDB App registration client ID"
-  type        = string
-}
-
 variable "m2m_app_registration_client_id" {
   description = "The M2M App registration client ID"
   type        = string

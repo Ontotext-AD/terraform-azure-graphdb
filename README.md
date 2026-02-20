@@ -221,7 +221,6 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | openid\_auth\_methods | The OpenID authentication methods | `string` | `null` | no |
 | openid\_auth\_database | The OpenID authentication database | `string` | `null` | no |
 | openid\_tenant\_id | The OpenID tenant ID | `string` | `null` | no |
-| gdb\_app\_registration\_client\_id | The GraphDB App registration client ID | `string` | `null` | no |
 | m2m\_app\_registration\_client\_id | The M2M App registration client ID | `string` | `null` | no |
 | m2m\_app\_registration\_client\_secret | The M2M App registration client secret | `string` | `null` | no |
 | m2m\_scope | The scope for the M2M application | `string` | `null` | no |

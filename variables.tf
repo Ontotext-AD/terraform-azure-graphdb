@@ -680,12 +680,6 @@ variable "openid_tenant_id" {
 
 # External Entra ID - Required for backup
 
-variable "gdb_app_registration_client_id" {
-  description = "The GraphDB App registration client ID"
-  type        = string
-  default     = null
-}
-
 variable "m2m_app_registration_client_id" {
   description = "The M2M App registration client ID"
   type        = string
@@ -708,11 +702,10 @@ variable "m2m_app_registration_client_secret" {
       var.openid_auth_methods != null && trimspace(var.openid_auth_methods) != "" &&
       var.openid_auth_database != null && trimspace(var.openid_auth_database) != "" &&
       var.openid_tenant_id != null && trimspace(var.openid_tenant_id) != "" &&
-      var.gdb_app_registration_client_id != null && trimspace(var.gdb_app_registration_client_id) != "" &&
       var.m2m_app_registration_client_id != null && trimspace(var.m2m_app_registration_client_id) != "" &&
       var.m2m_scope != null && trimspace(var.m2m_scope) != ""
     )
-    error_message = "When m2m_app_registration_client_secret is set, the GraphDB OpenID and External Entra ID variables must all be set and non-empty: openid_issuer, openid_client_id, openid_auth_methods, openid_auth_database, openid_tenant_id, gdb_app_registration_client_id, m2m_app_registration_client_id, m2m_scope."
+    error_message = "When m2m_app_registration_client_secret is set, the GraphDB OpenID and External Entra ID variables must all be set and non-empty: openid_issuer, openid_client_id, openid_auth_methods, openid_auth_database, openid_tenant_id, m2m_app_registration_client_id, m2m_scope."
   }
 }
 

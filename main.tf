@@ -328,7 +328,6 @@ module "graphdb" {
   disable_agw = var.disable_agw
 
   # Entra ID Integration
-  gdb_app_registration_client_id     = var.gdb_app_registration_client_id
   oauth_roles_prefix                 = var.oauth_roles_prefix
   oauth_roles_claim                  = var.oauth_roles_claim
   openid_auth_flow                   = var.openid_auth_flow
