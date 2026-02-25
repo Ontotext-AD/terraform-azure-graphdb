@@ -108,6 +108,7 @@ module "backup" {
   storage_account_replication_type      = var.storage_account_replication_type
   storage_blobs_max_days_since_creation = var.storage_blobs_max_days_since_creation
   storage_account_retention_hot_to_cool = var.storage_account_retention_hot_to_cool
+  storage_account_admin_principals      = var.storage_account_admin_principals
 
   storage_container_soft_delete_retention_policy = var.storage_container_soft_delete_retention_policy
   storage_blob_soft_delete_retention_policy      = var.storage_blob_soft_delete_retention_policy

@@ -396,6 +396,12 @@ variable "storage_account_retention_hot_to_cool" {
   default     = 3
 }
 
+variable "storage_account_admin_principals" {
+  description = "List of AAD user or group object IDs to assign Storage Blob Data Contributor on the backup storage account"
+  type        = list(string)
+  default     = []
+}
+
 variable "storage_container_soft_delete_retention_policy" {
   description = "Number of days for retaining the storage container from actual deletion"
   type        = number

@@ -252,7 +252,9 @@ check_gdb() {
   fi
 
   local gdb_address="$1:7200/rest/monitor/infrastructure"
-  if gdb_curl -s --head --fail "$gdb_address" >/dev/null; then
+  local http_code
+  http_code=$(curl -s -o /dev/null -w '%%{http_code}' "$gdb_address")
+  if [[ "$http_code" == "200" || "$http_code" == "401" ]]; then
     log_with_timestamp "Success, GraphDB node $gdb_address is available"
     return 0
   else
