@@ -180,6 +180,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | storage\_account\_replication\_type | Specify the data redundancy strategy for your Azure Storage Account | `string` | `"ZRS"` | no |
 | storage\_blobs\_max\_days\_since\_creation | Specifies the retention period in days since creation before deleting storage blobs | `number` | `31` | no |
 | storage\_account\_retention\_hot\_to\_cool | Specifies the retention period in days between moving data from hot to cool tier storage | `number` | `3` | no |
+| storage\_account\_admin\_principals | List of AAD user or group object IDs to assign Storage Blob Data Contributor on the backup storage account | `list(string)` | `[]` | no |
 | storage\_container\_soft\_delete\_retention\_policy | Number of days for retaining the storage container from actual deletion | `number` | `31` | no |
 | storage\_blob\_soft\_delete\_retention\_policy | Number of days for retaining storage blobs from actual deletion | `number` | `31` | no |
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
@@ -525,6 +526,19 @@ You can use your external Application Gateway without the context path.
 **4.** Network Security Group (NSG) Configuration:
 - Configure NSG rules to allow traffic between the Application Gateway and the VMSS, ensuring the necessary access is in place.
 -
+**Viewing Backups via the Azure Web UI Console**
+
+By default, the backup storage account does not grant any users or groups direct data-plane access.
+To browse backup files through the Azure portal, assign the `Storage Blob Data Contributor` role to the relevant AAD users or groups using the `storage_account_admin_principals` variable:
+
+```hcl
+storage_account_admin_principals = [
+  "00000000-0000-0000-0000-000000000001", # object ID of a user or group
+]
+```
+
+Without this, you will see the storage container in the portal but will not be able to list or download blobs.
+
 ## Entra ID
 
 - If `m2m_app_registration_client_secret` is set, the cluster and backup scripts **attempt bearer auth first** and fall back to basic auth if bearer fails.

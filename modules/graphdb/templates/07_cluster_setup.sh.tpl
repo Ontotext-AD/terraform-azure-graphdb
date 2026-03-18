@@ -51,8 +51,8 @@ find_leader_node() {
       # Gets the address of the node if nodeState is LEADER, grpc port is returned therefor we replace port 7300 to 7200
       local leader_address
       leader_address=$(gdb_curl -s "$endpoint" \
-        | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
-        | sed 's/7300/7200/')
+        | jq -r '.[] | select(.nodeState == "LEADER") | .address' 2>/dev/null \
+        | sed 's/7300/7200/') || true
 
       if [ -n "$${leader_address}" ]; then
         # Extract node name from leader address (e.g., "node-1.dns-zone:7200" -> "node-1")
@@ -118,22 +118,6 @@ systemctl enable graphdb-cluster-proxy.service
 systemctl start graphdb-cluster-proxy.service
 
 log_with_timestamp "Started GraphDB services"
-
-check_gdb() {
-  if [ -z "$1" ]; then
-    log_with_timestamp "Error: IP address or hostname is not provided."
-    return 1
-  fi
-
-  local gdb_address="$1:7200/rest/monitor/infrastructure"
-  if gdb_curl -s --head --fail "$gdb_address" >/dev/null; then
-    log_with_timestamp "Success, GraphDB node $gdb_address is available"
-    return 0
-  else
-    log_with_timestamp "GraphDB node $gdb_address is not available yet"
-    return 1
-  fi
-}
 
 # Function to check if the GraphDB license has been applied
 check_license() {

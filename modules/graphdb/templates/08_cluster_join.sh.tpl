@@ -91,9 +91,9 @@ join_cluster() {
       # Gets the address of the node if nodeState is LEADER, grpc port is returned therefore we replace port 7300 to 7200
       LEADER_ADDRESS=$(
         gdb_curl -s "$endpoint" \
-        | jq -r '.[] | select(.nodeState == "LEADER") | .address' \
+        | jq -r '.[] | select(.nodeState == "LEADER") | .address' 2>/dev/null \
         | sed 's/7300/7200/'
-      )
+      ) || true
 
       if [ -n "$${LEADER_ADDRESS}" ]; then
         LEADER_NODE=$LEADER_ADDRESS
@@ -119,7 +119,6 @@ join_cluster() {
   nodes_in_cluster=$(echo "$cluster_metrics" | awk '{print $1}')
   disconnected_nodes=$(echo "$cluster_metrics" | awk '{print $3}')
 
-  # Fallback / sanity check: if we can't parse, skip automatic join
   if ! [[ "$disconnected_nodes" =~ ^[0-9]+$ ]]; then
     log_with_timestamp "Could not parse graphdb_nodes_disconnected from cluster metrics: '$cluster_metrics'. Skipping automatic join."
     return 0

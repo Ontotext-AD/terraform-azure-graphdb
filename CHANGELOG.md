@@ -5,6 +5,10 @@
 * Added Entra ID Support for authentication
 * Removed Telegraf agent configuration
 * Enabled Private Link for Public Application Gateways
+* Fixed GraphDB Backup function regarding [the latest changes](https://graphdb.ontotext.com/documentation/11.3/migrating-graphdb-configurations.html)
+* Changed storage account for backups to use entraID as authentication method
+* Added option to provide group/user permissions for the storage account for the backups in order to access it
+* Update trivy version
 
 ## 2.4.1
 

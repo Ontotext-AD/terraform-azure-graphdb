@@ -19,6 +19,18 @@ touch /var/log/graphdb_backup.log
 chown gdb-backup:gdb-backup /var/log/graphdb_backup.log
 chmod 640 /var/log/graphdb_backup.log
 
+# Configure log rotation for the backup log
+cat <<'EOF' >/etc/logrotate.d/graphdb_backup
+/var/log/graphdb_backup.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+    create 640 gdb-backup gdb-backup
+}
+EOF
+
 ###############################################################################
 # /usr/bin/run_backup.sh
 ###############################################################################
@@ -28,14 +40,105 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Imports helper functions
-source /var/lib/cloud/instance/scripts/part-002
-
 LOG_FILE="/var/log/graphdb_backup.log"
 exec >>"$LOG_FILE" 2>&1
 
 log_with_timestamp() {
   echo "$(date '+%Y-%m-%d %H:%M:%S'): $*"
+}
+
+gdb_get_m2m_token() {
+  local client_id="$${M2M_CLIENT_ID:-}"
+  local client_secret="$${M2M_CLIENT_SECRET:-}"
+  local tenant_id="$${M2M_TENANT_ID:-}"
+  local scope="$${M2M_SCOPE:-}"
+
+  if [[ -z "$${client_id}" || "$${client_id}" == "null" ]]; then
+    log_with_timestamp "M2M: missing M2M_CLIENT_ID; falling back to basic auth"
+    return 1
+  fi
+
+  if [[ -z "$${client_secret}" || "$${client_secret}" == "null" ]]; then
+    log_with_timestamp "M2M: missing M2M_CLIENT_SECRET; falling back to basic auth"
+    return 1
+  fi
+
+  if [[ -z "$${tenant_id}" || "$${tenant_id}" == "null" ]]; then
+    log_with_timestamp "M2M: missing M2M_TENANT_ID; falling back to basic auth"
+    return 1
+  fi
+
+  if [[ -z "$${scope}" || "$${scope}" == "null" ]]; then
+    if [[ -n "$${APP_CONFIGURATION_ENDPOINT:-}" && "$${APP_CONFIGURATION_ENDPOINT}" != "null" ]]; then
+      az login --identity -o none >/dev/null 2>&1 || true
+      scope="$(az appconfig kv show \
+        --endpoint "$${APP_CONFIGURATION_ENDPOINT}" \
+        --auth-mode login \
+        --key m2m-app-scope \
+        --query value -o tsv 2>/dev/null || true)"
+    fi
+  fi
+
+  if [[ -z "$${scope}" || "$${scope}" == "null" ]]; then
+    log_with_timestamp "M2M: missing scope (M2M_SCOPE or AppConfig key m2m-app-scope); falling back to basic auth"
+    return 1
+  fi
+
+  local token_response
+  token_response="$(curl -sS -X POST "https://login.microsoftonline.com/$${tenant_id}/oauth2/v2.0/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "client_id=$${client_id}" \
+    --data-urlencode "client_secret=$${client_secret}" \
+    --data-urlencode "scope=$${scope}" \
+    --data-urlencode "grant_type=client_credentials" 2>/dev/null || true)"
+
+  local token
+  token="$(echo "$${token_response}" | jq -r '.access_token // empty' 2>/dev/null || true)"
+
+  if [[ -z "$${token}" ]]; then
+    local err desc
+    err="$(echo "$${token_response}" | jq -r '.error // empty' 2>/dev/null || true)"
+    desc="$(echo "$${token_response}" | jq -r '.error_description // empty' 2>/dev/null || true)"
+    if [[ -n "$${err}" || -n "$${desc}" ]]; then
+      log_with_timestamp "M2M: token request failed ($${err:-unknown}): $${desc:-no description}"
+    else
+      log_with_timestamp "M2M: token request failed (no access_token in response)"
+    fi
+    return 1
+  fi
+
+  printf '%s' "$${token}"
+}
+
+gdb_backup_auth() {
+  local app_config_endpoint="$1"
+  GDB_BACKUP_AUTH_MODE="basic"
+  GDB_BACKUP_AUTH_VALUE=""
+
+  if [[ "$${M2M_ENABLED:-false}" == "true" ]]; then
+    local token
+    token="$(gdb_get_m2m_token || true)"
+    if [[ -n "$${token}" && "$${token}" != "null" ]]; then
+      GDB_BACKUP_AUTH_MODE="bearer"
+      GDB_BACKUP_AUTH_VALUE="$${token}"
+      return 0
+    fi
+    log_with_timestamp "M2M: enabled but token not available for backup; falling back to basic auth"
+  fi
+
+  local pwd
+  pwd="$(az appconfig kv show \
+    --endpoint "$${app_config_endpoint}" \
+    --auth-mode login \
+    --key graphdb-password \
+    --query value -o tsv | base64 -d)"
+
+  if [[ -z "$pwd" ]]; then
+    log_with_timestamp "Backup auth: failed to fetch graphdb-password from AppConfig"
+    return 1
+  fi
+
+  GDB_BACKUP_AUTH_VALUE="$pwd"
 }
 
 storage_account="$${1:?storage account required}"
@@ -55,6 +158,8 @@ export M2M_CLIENT_ID="$m2m_client_id"
 export M2M_CLIENT_SECRET="$m2m_client_secret"
 export M2M_TENANT_ID="$m2m_tenant_id"
 export M2M_SCOPE="$m2m_scope"
+
+az login --identity -o none >/dev/null 2>&1 || true
 
 log_with_timestamp "Starting GraphDB backup run for $${storage_account}/$${storage_container}"
 
@@ -109,6 +214,11 @@ validate_backup() {
   if [[ -n "$${output}" ]]; then
     log_with_timestamp "graphdb_backup output: $${output}"
   fi
+  if [[ "$rc" -eq 2 ]]; then
+    log_with_timestamp "Node is not the cluster leader; backup skipped on this node."
+    return 2
+  fi
+
   if [[ "$rc" -ne 0 ]]; then
     log_with_timestamp "ERROR: graphdb_backup failed with exit code $${rc}"
     return "$${rc}"
@@ -118,19 +228,24 @@ validate_backup() {
   wait_for_blob_to_appear
 }
 
+backup_rc=0
 if gdb_backup_auth "$app_configuration_endpoint"; then
   if [[ "$GDB_BACKUP_AUTH_MODE" == "bearer" ]]; then
     log_with_timestamp "Using M2M authentication flow"
     log_with_timestamp "Running graphdb_backup (bearer) for $${storage_account}/$${storage_container}"
-    validate_backup /usr/bin/graphdb_backup bearer "$GDB_BACKUP_AUTH_VALUE" "$storage_account" "$storage_container"
+    validate_backup /usr/bin/graphdb_backup bearer "$GDB_BACKUP_AUTH_VALUE" "$storage_account" "$storage_container" || backup_rc=$?
   else
     log_with_timestamp "Using basic authentication flow"
     log_with_timestamp "Running graphdb_backup (basic) for $${storage_account}/$${storage_container}"
-    validate_backup /usr/bin/graphdb_backup basic admin "$GDB_BACKUP_AUTH_VALUE" "$storage_account" "$storage_container"
+    validate_backup /usr/bin/graphdb_backup basic admin "$GDB_BACKUP_AUTH_VALUE" "$storage_account" "$storage_container" || backup_rc=$?
   fi
 else
   log_with_timestamp "ERROR: Failed to determine backup auth (M2M/basic)"
   exit 1
+fi
+
+if [[ "$backup_rc" -eq 2 ]]; then
+  exit 0
 fi
 
 log_with_timestamp "Backup run completed successfully"
@@ -195,7 +310,7 @@ perform_backup() {
       --header 'Content-Type: application/json' \
       "$auth_arg1" "$auth_arg2" \
       --header 'Accept: application/json' \
-      -d "{\"bucketUri\": \"az://$storage_container/$backup_name?blob_storage_account=$storage_account\", \"backupOptions\": {\"backupSystemData\": true}}" \
+      -d "{\"bucketUri\": \"az://$storage_container/$backup_name?blob_storage_account=$storage_account\", \"backupSystemData\": true}" \
       'http://localhost:7200/rest/recovery/cloud-backup')"
 
     end_time="$(date +%s)"
@@ -233,11 +348,11 @@ if [ "$is_cluster" = "200" ]; then
 
   if [ "$node_state" != "LEADER" ]; then
     echo "The current node is not the leader, but $node_state. Exiting"
-    exit 0
+    exit 2
   fi
-  perform_backup | tee -a /var/opt/graphdb/node/graphdb_backup.log
+  perform_backup
 elif [ "$is_cluster" = "503" ]; then
-  perform_backup | tee -a /var/opt/graphdb/node/graphdb_backup.log
+  perform_backup
 fi
 EOF
 
@@ -246,7 +361,9 @@ chmod +x /usr/bin/graphdb_backup
 ###############################################################################
 # Cron entry
 ###############################################################################
-echo "${backup_schedule} gdb-backup /usr/bin/run_backup.sh ${backup_storage_account_name} ${backup_storage_container_name}" > /etc/cron.d/graphdb_backup
+cat <<CRONEOF > /etc/cron.d/graphdb_backup
+${backup_schedule} gdb-backup /usr/bin/run_backup.sh ${backup_storage_account_name} ${backup_storage_container_name}
+CRONEOF
 
 chmod og-rwx /etc/cron.d/graphdb_backup
  # Set ownership of az-cli to backup user

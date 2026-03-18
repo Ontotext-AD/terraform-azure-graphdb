@@ -80,3 +80,8 @@ variable "storage_blob_soft_delete_retention_policy" {
   type        = number
   default     = 7
 }
+
+variable "storage_account_admin_principals" {
+  description = "List of AAD user or group object IDs to assign Storage Blob Data Contributor on the backup storage account"
+  type        = list(string)
+}

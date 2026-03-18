@@ -31,6 +31,7 @@ resource "azurerm_storage_account" "graphdb_backup" {
   allow_nested_items_to_be_public   = false
   shared_access_key_enabled         = false
   infrastructure_encryption_enabled = true
+  default_to_oauth_authentication   = true
   allowed_copy_scope                = var.storage_account_allowed_copy_scope
 
   blob_properties {
@@ -58,6 +59,13 @@ resource "azurerm_storage_container" "graphdb_backup" {
   name                  = "${var.resource_name_prefix}-backup"
   storage_account_id    = azurerm_storage_account.graphdb_backup.id
   container_access_type = "private"
+}
+
+resource "azurerm_role_assignment" "storage_admin_access" {
+  for_each             = toset(var.storage_account_admin_principals)
+  scope                = azurerm_storage_account.graphdb_backup.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = each.value
 }
 
 resource "azurerm_storage_management_policy" "graphdb_backup_retention" {
