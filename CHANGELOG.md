@@ -9,6 +9,7 @@
 * Changed storage account for backups to use entraID as authentication method
 * Added option to provide group/user permissions for the storage account for the backups in order to access it
 * Update trivy version
+* Updated GraphDB default version to [11.3.1](https://graphdb.ontotext.com/documentation/11.3/release-notes.html#graphdb-11-3-1)
 
 ## 2.4.1
 
