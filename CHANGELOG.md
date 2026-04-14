@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 3.0.1
+
+* Updated GraphDB default version to [11.3.2](https://graphdb.ontotext.com/documentation/11.3/release-notes.html#graphdb-11-3-2)
+
 ## 3.0.0
 
 * Added Entra ID Support for authentication
