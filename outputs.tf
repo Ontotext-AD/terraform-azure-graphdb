@@ -49,3 +49,13 @@ output "dns_cname_records" {
   description = "CNAME records created in the DNS zone (if any)"
   value       = var.deploy_external_dns_records && length(module.external_dns_records[0].cname_records) > 0 ? module.external_dns_records[0].cname_records : null
 }
+
+output "jump_vm_public_ip_address" {
+  description = "Public IP address of the Jump VM for SSH access (null if not deployed)"
+  value       = var.deploy_jump_vm ? module.jumpvm[0].public_ip_address : null
+}
+
+output "jump_vm_ssh_command" {
+  description = "SSH command to connect to the Jump VM (null if not deployed)"
+  value       = var.deploy_jump_vm ? "ssh -i <path_to_private_key> ${var.jump_vm_admin_username}@${module.jumpvm[0].public_ip_address}" : null
+}
