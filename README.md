@@ -191,8 +191,8 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
 | deploy\_jump\_vm | Deploy a Jump VM for direct SSH access to GraphDB nodes. Faster alternative to Azure Bastion. | `bool` | `false` | no |
 | jump\_subnet\_address\_prefixes | Subnet address prefixes for the Jump VM | `list(string)` | ```[ "10.0.4.0/24" ]``` | no |
-| jump\_vm\_size | Azure VM SKU for the Jump VM | `string` | `"Standard_B2s"` | no |
-| jump\_vm\_admin\_username | Admin username for the Jump VM | `string` | `"adminuser"` | no |
+| jump\_vm\_sku | Azure VM SKU for the Jump VM | `string` | `"Standard_B1s"` | no |
+| jump\_vm\_admin\_username | Admin username for the Jump VM | `string` | `"graphdb"` | no |
 | deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
