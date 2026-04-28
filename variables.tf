@@ -446,6 +446,32 @@ variable "bastion_subnet_address_prefixes" {
   default     = ["10.0.3.0/26"]
 }
 
+# Jump VM
+
+variable "deploy_jump_vm" {
+  description = "Deploy a Jump VM for direct SSH access to GraphDB nodes. Faster alternative to Azure Bastion."
+  type        = bool
+  default     = false
+}
+
+variable "jump_subnet_address_prefixes" {
+  description = "Subnet address prefixes for the Jump VM"
+  type        = list(string)
+  default     = ["10.0.4.0/24"]
+}
+
+variable "jump_vm_sku" {
+  description = "Azure VM SKU for the Jump VM"
+  type        = string
+  default     = "Standard_B1s"
+}
+
+variable "jump_vm_admin_username" {
+  description = "Admin username for the Jump VM"
+  type        = string
+  default     = "graphdb"
+}
+
 # Monitoring
 
 variable "deploy_monitoring" {

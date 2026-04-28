@@ -52,6 +52,7 @@ zones using a VM scale set. Key features of the module include:
 - Azure Private DNS for internal GraphDB cluster communication
 - Azure Key Vault for storing sensitive configurations
 - Optional Azure Bastion deployment
+- Optional Jump VM deployment for direct SSH access to GraphDB nodes
 - User assigned identities for RBAC authorization with the least privilege principle
 - and more
 
@@ -65,6 +66,7 @@ zones using a VM scale set. Key features of the module include:
 | TLS Module                 | Manages TLS certificate secrets in Key Vault and their related identities.                                        | - Creates TLS certificate secrets in Key Vault.<br/> - Configures identity related to the TLS certificate.                                                        |
 | Application Gateway Module | Sets up a public IP address and Application Gateway for forwarding internet traffic to GraphDB proxies/instances. | - Configures TLS certificate for the gateway.<br/> - Enables private access and private link service.<br/> - Defines global buffer settings.                      |
 | Bastion Module             | Deploys an Azure Bastion host for secure remote connections.                                                      | - Configures the bastion host within the specified virtual network.                                                                                               |
+| Jump VM Module             | Deploys a lightweight Linux VM with a public IP for direct SSH access to GraphDB nodes.                          | - Faster to provision than Azure Bastion.<br/> - Configurable VM size and admin username.<br/> - NSG restricts SSH inbound to `management_cidr_blocks` only.     |
 | Monitoring Module          | Configures Azure monitoring for the deployed resources.                                                           | - Sets up Application Insights for the GraphDB scale set.<br/> - Sets up web test availability monitoring.<br/> - Defines retention policies for monitoring data. |
 | GraphDB Module             | Deploys a VM scale set for GraphDB and its cluster proxies.                                                       | - Configures networking settings.<br/> - Sets up GraphDB configurations and licenses.<br/> - Defines backup storage, VM image, and managed disk settings.         |
 
@@ -187,6 +189,10 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | backup\_schedule | Cron expression for the backup job. | `string` | `"0 0 * * *"` | no |
 | deploy\_bastion | Deploy bastion module | `bool` | `false` | no |
 | bastion\_subnet\_address\_prefixes | Bastion subnet address prefixes | `list(string)` | ```[ "10.0.3.0/26" ]``` | no |
+| deploy\_jump\_vm | Deploy a Jump VM for direct SSH access to GraphDB nodes. Faster alternative to Azure Bastion. | `bool` | `false` | no |
+| jump\_subnet\_address\_prefixes | Subnet address prefixes for the Jump VM | `list(string)` | ```[ "10.0.4.0/24" ]``` | no |
+| jump\_vm\_sku | Azure VM SKU for the Jump VM | `string` | `"Standard_B1s"` | no |
+| jump\_vm\_admin\_username | Admin username for the Jump VM | `string` | `"graphdb"` | no |
 | deploy\_monitoring | Deploy monitoring module | `bool` | `true` | no |
 | disk\_size\_gb | Size of the managed data disk which will be created | `number` | `500` | no |
 | disk\_iops\_read\_write | Data disk IOPS | `number` | `7500` | no |
@@ -323,6 +329,30 @@ To enable the deployment of Azure Bastion, you simply need to enable the followi
 
 ```hcl
 deploy_bastion = true
+```
+
+**Jump VM**
+
+To enable a Jump VM for direct SSH access to GraphDB nodes, set:
+
+```hcl
+deploy_jump_vm = true
+ssh_key        = "your-public-key"
+```
+
+The Jump VM uses the same `ssh_key` as the GraphDB nodes and is reachable on port 22 from your `management_cidr_blocks`.
+After `terraform apply`, use the `jump_vm_ssh_command` output to connect:
+
+```bash
+ssh adminuser@<jump_vm_public_ip>
+```
+
+From the Jump VM you can then SSH into any GraphDB node by its private IP. You can customise the VM size and subnet:
+
+```hcl
+jump_vm_sku                  = "Standard_B2s"
+jump_vm_admin_username       = "adminuser"
+jump_subnet_address_prefixes = ["10.0.4.0/24"]
 ```
 
 **Public Gateway with Private Link**

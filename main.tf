@@ -210,6 +210,25 @@ module "bastion" {
   bastion_allowed_inbound_address_prefixes = var.management_cidr_blocks
 }
 
+# Creates a Jump VM for direct SSH access to GraphDB nodes
+module "jumpvm" {
+  count = var.deploy_jump_vm ? 1 : 0
+
+  source = "./modules/jumpvm"
+
+  resource_name_prefix = var.resource_name_prefix
+  location             = var.location
+  resource_group_name  = local.resource_group_name
+
+  virtual_network_name            = local.virtual_network_name
+  jump_subnet_address_prefixes    = var.jump_subnet_address_prefixes
+  graphdb_subnet_address_prefixes = var.graphdb_subnet_address_prefixes
+  allowed_ssh_cidr_blocks         = var.management_cidr_blocks
+  vm_sku                          = var.jump_vm_sku
+  admin_username                  = var.jump_vm_admin_username
+  ssh_key                         = var.ssh_key
+}
+
 # Configures Azure monitoring
 module "monitoring" {
   count = var.deploy_monitoring ? 1 : 0
@@ -263,12 +282,15 @@ module "graphdb" {
   zones                = local.adjusted_zones
 
   # Networking
-  virtual_network_id                   = local.virtual_network_id
-  graphdb_subnet_id                    = azurerm_subnet.graphdb_vmss.id
-  graphdb_inbound_address_prefixes     = var.gateway_subnet_address_prefixes
-  graphdb_ssh_inbound_address_prefixes = var.deploy_bastion ? var.bastion_subnet_address_prefixes : []
-  graphdb_outbound_address_prefix      = var.outbound_allowed_address_prefix
-  graphdb_outbound_address_prefixes    = var.outbound_allowed_address_prefixes
+  virtual_network_id               = local.virtual_network_id
+  graphdb_subnet_id                = azurerm_subnet.graphdb_vmss.id
+  graphdb_inbound_address_prefixes = var.gateway_subnet_address_prefixes
+  graphdb_ssh_inbound_address_prefixes = concat(
+    var.deploy_bastion ? var.bastion_subnet_address_prefixes : [],
+    var.deploy_jump_vm ? var.jump_subnet_address_prefixes : []
+  )
+  graphdb_outbound_address_prefix   = var.outbound_allowed_address_prefix
+  graphdb_outbound_address_prefixes = var.outbound_allowed_address_prefixes
 
   # Public IP idle timeout settings
   nat_gateway_pip_idle_timeout = var.nat_gateway_pip_idle_timeout
