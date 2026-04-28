@@ -2,6 +2,7 @@
 
 ## 3.1.0
 
+* Updated GraphDB default version to [11.3.3](https://graphdb.ontotext.com/documentation/11.3/release-notes.html#graphdb-11-3-3)
 * Added Jump VM module (`jumpvm`) for direct SSH access to GraphDB nodes as a lightweight, fast-provisioning alternative to Azure Bastion
 
 ## 3.0.1
