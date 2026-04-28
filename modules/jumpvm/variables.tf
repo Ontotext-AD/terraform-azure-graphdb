@@ -44,3 +44,8 @@ variable "ssh_key" {
   description = "Public SSH key for authenticating to the Jump VM"
   type        = string
 }
+
+variable "vm_sku" {
+  description = "Azure VM SKU for the Jump VM"
+  type        = string
+}
