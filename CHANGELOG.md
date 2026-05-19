@@ -1,8 +1,10 @@
 # GraphDB Azure Terraform Module Changelog
 
-## 3.1.1
+## 3.2.0
 
+* Updated GraphDB default version to [11.4.0](https://graphdb.ontotext.com/documentation/11.4/release-notes.html#graphdb-11-4-0)
 * Fixed the proxy port in the GDB config overrides.
+* Added documentation example for `graphdb.auth.security.enabled` property in `graphdb.properties`, including cluster validation behaviour and error messages for mismatching security settings across nodes
 
 ## 3.1.0
 
