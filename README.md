@@ -328,6 +328,8 @@ graphdb_java_options = "-XX:+PrintCommandLineFlags"
 
 GraphDB 11.4 introduces `graphdb.auth.security.enabled` to control security in the properties file. Once set, the value cannot be altered at runtime. The older `security.enabled` property still works, but `graphdb.auth.security.enabled` takes precedence when both are present.
 
+See the official [GraphDB documentation on additional authentication for OpenID clients](https://graphdb.ontotext.com/documentation/11.4/access-control.html#additional-authentication-for-openid-clients) for more details.
+
 To enable security, create a `graphdb.properties` file:
 
 ```properties
@@ -626,6 +628,58 @@ openid_client_id                    = "<your-openid-client-id>"
 openid_issuer                       = "https://login.microsoftonline.com/<tenant-id>/v2.0"
 openid_tenant_id                    = "<your-tenant-id>"
 ```
+
+#### Additional OAuth Token Authentication Methods
+
+When `graphdb.auth.openid.proxy=true`, GraphDB calls the identity provider's token endpoint directly and must authenticate itself as a registered client. This is separate from the end user's authentication. Some identity providers (Entra ID, Keycloak, Okta) require or recommend this.
+
+Configure via a custom `graphdb.properties` file referenced with `graphdb_properties_path`:
+
+```hcl
+graphdb_properties_path = "<path_to_graphdb_properties_file>"
+```
+
+Supported values for `graphdb.auth.openid.client.auth.type`:
+
+| Type | Description |
+|---|---|
+| `none` | No client authentication. Default, preserves existing behavior. |
+| `client_secret_basic` | Client ID and secret sent as HTTP Basic auth header. Most widely supported. |
+| `client_secret_post` | Client secret added to the request body instead of the header. |
+| `client_secret_jwt` | Short-lived JWT signed with the client secret, sent as `client_assertion`. More secure than sending the secret directly. Default signing algorithm: `HS256`. |
+| `private_key_jwt` | JWT signed with a private key from a PKCS12 keystore. Most secure — the secret never leaves the server. Default signing algorithm: `RS256`. |
+
+**`client_secret_basic` or `client_secret_post`:**
+
+```properties
+graphdb.auth.openid.client.auth.type=client_secret_basic
+graphdb.auth.openid.client_secret=<client-secret>
+```
+
+**`client_secret_jwt`:**
+
+```properties
+graphdb.auth.openid.client.auth.type=client_secret_jwt
+graphdb.auth.openid.client_secret=<client-secret>
+# Optional: override default signing algorithm (default: HS256)
+graphdb.auth.openid.client.auth.signature_alg=HS256
+```
+
+**`private_key_jwt`:**
+
+```properties
+graphdb.auth.openid.client.auth.type=private_key_jwt
+graphdb.auth.openid.client.auth.keystore=<path_to_pkcs12_keystore>
+graphdb.auth.openid.client.auth.keystore_password=<keystore-password>
+# Optional: defaults to keystore_password if not set
+graphdb.auth.openid.client.auth.private_key_password=<private-key-password>
+# Optional: override default signing algorithm (default: RS256)
+graphdb.auth.openid.client.auth.signature_alg=RS256
+```
+
+> **Notes:**
+> - The keystore for `private_key_jwt` must be PKCS12 format with the private key as the first entry.
+> - Switching from `none` to any other method requires the identity provider to be configured to expect that method for this client.
 
 ## Local Development
 
