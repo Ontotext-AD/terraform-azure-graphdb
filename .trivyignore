@@ -1,5 +1,10 @@
 # Rule: Key vault should have purge protection enabled
 # Note: There is a variable for controlling the purge protection
 AVD-AZU-0016
+
 # Storage account does not have logging enabled for any service.
 AVD-AZU-0057
+
+# Storage account with blob containers should use customer-managed keys for encryption.
+# Reason: Disabled until implemented
+AZU-0060
