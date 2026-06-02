@@ -6,6 +6,7 @@
 * Updated GraphDB default version to [11.4.0](https://graphdb.ontotext.com/documentation/11.4/release-notes.html#graphdb-11-4-0)
 * Fixed the proxy port in the GDB config overrides.
 * Added documentation example for `graphdb.auth.security.enabled` property in `graphdb.properties`, including cluster validation behaviour and error messages for mismatching security settings across nodes
+* Added audit log support for GraphDB with configurable variables: `graphdb_audit_log_enabled`, `graphdb_audit_log_role`, `graphdb_audit_log_repository`, `graphdb_audit_log_headers`, `graphdb_audit_log_max_request_length`
 
 ## 3.1.0
 

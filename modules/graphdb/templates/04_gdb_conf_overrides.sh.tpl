@@ -95,6 +95,23 @@ graphdb.proxy.hosts=$${NODE_DNS}:7300
 EOF
 fi
 
+%{ if graphdb_audit_log_enabled ~}
+log_with_timestamp "Configuring GraphDB audit log"
+cat <<EOF >>/etc/graphdb/graphdb.properties
+graphdb.audit.log.enabled=true
+graphdb.audit.role=${graphdb_audit_log_role}
+%{ if graphdb_audit_log_repository != null && graphdb_audit_log_repository != "" ~}
+graphdb.audit.repository=${graphdb_audit_log_repository}
+%{ endif ~}
+%{ if graphdb_audit_log_headers != null && graphdb_audit_log_headers != "" ~}
+graphdb.audit.headers=${graphdb_audit_log_headers}
+%{ endif ~}
+%{ if graphdb_audit_log_max_request_length != null ~}
+graphdb.audit.request.max.length=${graphdb_audit_log_max_request_length}
+%{ endif ~}
+EOF
+%{ endif ~}
+
 if [[ -n "${m2m_client_secret}" && "${m2m_client_secret}" != "null" ]]; then
   cat <<EOF >>/etc/graphdb/graphdb.properties
 graphdb.auth.methods=${openid_auth_methods}
