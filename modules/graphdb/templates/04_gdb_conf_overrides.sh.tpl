@@ -145,10 +145,37 @@ if [[ $secrets == *"${graphdb_properties_secret_name}"* ]]; then
   az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_properties_secret_name} | jq -r .value | base64 -d >>/etc/graphdb/graphdb.properties
 fi
 
+DATA_ENCRYPTION_TYPE=${graphdb_data_encryption_type}
+ENC_PROPS=""
+if [[ -n "$DATA_ENCRYPTION_TYPE" ]]; then
+  if [[ "$DATA_ENCRYPTION_TYPE" = "file" ]]; then
+    log_with_timestamp "Configuring file-based data encryption."
+    az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_data_encryption_master_key_secret_name} | jq -r .value | base64 -d >/etc/graphdb/master.key
+    chown graphdb:graphdb /etc/graphdb/master.key
+    chmod a-wx,o-rwx /etc/graphdb/master.key
+    ENC_PROPS="-Dgraphdb.data.encryption.type=file -Dgraphdb.data.encryption.file=/etc/graphdb/master.key"
+  elif [[ "$DATA_ENCRYPTION_TYPE" = "pkcs12" ]]; then
+    log_with_timestamp "Configuring pkcs12-based data encryption."
+    az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_data_encryption_keystore_secret_name} | jq -r .value | base64 -d >/etc/graphdb/master.p12
+    chown graphdb:graphdb /etc/graphdb/master.p12
+    chmod a-wx,o-rwx /etc/graphdb/master.p12
+    ENC_PROPS="-Dgraphdb.data.encryption.type=pkcs12 -Dgraphdb.data.encryption.file=/etc/graphdb/master.p12 -Dgraphdb.data.encryption.keystore.alias=${graphdb_data_encryption_keystore_alias} -Dgraphdb.data.encryption.keystore.password=${graphdb_data_encryption_keystore_password}"
+  else
+    log_with_timestamp "Invalid or unsupported data encryption type: $DATA_ENCRYPTION_TYPE. Skipping data encryption"
+  fi
+fi
+
+extra_graphdb_java_options=""
 if [[ $secrets == *"${graphdb_java_options_secret_name}"* ]]; then
   log_with_timestamp "Using GDB_JAVA_OPTS overrides"
   extra_graphdb_java_options=$(az appconfig kv show --endpoint "$APP_CONFIG_ENDPOINT" --auth-mode login --key ${graphdb_java_options_secret_name} | jq -r .value | base64 -d)
-  if grep GDB_JAVA_OPTS &>/dev/null /etc/graphdb/graphdb.env; then
+fi
+if [[ -n $ENC_PROPS ]]; then
+  extra_graphdb_java_options="$extra_graphdb_java_options $ENC_PROPS"
+fi
+
+if [[ -n $extra_graphdb_java_options  ]]; then
+  if grep GDB_JAVA_OPTS /etc/graphdb/graphdb.env &>/dev/null; then
     sed -ie "s|GDB_JAVA_OPTS=\"\(.*\)\"|GDB_JAVA_OPTS=\"\1 $extra_graphdb_java_options\"|g" /etc/graphdb/graphdb.env
   else
     echo "GDB_JAVA_OPTS=$extra_graphdb_java_options" > /etc/graphdb/graphdb.env

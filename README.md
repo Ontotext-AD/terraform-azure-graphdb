@@ -238,6 +238,11 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | m2m\_app\_registration\_client\_id | The M2M App registration client ID | `string` | `null` | no |
 | m2m\_app\_registration\_client\_secret | The M2M App registration client secret | `string` | `null` | no |
 | m2m\_scope | The scope for the M2M application | `string` | `null` | no |
+| graphdb\_data\_encryption\_type | The type of data encryption (Encryption at rest) to configure for the GraphDB instances. Supported values: '', file, pkcs12 | `string` | `""` | no |
+| graphdb\_data\_encryption\_master\_key\_filepath | The master key, when using file-based data encryption. | `string` | `""` | no |
+| graphdb\_data\_encryption\_keystore\_alias | The alias of the data encryption master key, when stored in a keystore (i.e. when using type pkcs12) | `string` | n/a | yes |
+| graphdb\_data\_encryption\_keystore\_filepath | Local path to a keystore file containing the master key for encryption at rest setup | `string` | `""` | no |
+| graphdb\_data\_encryption\_keystore\_password | The keystore password for the data encryption keystore (when using type pkcs12) | `string` | `""` | no |
 <!-- END_TF_DOCS -->
 
 ## Usage
@@ -502,6 +507,42 @@ graphdb_audit_log_max_request_length = 1024
 ```
 
 See [GraphDB Security Auditing](https://graphdb.ontotext.com/documentation/11.4/security-auditing.html) for more details.
+
+
+**Encryption at Rest**
+
+Starting from 11.4.0, GraphDB supports encryption at rest (See [here](https://graphdb.ontotext.com/documentation/11.4/encryption.html#encryption-at-rest)). There are two ways to configure encryption at rest: master key and pkcs12 keystore
+
+***Using a master key***
+
+To configure encryption at rest using a master key, the following variables can be set:
+
+```hcl
+graphdb_data_encryption_type              = "pkcs12"
+graphdb_data_encryption_master_key_filepath = "/path/to/local/master.txt"
+```
+where the `master.txt` contains the 256 bit master key. An example of creating a master key is shown below:
+
+```hcl
+$ head -c 32 /dev/urandom
+```
+
+***Using PKCS12 keystore***
+
+To configure encryption at rest using a PKCS12 keystore, first create a keystore with a secret key. Example is shown below:
+
+```hcl
+$ keytool -importpass -alias <key_alias> -keyalg AES -keysize 256 -keystore /path/to/keystore -storetype PKCS12
+```
+Then configure and deploy as such:
+
+```hcl
+graphdb_data_encryption_type              = "pkcs12"
+graphdb_data_encryption_keystore_password = "<pass>"
+graphdb_data_encryption_keystore_alias    = "<key_alias>"
+graphdb_data_encryption_keystore_filepath = "/path/to/keystore"
+```
+where `pass` is the keystore password and `key_alias` is the key alias inside the keystore.
 
 ## Next Steps
 

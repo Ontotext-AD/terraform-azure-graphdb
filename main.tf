@@ -307,16 +307,23 @@ module "graphdb" {
   # GraphDB Configurations
   graphdb_external_address_fqdn = var.graphdb_external_address_fqdn != null ? var.graphdb_external_address_fqdn : (var.gateway_enable_private_access ? module.application_gateway[0].private_ip_address : (var.disable_agw ? null : module.application_gateway[0].public_ip_address_fqdn))
 
-  graphdb_password                     = var.graphdb_password
-  graphdb_license_path                 = var.graphdb_license_path
-  graphdb_cluster_token                = var.graphdb_cluster_token
-  graphdb_properties_path              = var.graphdb_properties_path
-  graphdb_java_options                 = var.graphdb_java_options
-  graphdb_audit_log_enabled            = var.graphdb_audit_log_enabled
-  graphdb_audit_log_role               = var.graphdb_audit_log_role
-  graphdb_audit_log_repository         = var.graphdb_audit_log_repository
-  graphdb_audit_log_headers            = var.graphdb_audit_log_headers
-  graphdb_audit_log_max_request_length = var.graphdb_audit_log_max_request_length
+  graphdb_password                               = var.graphdb_password
+  graphdb_license_path                           = var.graphdb_license_path
+  graphdb_cluster_token                          = var.graphdb_cluster_token
+  graphdb_properties_path                        = var.graphdb_properties_path
+  graphdb_java_options                           = var.graphdb_java_options
+  graphdb_audit_log_enabled                      = var.graphdb_audit_log_enabled
+  graphdb_audit_log_role                         = var.graphdb_audit_log_role
+  graphdb_audit_log_repository                   = var.graphdb_audit_log_repository
+  graphdb_audit_log_headers                      = var.graphdb_audit_log_headers
+  graphdb_audit_log_max_request_length           = var.graphdb_audit_log_max_request_length
+  graphdb_data_encryption_type                   = var.graphdb_data_encryption_type
+  graphdb_data_encryption_master_key_filepath    = var.graphdb_data_encryption_master_key_filepath
+  graphdb_data_encryption_master_key_secret_name = var.graphdb_data_encryption_master_key_secret_name
+  graphdb_data_encryption_keystore_alias         = var.graphdb_data_encryption_keystore_alias
+  graphdb_data_encryption_keystore_secret_name   = var.graphdb_data_encryption_keystore_secret_name
+  graphdb_data_encryption_keystore_filepath      = var.graphdb_data_encryption_keystore_filepath
+  graphdb_data_encryption_keystore_password      = var.graphdb_data_encryption_keystore_password
 
   # Backups Storage Account
   backup_storage_account_name   = module.backup.storage_account_name
