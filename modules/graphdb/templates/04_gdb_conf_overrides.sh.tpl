@@ -65,8 +65,10 @@ else
 
 if [ -n "${context_path}" ]; then
   VHOSTS_VALUE="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH},http://$${NODE_DNS}:7200"
+  PROXY_VHOSTS_VALUE="https://${graphdb_external_address_fqdn}/$${CLEAN_CONTEXT_PATH},http://$${NODE_DNS}:7201"
 else
   VHOSTS_VALUE="https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7200"
+  PROXY_VHOSTS_VALUE="https://${graphdb_external_address_fqdn},http://$${NODE_DNS}:7201"
 fi
 
 cat <<EOF >/etc/graphdb/graphdb.properties
@@ -86,7 +88,7 @@ fi
 cat <<EOF >/etc/graphdb-cluster-proxy/graphdb.properties
 graphdb.auth.token.secret=$graphdb_cluster_token
 graphdb.connector.port=7201
-graphdb.vhosts=$${VHOSTS_VALUE}
+graphdb.vhosts=$${PROXY_VHOSTS_VALUE}
 graphdb.external-url=$${EXTERNAL_URL}
 graphdb.rpc.address=$${NODE_DNS}:7301
 graphdb.proxy.hosts=$${NODE_DNS}:7300

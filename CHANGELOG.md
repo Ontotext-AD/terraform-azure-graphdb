@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 3.1.1
+
+* Fixed the proxy port in the GDB config overrides.
+
 ## 3.1.0
 
 * Updated GraphDB default version to [11.3.3](https://graphdb.ontotext.com/documentation/11.3/release-notes.html#graphdb-11-3-3)
