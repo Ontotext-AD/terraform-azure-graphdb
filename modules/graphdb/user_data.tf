@@ -112,6 +112,11 @@ data "cloudinit_config" "entrypoint" {
       openid_auth_database : local.openid_auth_database
       tenant_id : local.openid_tenant_id
       scope : local.m2m_scope
+      graphdb_audit_log_enabled : var.graphdb_audit_log_enabled
+      graphdb_audit_log_role : var.graphdb_audit_log_role
+      graphdb_audit_log_repository : var.graphdb_audit_log_repository
+      graphdb_audit_log_headers : var.graphdb_audit_log_headers
+      graphdb_audit_log_max_request_length : var.graphdb_audit_log_max_request_length
     })
   }
 

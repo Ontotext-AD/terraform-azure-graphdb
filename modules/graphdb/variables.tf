@@ -399,3 +399,28 @@ variable "m2m_scope" {
   description = "The scope for the M2M authentication"
   type        = string
 }
+
+variable "graphdb_audit_log_enabled" {
+  description = "Enables audit logging in GraphDB. When true, sets graphdb.audit.role in graphdb.properties."
+  type        = bool
+}
+
+variable "graphdb_audit_log_role" {
+  description = "Sets the audit role level. Accepted values (hierarchy, most to least verbose): ANY, USER, REPO_MANAGER, ADMIN. See https://graphdb.ontotext.com/documentation/11.3/security-auditing.html"
+  type        = string
+}
+
+variable "graphdb_audit_log_repository" {
+  description = "Configures repository access audit logging. Accepted values: READ (logs read and write), WRITE (logs write only). Leave null to omit."
+  type        = string
+}
+
+variable "graphdb_audit_log_headers" {
+  description = "Comma-separated list of HTTP request headers to include in the audit log, e.g. 'Referer,User-Agent'. Leave null to log no headers (default)."
+  type        = string
+}
+
+variable "graphdb_audit_log_max_request_length" {
+  description = "Maximum number of bytes from the request body to include in the audit log. Defaults to 1024 when not set."
+  type        = number
+}

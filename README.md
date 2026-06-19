@@ -174,6 +174,11 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | graphdb\_password | Secret token used to access GraphDB cluster. | `string` | `null` | no |
 | graphdb\_properties\_path | Path to a local file containing GraphDB properties (graphdb.properties) that would be appended to the default in the VM. | `string` | `null` | no |
 | graphdb\_java\_options | GraphDB options to pass to GraphDB with GRAPHDB\_JAVA\_OPTS environment variable. | `string` | `null` | no |
+| graphdb\_audit\_log\_enabled | Enables audit logging in GraphDB. When true, sets graphdb.audit.role in graphdb.properties. | `bool` | `false` | no |
+| graphdb\_audit\_log\_role | Sets the audit role level. Accepted values (hierarchy, most to least verbose): ANY, USER, REPO\_MANAGER, ADMIN. See https://graphdb.ontotext.com/documentation/11.3/security-auditing.html | `string` | `"REPO_MANAGER"` | no |
+| graphdb\_audit\_log\_repository | Configures repository access audit logging. Accepted values: READ (logs read and write), WRITE (logs write only). Leave null to omit. | `string` | `"WRITE"` | no |
+| graphdb\_audit\_log\_headers | Comma-separated list of HTTP request headers to include in the audit log, e.g. 'Referer,User-Agent'. Leave null to log no headers (default). | `string` | `""` | no |
+| graphdb\_audit\_log\_max\_request\_length | Maximum number of bytes from the request body to include in the audit log. Defaults to 1024 when not set. | `number` | `null` | no |
 | node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
@@ -484,6 +489,19 @@ You can provide the VMSS with a custom VM image by specifying `graphdb_image_id`
 graphdb_image_id = "/subscriptions/<subscription_id>/resourceGroups/<resource_group_name>/providers/Microsoft.Compute/galleries/<gallery_name>/images/<image_definition_name>/versions/<image_version>"
 ```
 
+**Audit Logging**
+
+To enable audit logging in GraphDB, set `graphdb_audit_log_enabled` to `true`. You can further customize the audit log behavior with the following variables:
+
+```hcl
+graphdb_audit_log_enabled            = true
+graphdb_audit_log_role               = "REPO_MANAGER" # ANY, USER, REPO_MANAGER, ADMIN
+graphdb_audit_log_repository         = "WRITE"        # READ or WRITE
+graphdb_audit_log_headers            = "Referer,User-Agent"
+graphdb_audit_log_max_request_length = 1024
+```
+
+See [GraphDB Security Auditing](https://graphdb.ontotext.com/documentation/11.4/security-auditing.html) for more details.
 
 ## Next Steps
 

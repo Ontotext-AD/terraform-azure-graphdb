@@ -332,6 +332,51 @@ variable "graphdb_java_options" {
   default     = null
 }
 
+variable "graphdb_audit_log_enabled" {
+  description = "Enables audit logging in GraphDB. When true, sets graphdb.audit.role in graphdb.properties."
+  type        = bool
+  default     = false
+}
+
+variable "graphdb_audit_log_role" {
+  description = "Sets the audit role level. Accepted values (hierarchy, most to least verbose): ANY, USER, REPO_MANAGER, ADMIN. See https://graphdb.ontotext.com/documentation/11.3/security-auditing.html"
+  type        = string
+  default     = "REPO_MANAGER"
+
+  validation {
+    condition     = contains(["ANY", "USER", "REPO_MANAGER", "ADMIN"], var.graphdb_audit_log_role)
+    error_message = "graphdb_audit_log_role must be one of: ANY, USER, REPO_MANAGER, ADMIN."
+  }
+}
+
+variable "graphdb_audit_log_repository" {
+  description = "Configures repository access audit logging. Accepted values: READ (logs read and write), WRITE (logs write only). Leave null to omit."
+  type        = string
+  default     = "WRITE"
+
+  validation {
+    condition     = var.graphdb_audit_log_repository == null || var.graphdb_audit_log_repository == "" || contains(["READ", "WRITE"], var.graphdb_audit_log_repository)
+    error_message = "graphdb_audit_log_repository must be READ, WRITE, or null."
+  }
+}
+
+variable "graphdb_audit_log_headers" {
+  description = "Comma-separated list of HTTP request headers to include in the audit log, e.g. 'Referer,User-Agent'. Leave null to log no headers (default)."
+  type        = string
+  default     = ""
+}
+
+variable "graphdb_audit_log_max_request_length" {
+  description = "Maximum number of bytes from the request body to include in the audit log. Defaults to 1024 when not set."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.graphdb_audit_log_max_request_length == null || var.graphdb_audit_log_max_request_length > 0
+    error_message = "graphdb_audit_log_max_request_length must be a positive number."
+  }
+}
+
 # GraphDB VM
 
 variable "node_count" {
