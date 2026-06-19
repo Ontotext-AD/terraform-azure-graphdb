@@ -2,6 +2,7 @@
 
 ## 3.2.0
 
+* Added documentation for `graphdb.auth.openid.client.auth.type` — controls how GraphDB authenticates to the OpenID token endpoint, supporting `none`, `client_secret_basic`, `client_secret_post`, `client_secret_jwt`, and `private_key_jwt`
 * Updated GraphDB default version to [11.4.0](https://graphdb.ontotext.com/documentation/11.4/release-notes.html#graphdb-11-4-0)
 * Fixed the proxy port in the GDB config overrides.
 * Added documentation example for `graphdb.auth.security.enabled` property in `graphdb.properties`, including cluster validation behaviour and error messages for mismatching security settings across nodes
