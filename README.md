@@ -240,7 +240,9 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | m2m\_scope | The scope for the M2M application | `string` | `null` | no |
 | graphdb\_data\_encryption\_type | The type of data encryption (Encryption at rest) to configure for the GraphDB instances. Supported values: '', file, pkcs12 | `string` | `""` | no |
 | graphdb\_data\_encryption\_master\_key\_filepath | The master key, when using file-based data encryption. | `string` | `""` | no |
-| graphdb\_data\_encryption\_keystore\_alias | The alias of the data encryption master key, when stored in a keystore (i.e. when using type pkcs12) | `string` | n/a | yes |
+| graphdb\_data\_encryption\_master\_key\_secret\_name | Name for the graphdb\_data\_encryption\_master\_key\_filepath property in App Configuration | `string` | `"graphdb_data_encryption_master_key_filepath"` | no |
+| graphdb\_data\_encryption\_keystore\_alias | The alias of the data encryption master key, when stored in a keystore (i.e. when using type pkcs12) | `string` | `"masterkey"` | no |
+| graphdb\_data\_encryption\_keystore\_secret\_name | Name for the graphdb\_data\_encryption\_keystore\_filepath property in App Configuration | `string` | `"graphdb_data_encryption_keystore_filepath"` | no |
 | graphdb\_data\_encryption\_keystore\_filepath | Local path to a keystore file containing the master key for encryption at rest setup | `string` | `""` | no |
 | graphdb\_data\_encryption\_keystore\_password | The keystore password for the data encryption keystore (when using type pkcs12) | `string` | `""` | no |
 <!-- END_TF_DOCS -->
