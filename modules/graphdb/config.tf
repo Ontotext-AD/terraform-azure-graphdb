@@ -63,3 +63,20 @@ resource "azurerm_app_configuration_key" "graphdb_node_count" {
   value                  = var.node_count
   content_type           = "text/plain"
 }
+
+resource "azurerm_app_configuration_key" "graphdb_data_encryption_keystore_filepath" {
+  count                  = trimspace(var.graphdb_data_encryption_keystore_filepath) != "" && fileexists(var.graphdb_data_encryption_keystore_filepath) ? 1 : 0
+  configuration_store_id = var.app_configuration_id
+  key                    = var.graphdb_data_encryption_keystore_secret_name
+  value                  = filebase64(var.graphdb_data_encryption_keystore_filepath)
+  content_type           = "text/plain"
+}
+
+resource "azurerm_app_configuration_key" "graphdb_data_encryption_master_key_filepath" {
+  count                  = trimspace(var.graphdb_data_encryption_master_key_filepath) != "" && fileexitsts(var.graphdb_data_encryption_master_key_filepath) ? 1 : 0
+  configuration_store_id = var.app_configuration_id
+  key                    = var.graphdb_data_encryption_master_key_secret_name
+  value                  = filebase64(var.graphdb_data_encryption_master_key_filepath)
+  content_type           = "text/plain"
+}
+

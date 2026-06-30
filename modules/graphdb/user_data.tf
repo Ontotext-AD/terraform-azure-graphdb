@@ -117,6 +117,12 @@ data "cloudinit_config" "entrypoint" {
       graphdb_audit_log_repository : var.graphdb_audit_log_repository
       graphdb_audit_log_headers : var.graphdb_audit_log_headers
       graphdb_audit_log_max_request_length : var.graphdb_audit_log_max_request_length
+      graphdb_data_encryption_type : var.graphdb_data_encryption_type
+      graphdb_data_encryption_keystore_secret_name : var.graphdb_data_encryption_keystore_secret_name
+      graphdb_data_encryption_keystore_alias : var.graphdb_data_encryption_keystore_alias
+      graphdb_data_encryption_keystore_password : var.graphdb_data_encryption_keystore_password
+      graphdb_data_encryption_master_key_filepath : var.graphdb_data_encryption_master_key_filepath
+      graphdb_data_encryption_master_key_secret_name : var.graphdb_data_encryption_master_key_secret_name
     })
   }
 
