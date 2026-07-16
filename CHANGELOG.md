@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 3.2.1
+
+* Updated GraphDB default version to [11.4.1](https://graphdb.ontotext.com/documentation/11.4/release-notes.html#graphdb-11-4-1)
+
 ## 3.2.0
 
 * Added documentation for `graphdb.auth.openid.client.auth.type` — controls how GraphDB authenticates to the OpenID token endpoint, supporting `none`, `client_secret_basic`, `client_secret_post`, `client_secret_jwt`, and `private_key_jwt`
