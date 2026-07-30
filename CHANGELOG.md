@@ -1,5 +1,9 @@
 # GraphDB Azure Terraform Module Changelog
 
+## 3.2.3
+
+* Fixed GDB config overrides template hardcoding `graphdb.audit.log.enabled=true` regardless of `graphdb_audit_log_enabled` value
+
 ## 3.2.2
 
 * Updated GraphDB default version to [11.4.2](https://graphdb.ontotext.com/documentation/11.4/release-notes.html#graphdb-11-4-2)
