@@ -307,6 +307,21 @@ Once deployed, you should be able to access the environment at the generated FQD
 
 ## Examples
 
+**Ready-to-use `terraform.tfvars` examples**
+
+The `examples/` directory contains complete variable files for a 3-node GraphDB cluster. Copy one to
+`terraform.tfvars` in your project root and replace the `<PLACEHOLDER>` values.
+
+| File | Deployment | Description |
+|------|------------|-------------|
+| [examples/cluster-public/terraform.tfvars.minimal.example](examples/cluster-public/terraform.tfvars.minimal.example) | Public | Smallest working set — required inputs only, plus values that differ from the module defaults. Start here. |
+| [examples/cluster-public/terraform.tfvars.example](examples/cluster-public/terraform.tfvars.example) | Public | Fully annotated reference with every commonly tuned variable set explicitly. |
+| [examples/cluster-private/terraform.tfvars.minimal.example](examples/cluster-private/terraform.tfvars.minimal.example) | Private | Smallest working set for a private Application Gateway with Private Link. |
+| [examples/cluster-private/terraform.tfvars.example](examples/cluster-private/terraform.tfvars.example) | Private | Fully annotated private-deployment reference, including Private DNS zone wiring. |
+
+The private examples require the Private Link feature to be registered on the subscription — see [Prerequisites](#prerequisites).
+For a single-node deployment instead of a cluster, see [Single Node Deployment](#single-node-deployment).
+
 **GraphDB Secrets**
 
 Instead of generating a random administrator password, you can provide one with:

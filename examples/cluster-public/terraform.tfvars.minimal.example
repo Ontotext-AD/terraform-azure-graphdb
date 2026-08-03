@@ -1,0 +1,79 @@
+###############################################################################
+# GraphDB Cluster — PUBLIC deployment, MINIMAL set
+#
+# Only required inputs + values that differ from module defaults.
+# Defaults already give you: 3-node cluster, 3 availability zones, monitoring,
+# public Application Gateway, purge protection, 500 GB PremiumV2 disks,
+# ZRS backup storage, daily backup at 00:00 UTC, GraphDB 11.4.2,
+# "Internet" inbound/outbound.
+#
+# Copy to terraform.tfvars, replace every <PLACEHOLDER>, then:
+#   terraform init && terraform plan && terraform apply
+#
+# References:
+#   Full variable reference:   ../../README.md#inputs
+#   Usage walkthrough:         ../../README.md#usage
+#   Worked examples:           ../../README.md#examples
+#   Annotated version of this file, with every tunable set explicitly:
+#     ./terraform.tfvars.example
+###############################################################################
+
+# --- Required ----------------------------------------------------------------
+
+azure_subscription_id = "<SUBSCRIPTION_ID>"
+resource_name_prefix  = "graphdb-prod"
+location              = "East US"
+instance_type         = "Standard_E8as_v5"
+graphdb_license_path  = "./graphdb.license"
+
+# CIDRs allowed to reach Bastion / Key Vault management endpoints.
+management_cidr_blocks = ["<YOUR_OFFICE_CIDR>"]
+
+# TLS is required — see ../../README.md#examples → "Providing a TLS certificate".
+# Local PFX/P12 (a Key Vault is created for it)...
+tls_certificate_path = "./certificate.p12"
+# tls_certificate_password = "<PFX_PASSWORD>"
+
+# ...or an existing Key Vault certificate instead of tls_certificate_path:
+# tls_certificate_id          = "https://<vault>.vault.azure.net/secrets/<name>/<version>"
+# tls_certificate_identity_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<identity>"
+
+# --- Resource locks ----------------------------------------------------------
+
+# Resource group delete lock (module default: true). Disabled here so test
+# deployments can be torn down with `terraform destroy`.
+# Set to true for production. See ../../README.md#examples → "Purge Protection"
+lock_resources = false
+
+# --- TCP idle timeouts (maximum allowed, both default to 4 minutes) ----------
+
+app_gateway_pip_idle_timeout = 30
+nat_gateway_pip_idle_timeout = 30
+
+# --- Strongly recommended ----------------------------------------------------
+
+# SSH access to the nodes (via Bastion/Jump VM).
+ssh_key = "<SSH_PUBLIC_KEY>"
+
+# Monitoring is deployed by default; without these, alerts go nowhere.
+# See ../../README.md#examples → "Monitoring"
+monitor_reader_principal_id        = "<USER_OR_GROUP_OBJECT_ID>"
+notification_recipients_email_list = ["<ALERTS_EMAIL>"]
+
+tags = {
+  Environment = "prod"
+  CostCenter  = "<COST_CENTER>"
+}
+
+# --- Common optional overrides (all defaulted — uncomment as needed) ---------
+# Each of these has a worked example in ../../README.md#examples. Existing
+# RG/VNet and custom DNS records: ../../README.md#next-steps
+# Entra ID / OpenID authentication: ../../README.md#entra-id
+
+# node_count = 5                        # default 3; see README#scaling-out-a-cluster
+# graphdb_password = "<ADMIN_PASSWORD>" # default: randomly generated
+# deploy_bastion = false                # default false
+# graphdb_external_address_fqdn = "graphdb.example.com" # default: AppGW public FQDN
+# disk_size_gb = 1250                   # default 500
+# backup_schedule = "0 2 * * *"         # default "0 0 * * *"
+# inbound_allowed_address_prefixes = ["203.0.113.0/24"] # default: Internet
