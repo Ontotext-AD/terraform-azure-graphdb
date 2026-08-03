@@ -1,0 +1,228 @@
+###############################################################################
+# GraphDB Cluster — PRIVATE deployment example
+#
+# 3-node GraphDB cluster behind a PRIVATE Application Gateway (private frontend IP only)
+# exposed through Application Gateway Private Link, resolved via a Private DNS zone.
+# No public ingress to GraphDB.
+#
+# Prerequisite: register the Private Link feature once per subscription:
+#   az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network
+#
+# Copy to terraform.tfvars, replace every <PLACEHOLDER>, then:
+#   terraform init && terraform plan && terraform apply
+#
+# References:
+#   Feature registration etc.:    ../../README.md#prerequisites
+#   Full variable reference:      ../../README.md#inputs
+#   Private Link setup:           ../../README.md#examples → "Private Gateway with Private Link"
+#   Minimal version of this file: ./terraform.tfvars.minimal.example
+###############################################################################
+
+# --- General -----------------------------------------------------------------
+
+azure_subscription_id = "<SUBSCRIPTION_ID>"
+resource_name_prefix  = "graphdb-priv"
+location              = "East US"
+zones                 = [1, 2, 3]
+
+tags = {
+  Environment = "prod"
+  CostCenter  = "<COST_CENTER>"
+  Owner       = "<TEAM_EMAIL>"
+}
+
+# Resource group delete lock. Disabled here so test deployments can be torn
+# down with `terraform destroy`. Set to true for production.
+lock_resources = false
+
+# --- Networking --------------------------------------------------------------
+
+# Typically a private deployment lands in an existing hub/spoke VNet.
+# See ../../README.md#next-steps → "Deploying in Existing Resource Group and Virtual Network"
+# resource_group_name  = "existing-rg"
+# virtual_network_name = "existing-vnet"
+
+virtual_network_address_space                = ["10.0.0.0/16"]
+gateway_subnet_address_prefixes              = ["10.0.1.0/24"]
+graphdb_subnet_address_prefixes              = ["10.0.2.0/24"]
+bastion_subnet_address_prefixes              = ["10.0.3.0/26"]
+gateway_private_link_subnet_address_prefixes = ["10.0.5.0/24"]
+
+# Custom DNS resolvers for the VMSS (e.g. on-prem / hub DNS forwarders).
+# vmss_dns_servers = ["10.0.0.10", "10.0.0.11"]
+
+management_cidr_blocks = ["<YOUR_OFFICE_OR_VPN_CIDR>"]
+
+# --- Application Gateway (private + Private Link) ----------------------------
+# See ../../README.md#examples → "Private Gateway with Private Link"
+
+gateway_enable_private_access                         = true # private frontend IP only
+gateway_enable_private_link_service                   = true
+gateway_private_link_service_network_policies_enabled = false
+disable_agw                                           = false
+
+gateway_probe_interval  = 10
+gateway_probe_timeout   = 1
+gateway_probe_threshold = 2
+
+# context_path = "/graphdb"
+
+# --- TLS (REQUIRED — pick ONE option) ----------------------------------------
+# See ../../README.md#examples → "Providing a TLS certificate"
+
+# Internal CA cert works here; clients must trust the issuing chain.
+tls_certificate_path = "./certificate.p12"
+# tls_certificate_password = "<PFX_PASSWORD>"
+
+# Or reference an existing Key Vault certificate:
+# tls_certificate_id          = "https://<vault>.vault.azure.net/secrets/<name>/<version>"
+# tls_certificate_identity_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<identity>"
+
+# Purge protection / soft delete: ../../README.md#examples → "Purge Protection"
+key_vault_enable_purge_protection    = true
+key_vault_soft_delete_retention_days = 30
+
+# --- App Configuration -------------------------------------------------------
+
+app_config_enable_purge_protection    = true
+app_config_soft_delete_retention_days = 7
+
+# --- GraphDB cluster ---------------------------------------------------------
+# Resizing later: ../../README.md#scaling-out-a-cluster
+# Single node instead: ../../README.md#single-node-deployment
+
+node_count = 3
+
+graphdb_version      = "11.4.2"
+graphdb_license_path = "./graphdb.license"
+
+graphdb_password      = "<GRAPHDB_ADMIN_PASSWORD>"
+graphdb_cluster_token = "<CLUSTER_SHARED_TOKEN>"
+
+# Extra graphdb.properties appended to the VM defaults.
+# See ../../README.md#examples → "GraphDB Configurations" and
+# "Enabling GraphDB Security via Properties File"
+# graphdb_properties_path = "./graphdb.properties"
+
+# See ../../README.md#examples → "Audit Logging"
+graphdb_audit_log_enabled            = true
+graphdb_audit_log_role               = "REPO_MANAGER"
+graphdb_audit_log_repository         = "WRITE"
+graphdb_audit_log_max_request_length = 1024
+
+# --- VM / VMSS ---------------------------------------------------------------
+
+instance_type = "Standard_E8as_v5"
+ssh_key       = "<SSH_PUBLIC_KEY>"
+
+# TCP idle timeout for outbound connections via the NAT Gateway public IP. 30 minutes is the maximum allowed (default 4).
+nat_gateway_pip_idle_timeout = 30
+
+# --- Managed data disks ------------------------------------------------------
+# Sizing guidance: ../../README.md#examples → "Managed Disks"
+
+disk_size_gb               = 500
+disk_iops_read_write       = 7500
+disk_mbps_read_write       = 250
+disk_storage_account_type  = "PremiumV2_LRS"
+disk_network_access_policy = "DenyAll"
+disk_public_network_access = false
+
+# --- Backups -----------------------------------------------------------------
+
+backup_schedule = "0 2 * * *"
+
+storage_account_tier                           = "Standard"
+storage_account_replication_type               = "ZRS"
+storage_blobs_max_days_since_creation          = 31
+storage_account_retention_hot_to_cool          = 3
+storage_container_soft_delete_retention_policy = 31
+storage_blob_soft_delete_retention_policy      = 31
+# storage_account_admin_principals = ["<AAD_GROUP_OBJECT_ID>"]
+
+# --- Access (no public GraphDB endpoint — use Bastion or Jump VM) ------------
+# See ../../README.md#examples → "Bastion" and "Jump VM"
+
+deploy_bastion = false
+
+deploy_jump_vm = false
+# jump_vm_sku                  = "Standard_B2s"
+# jump_vm_admin_username       = "graphdb"
+# jump_subnet_address_prefixes = ["10.0.4.0/24"]
+
+# --- Monitoring --------------------------------------------------------------
+# See ../../README.md#examples → "Monitoring"
+
+deploy_monitoring                  = true
+monitor_reader_principal_id        = "<USER_OR_GROUP_OBJECT_ID>"
+notification_recipients_email_list = ["<ALERTS_EMAIL>"]
+
+la_workspace_sku               = "PerGB2018"
+la_workspace_retention_in_days = 30
+appi_retention_in_days         = 30
+appi_daily_data_cap_in_gb      = 1
+
+# Availability web tests run from public Azure regions and cannot reach a private endpoint — disable them for private deployments.
+appi_web_test_availability_enabled = false
+web_test_ssl_check_enabled         = false
+
+# --- Private DNS for the private gateway frontend ----------------------------
+# See ../../README.md#next-steps → "Deploying a Domain or Subdomain for GraphDB
+# Application Gateway" (private hosted zone variant).
+# With no explicit record lists, records are created automatically against the Application Gateway.
+
+graphdb_external_address_fqdn = "graphdb.internal.example.com"
+
+deploy_external_dns_records = true
+
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB
+# records in it. A private zone resolves only inside the linked VNets, so any
+# internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
+external_dns_records_zone_name    = "internal.example.com"
+external_dns_records_private_zone = true
+external_dns_record_name          = "graphdb"
+external_dns_record_ttl           = 300
+
+external_dns_private_zone_vnet_links = {
+  primary = {
+    virtual_network_id   = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>"
+    registration_enabled = false
+  }
+  # consumer = {
+  #   virtual_network_id   = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<consumer-vnet>"
+  #   registration_enabled = false
+  # }
+}
+
+# --- Optional: Entra ID / OpenID authentication ------------------------------
+# Setup, client auth types and required properties: ../../README.md#entra-id
+
+# openid_issuer         = "https://login.microsoftonline.com/<TENANT_ID>/v2.0"
+# openid_client_id      = "<APP_CLIENT_ID>"
+# openid_tenant_id      = "<TENANT_ID>"
+# openid_username_claim = "graphdb_username"
+# oauth_roles_claim     = "roles"
+# oauth_roles_prefix    = "GDB_"
+# openid_auth_flow      = "code"
+# openid_token_type     = "id"
+# openid_auth_methods   = "openid,basic"
+# openid_auth_database  = "oidc"
+#
+# m2m_app_registration_client_id     = "<M2M_CLIENT_ID>"
+# m2m_app_registration_client_secret = "<M2M_CLIENT_SECRET>"
+# m2m_scope                          = "api://<APP_CLIENT_ID>/.default"
+
+# --- Optional: encryption at rest -------------------------------------------
+# Key/keystore creation commands: ../../README.md#examples → "Encryption at Rest"
+
+# graphdb_data_encryption_type                = "file"
+# graphdb_data_encryption_master_key_filepath = "./master.txt"
+#
+# graphdb_data_encryption_type              = "pkcs12"
+# graphdb_data_encryption_keystore_filepath = "./keystore.p12"
+# graphdb_data_encryption_keystore_password = "<KEYSTORE_PASSWORD>"
+# graphdb_data_encryption_keystore_alias    = "masterkey"

@@ -1,0 +1,222 @@
+###############################################################################
+# GraphDB Cluster — PUBLIC deployment example
+#
+# 3-node GraphDB cluster behind a PUBLIC Application Gateway (public IP + FQDN), reachable from the internet over HTTPS.
+#
+# Copy to terraform.tfvars, replace every <PLACEHOLDER>, then:
+#   terraform init && terraform plan && terraform apply
+#
+# References:
+#   Full variable reference:      ../../README.md#inputs
+#   Usage walkthrough:            ../../README.md#usage
+#   Worked examples:              ../../README.md#examples
+#   Minimal version of this file: ./terraform.tfvars.minimal.example
+###############################################################################
+
+# --- General -----------------------------------------------------------------
+
+azure_subscription_id = "<SUBSCRIPTION_ID>"
+resource_name_prefix  = "graphdb-prod"
+location              = "East US"
+zones                 = [1, 2, 3]
+
+tags = {
+  Environment = "prod"
+  CostCenter  = "<COST_CENTER>"
+  Owner       = "<TEAM_EMAIL>"
+}
+
+# Resource group delete lock. Disabled here so test deployments can be torn down with `terraform destroy`. Set to true for production.
+lock_resources = false
+
+# --- Networking --------------------------------------------------------------
+
+# Omit resource_group_name / virtual_network_name to let the module create them.
+# See ../../README.md#next-steps → "Deploying in Existing Resource Group and Virtual Network"
+# resource_group_name  = "existing-rg"
+# virtual_network_name = "existing-vnet"
+
+virtual_network_address_space   = ["10.0.0.0/16"]
+gateway_subnet_address_prefixes = ["10.0.1.0/24"]
+graphdb_subnet_address_prefixes = ["10.0.2.0/24"]
+bastion_subnet_address_prefixes = ["10.0.3.0/26"]
+
+# CIDRs allowed to reach Bastion / Key Vault management endpoints.
+# Narrow this to your office/VPN ranges — 0.0.0.0/0 is for testing only.
+management_cidr_blocks = ["<YOUR_OFFICE_CIDR>"]
+
+# Public gateway: open the HTTPS listener to the internet, or restrict it.
+inbound_allowed_address_prefix = "Internet"
+# inbound_allowed_address_prefixes = ["203.0.113.0/24", "198.51.100.10/32"]
+
+outbound_allowed_address_prefix = "Internet"
+
+# --- Application Gateway (public) --------------------------------------------
+# See ../../README.md#examples → "Public Gateway with Private Link"
+
+gateway_enable_private_access       = false # public frontend
+gateway_enable_private_link_service = false # set true to also expose via Private Link
+disable_agw                         = false
+
+gateway_probe_interval  = 10
+gateway_probe_timeout   = 1
+gateway_probe_threshold = 2
+
+# TCP idle timeout for client connections to the AppGW public IP.
+# 30 minutes is the maximum allowed (default 4).
+app_gateway_pip_idle_timeout = 30
+
+# Serve GraphDB under a subpath instead of "/".
+# context_path = "/graphdb"
+
+# --- TLS (REQUIRED — pick ONE option) ----------------------------------------
+# See ../../README.md#examples → "Providing a TLS certificate"
+
+# Option 1: local PFX/P12 file, imported into a module-created Key Vault.
+tls_certificate_path = "./certificate.p12"
+# tls_certificate_password = "<PFX_PASSWORD>"
+
+# Option 2: reference a certificate in an existing Key Vault.
+# tls_certificate_id          = "https://<vault>.vault.azure.net/secrets/<name>/<version>"
+# tls_certificate_identity_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<identity>"
+
+# Purge protection / soft delete: ../../README.md#examples → "Purge Protection"
+key_vault_enable_purge_protection    = true
+key_vault_soft_delete_retention_days = 30
+
+# --- App Configuration -------------------------------------------------------
+
+app_config_enable_purge_protection    = true
+app_config_soft_delete_retention_days = 7
+
+# --- GraphDB cluster ---------------------------------------------------------
+# Resizing later: ../../README.md#scaling-out-a-cluster
+# Single node instead: ../../README.md#single-node-deployment
+
+node_count = 3 # 3 nodes = quorum of 2; use 5 for higher fault tolerance
+
+graphdb_version      = "11.4.2"
+graphdb_license_path = "./graphdb.license"
+
+# Leave unset to have Terraform generate random values.
+graphdb_password      = "<GRAPHDB_ADMIN_PASSWORD>"
+graphdb_cluster_token = "<CLUSTER_SHARED_TOKEN>"
+
+# Extra graphdb.properties appended to the VM defaults.
+# See ../../README.md#examples → "GraphDB Configurations" and
+# "Enabling GraphDB Security via Properties File"
+# graphdb_properties_path = "./graphdb.properties"
+
+# See ../../README.md#examples → "Audit Logging"
+graphdb_audit_log_enabled            = true
+graphdb_audit_log_role               = "REPO_MANAGER"
+graphdb_audit_log_repository         = "WRITE"
+graphdb_audit_log_headers            = "Referer,User-Agent"
+graphdb_audit_log_max_request_length = 1024
+
+# --- VM / VMSS ---------------------------------------------------------------
+
+instance_type = "Standard_E8as_v5"
+ssh_key       = "<SSH_PUBLIC_KEY>"
+
+# Custom VM image: ../../README.md#examples → "Custom GraphDB VM Image"
+# graphdb_image_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.Compute/galleries/<gallery>/images/<image>/versions/<version>"
+
+# TCP idle timeout for outbound connections via the NAT Gateway public IP. 30 minutes is the maximum allowed (default 4).
+nat_gateway_pip_idle_timeout = 30
+
+# --- Managed data disks ------------------------------------------------------
+# Sizing guidance: ../../README.md#examples → "Managed Disks"
+
+disk_size_gb              = 500
+disk_iops_read_write      = 7500
+disk_mbps_read_write      = 250
+disk_storage_account_type = "PremiumV2_LRS"
+
+# --- Backups -----------------------------------------------------------------
+
+backup_schedule = "0 2 * * *" # daily 02:00 UTC
+
+storage_account_tier                           = "Standard"
+storage_account_replication_type               = "ZRS"
+storage_blobs_max_days_since_creation          = 31
+storage_account_retention_hot_to_cool          = 3
+storage_container_soft_delete_retention_policy = 31
+storage_blob_soft_delete_retention_policy      = 31
+# storage_account_admin_principals = ["<AAD_GROUP_OBJECT_ID>"]
+
+# --- Access (Bastion / Jump VM) ---------------------------------------------
+# See ../../README.md#examples → "Bastion" and "Jump VM"
+
+deploy_bastion = false
+
+# Faster SSH alternative to Bastion. Reachable on 22 from management_cidr_blocks.
+deploy_jump_vm = false
+# jump_vm_sku                  = "Standard_B2s"
+# jump_vm_admin_username       = "graphdb"
+# jump_subnet_address_prefixes = ["10.0.4.0/24"]
+
+# --- Monitoring --------------------------------------------------------------
+# See ../../README.md#examples → "Monitoring"
+
+deploy_monitoring                  = true
+monitor_reader_principal_id        = "<USER_OR_GROUP_OBJECT_ID>"
+notification_recipients_email_list = ["<ALERTS_EMAIL>"]
+
+la_workspace_sku                   = "PerGB2018"
+la_workspace_retention_in_days     = 30
+appi_retention_in_days             = 30
+appi_daily_data_cap_in_gb          = 1
+appi_web_test_availability_enabled = true
+web_test_ssl_check_enabled         = true
+web_test_geo_locations             = ["us-va-ash-azr", "us-il-ch1-azr", "emea-nl-ams-azr"]
+
+# --- Public DNS record for the gateway ---------------------------------------
+# See ../../README.md#next-steps → "Deploying a Domain or Subdomain for GraphDB
+# Application Gateway". With the module enabled and no explicit record lists, the records are created automatically against the Application Gateway.
+
+graphdb_external_address_fqdn = "graphdb.example.com"
+
+deploy_external_dns_records = true
+
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB
+# records in it. A private zone resolves only inside the linked VNets, so any
+# internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
+external_dns_records_zone_name    = "example.com"
+external_dns_records_private_zone = false
+external_dns_record_name          = "graphdb"
+external_dns_record_ttl           = 300
+
+# --- Optional: Entra ID / OpenID authentication ------------------------------
+# Setup, client auth types and required properties: ../../README.md#entra-id
+
+# openid_issuer         = "https://login.microsoftonline.com/<TENANT_ID>/v2.0"
+# openid_client_id      = "<APP_CLIENT_ID>"
+# openid_tenant_id      = "<TENANT_ID>"
+# openid_username_claim = "graphdb_username"
+# oauth_roles_claim     = "roles"
+# oauth_roles_prefix    = "GDB_"
+# openid_auth_flow      = "code"
+# openid_token_type     = "id"
+# openid_auth_methods   = "openid,basic"
+# openid_auth_database  = "oidc"
+#
+# # M2M app registration — required for backups when OpenID security is on.
+# m2m_app_registration_client_id     = "<M2M_CLIENT_ID>"
+# m2m_app_registration_client_secret = "<M2M_CLIENT_SECRET>"
+# m2m_scope                          = "api://<APP_CLIENT_ID>/.default"
+
+# --- Optional: encryption at rest -------------------------------------------
+# Key/keystore creation commands: ../../README.md#examples → "Encryption at Rest"
+
+# graphdb_data_encryption_type                = "file"
+# graphdb_data_encryption_master_key_filepath = "./master.txt"
+#
+# graphdb_data_encryption_type              = "pkcs12"
+# graphdb_data_encryption_keystore_filepath = "./keystore.p12"
+# graphdb_data_encryption_keystore_password = "<KEYSTORE_PASSWORD>"
+# graphdb_data_encryption_keystore_alias    = "masterkey"

@@ -1,0 +1,129 @@
+###############################################################################
+# GraphDB Cluster — PRIVATE deployment, MINIMAL set
+#
+# Only required inputs + values that differ from module defaults.
+# Defaults already give you: 3-node cluster, 3 availability zones, monitoring, purge protection, 500 GB PremiumV2 disks with DenyAll network policy,
+# ZRS backup storage, daily backup at 00:00 UTC, GraphDB 11.4.2, private link subnet 10.0.5.0/24.
+#
+# Prerequisite (see ../../README.md#prerequisites):
+# register the Private Link feature once per subscription:
+#   az feature register --name AllowApplicationGatewayPrivateLink --namespace Microsoft.Network
+#
+# Copy to terraform.tfvars, replace every <PLACEHOLDER>, then:
+#   terraform init && terraform plan && terraform apply
+#
+# References:
+#   Feature registration etc.: ../../README.md#prerequisites
+#   Full variable reference:   ../../README.md#inputs
+#   Private Link setup:        ../../README.md#examples → "Private Gateway with Private Link"
+#   Annotated version of this file, with every tunable set explicitly:
+#     ./terraform.tfvars.example
+###############################################################################
+
+# --- Required ----------------------------------------------------------------
+
+azure_subscription_id = "<SUBSCRIPTION_ID>"
+resource_name_prefix  = "graphdb-priv"
+location              = "East US"
+instance_type         = "Standard_E8as_v5"
+graphdb_license_path  = "./graphdb.license"
+
+management_cidr_blocks = ["<YOUR_OFFICE_OR_VPN_CIDR>"]
+
+# TLS is required — see ../../README.md#examples → "Providing a TLS certificate".
+# Internal CA cert is fine; clients must trust the chain.
+tls_certificate_path = "./certificate.p12"
+# tls_certificate_password = "<PFX_PASSWORD>"
+
+# ...or an existing Key Vault certificate instead of tls_certificate_path:
+# tls_certificate_id          = "https://<vault>.vault.azure.net/secrets/<name>/<version>"
+# tls_certificate_identity_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<identity>"
+
+# --- What makes this deployment private --------------------------------------
+# See ../../README.md#examples → "Private Gateway with Private Link"
+
+# Private frontend IP only, no public ingress to the Application Gateway.
+gateway_enable_private_access = true
+
+# Expose the gateway to consumer VNets/subscriptions via Private Link.
+gateway_enable_private_link_service = true
+
+# Default is "Internet" — restrict to internal ranges.
+inbound_allowed_address_prefixes = ["10.0.0.0/8", "<PEERED_VNET_CIDR>"]
+
+# Availability web tests run from public Azure regions and cannot reach a private frontend. Default is true.
+appi_web_test_availability_enabled = false
+
+# No public endpoint, so you need an in-VNet access path. Both default false.
+# See ../../README.md#examples → "Bastion" and "Jump VM"
+deploy_bastion = false
+# deploy_jump_vm = false
+# --- Resource locks ----------------------------------------------------------
+
+# Resource group delete lock (module default: true). Disabled here so test
+# deployments can be torn down with `terraform destroy`.
+# Set to true for production. See ../../README.md#examples → "Purge Protection"
+lock_resources = false
+
+# --- TCP idle timeouts (maximum allowed, default 4 minutes) ------------------
+
+# Outbound connections leave via the NAT Gateway public IP.
+nat_gateway_pip_idle_timeout = 30
+
+# app_gateway_pip_idle_timeout has no effect here: Azure still forces a public IP
+# on the gateway, but no listeners are attached to it in private mode.
+
+# --- Strongly recommended ----------------------------------------------------
+
+ssh_key = "<SSH_PUBLIC_KEY>"
+
+# Monitoring is deployed by default; without these, alerts go nowhere.
+# See ../../README.md#examples → "Monitoring"
+monitor_reader_principal_id        = "<USER_OR_GROUP_OBJECT_ID>"
+notification_recipients_email_list = ["<ALERTS_EMAIL>"]
+
+tags = {
+  Environment = "prod"
+  CostCenter  = "<COST_CENTER>"
+}
+
+# --- Common optional overrides (all defaulted — uncomment as needed) ---------
+# Each of these has a worked example in ../../README.md#examples.
+# Entra ID / OpenID authentication: ../../README.md#entra-id
+
+# Deploy into an existing hub/spoke network instead of creating one.
+# See ../../README.md#next-steps → "Deploying in Existing Resource Group and Virtual Network"
+# resource_group_name  = "existing-rg"
+# virtual_network_name = "existing-vnet"
+
+# Private DNS name for the gateway. Without this, clients use the private IP
+# (auto-detected for graphdb_external_address_fqdn).
+# See ../../README.md#next-steps → "Deploying a Domain or Subdomain for GraphDB
+# Application Gateway" (private hosted zone variant).
+#
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB
+# records in it. A private zone resolves only inside the linked VNets, so any
+# internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
+# graphdb_external_address_fqdn        = "graphdb.internal.example.com"
+# deploy_external_dns_records          = true
+# external_dns_records_zone_name       = "internal.example.com"
+# external_dns_records_private_zone    = true
+# external_dns_record_name             = "graphdb"
+# external_dns_private_zone_vnet_links = {
+#   primary = {
+#     virtual_network_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>"
+#   }
+# }
+
+# On-prem / hub DNS forwarders for the VMSS.
+# vmss_dns_servers = ["10.0.0.10", "10.0.0.11"]
+
+# node_count = 5                        # default 3
+# graphdb_password = "<ADMIN_PASSWORD>" # default: randomly generated
+# disk_size_gb = 1250                   # default 500
+# backup_schedule = "0 2 * * *"         # default "0 0 * * *"
+# outbound_allowed_address_prefixes = ["<FIREWALL_CIDR>"] # default: Internet
