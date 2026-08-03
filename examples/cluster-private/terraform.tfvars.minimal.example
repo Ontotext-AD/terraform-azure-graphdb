@@ -100,6 +100,14 @@ tags = {
 # (auto-detected for graphdb_external_address_fqdn).
 # See ../../README.md#next-steps → "Deploying a Domain or Subdomain for GraphDB
 # Application Gateway" (private hosted zone variant).
+#
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB
+# records in it. A private zone resolves only inside the linked VNets, so any
+# internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
 # graphdb_external_address_fqdn        = "graphdb.internal.example.com"
 # deploy_external_dns_records          = true
 # external_dns_records_zone_name       = "internal.example.com"

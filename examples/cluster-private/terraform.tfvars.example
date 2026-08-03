@@ -103,7 +103,6 @@ graphdb_cluster_token = "<CLUSTER_SHARED_TOKEN>"
 # See ../../README.md#examples → "GraphDB Configurations" and
 # "Enabling GraphDB Security via Properties File"
 # graphdb_properties_path = "./graphdb.properties"
-# graphdb_java_options = "-Xmx6g"
 
 # See ../../README.md#examples → "Audit Logging"
 graphdb_audit_log_enabled            = true
@@ -174,7 +173,15 @@ web_test_ssl_check_enabled         = false
 
 graphdb_external_address_fqdn = "graphdb.internal.example.com"
 
-deploy_external_dns_records       = true
+deploy_external_dns_records = true
+
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB
+# records in it. A private zone resolves only inside the linked VNets, so any
+# internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
 external_dns_records_zone_name    = "internal.example.com"
 external_dns_records_private_zone = true
 external_dns_record_name          = "graphdb"

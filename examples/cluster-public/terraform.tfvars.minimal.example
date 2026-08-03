@@ -73,7 +73,18 @@ tags = {
 # node_count = 5                        # default 3; see README#scaling-out-a-cluster
 # graphdb_password = "<ADMIN_PASSWORD>" # default: randomly generated
 # deploy_bastion = false                # default false
-# graphdb_external_address_fqdn = "graphdb.example.com" # default: AppGW public FQDN
+# Custom domain. Without one, GraphDB is reached at the gateway's own name, <resource_name_prefix>-<random>.<region>.cloudapp.azure.com.
+#
+# external_dns_records_zone_name: the module creates this zone and puts the GraphDB records in it.
+# A private zone resolves only inside the linked VNets, so any internal name works here; a public zone must be a domain you own.
+#
+# external_dns_record_name: subdomain in front of the zone name ("@" = zone root),
+# so "graphdb" + "example.com" => graphdb.example.com, plus a "www.graphdb" CNAME.
+# graphdb_external_address_fqdn is NOT derived from it — keep the two in sync.
+# graphdb_external_address_fqdn = "graphdb.example.com"
+# deploy_external_dns_records    = true
+# external_dns_records_zone_name = "example.com"
+# external_dns_record_name       = "graphdb"
 # disk_size_gb = 1250                   # default 500
 # backup_schedule = "0 2 * * *"         # default "0 0 * * *"
 # inbound_allowed_address_prefixes = ["203.0.113.0/24"] # default: Internet
