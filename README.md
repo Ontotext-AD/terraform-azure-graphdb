@@ -183,6 +183,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | node\_count | Number of GraphDB nodes to deploy in ASG | `number` | `3` | no |
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
+| vmss\_termination\_timeout | Length of time (in minutes, between 5 and 15) a notification is sent to the VM on the instance metadata server before the VM gets deleted. | `string` | `"PT5M"` | no |
 | user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]` | no |
 | user\_supplied\_rendered\_templates | Array of additional rendered templates to execute sequentially after the templated user data shell scripts | `list(string)` | `[]` | no |
 | user\_supplied\_templates | Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts. Accepts template and variables as part of the templatefile Function | `list(string)` | `[]` | no |
