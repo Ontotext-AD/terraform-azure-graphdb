@@ -32,7 +32,7 @@ resource "azurerm_network_security_group" "graphdb_gateway" {
   }
 
   dynamic "security_rule" {
-    for_each = var.gateway_allowed_address_prefix != null && length(var.gateway_allowed_address_prefix) > 0 ? [1] : []
+    for_each = length(var.gateway_allowed_address_prefixes) == 0 && var.gateway_allowed_address_prefix != null && length(var.gateway_allowed_address_prefix) > 0 ? [1] : []
     content {
       name                         = "AllowInBoundAddress"
       priority                     = 200

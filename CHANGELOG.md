@@ -1,5 +1,10 @@
 # GraphDB Azure Terraform Module Changelog
 
+# 3.4.0
+
+* Added termination_notification for the VMSS – defaults to 5 minutes.
+* Fixed an issue with the public AppGW NSG when gateway_allowed_address_prefixes were set, but the public access was still enabled.
+
 ## 3.3.0
 
 * Updated GraphDB default version to [11.5.0](https://graphdb.ontotext.com/documentation/11.5/release-notes.html#graphdb-11-5-0)
