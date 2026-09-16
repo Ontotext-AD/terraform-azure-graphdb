@@ -193,6 +193,11 @@ variable "graphdb_image_id" {
   default     = null
 }
 
+variable "termination_timeout" {
+  description = "Length of time (in minutes, between 5 and 15) a notification is sent to the VM on the instance metadata server before the VM gets deleted."
+  type        = string
+}
+
 # GraphDB VM
 
 variable "node_count_name" {

@@ -54,6 +54,11 @@ resource "azurerm_linux_virtual_machine_scale_set" "graphdb" {
   disable_password_authentication = true
   encryption_at_host_enabled      = var.encryption_at_host
 
+  termination_notification {
+    enabled = true
+    timeout = var.termination_timeout
+  }
+
   extension {
     name                       = "ConsulHealthExtension"
     publisher                  = "Microsoft.ManagedServices"

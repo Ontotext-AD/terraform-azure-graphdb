@@ -396,6 +396,18 @@ variable "ssh_key" {
   default     = null
 }
 
+# See https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-terminate-notification
+variable "vmss_termination_timeout" {
+  description = "Length of time (in minutes, between 5 and 15) a notification is sent to the VM on the instance metadata server before the VM gets deleted."
+  type        = string
+  default     = "PT5M"
+
+  validation {
+    condition     = can(regex("^PT(5|6|7|8|9|10|11|12|13|14|15)M$", var.vmss_termination_timeout))
+    error_message = "The termination_timeout must be an ISO 8601 duration between PT5M and PT15M, e.g. PT5M."
+  }
+}
+
 # Customer provided user data scripts
 variable "user_supplied_scripts" {
   description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."
