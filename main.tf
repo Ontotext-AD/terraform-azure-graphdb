@@ -345,6 +345,7 @@ module "graphdb" {
   user_supplied_rendered_templates = var.user_supplied_rendered_templates
   vmss_dns_servers                 = var.vmss_dns_servers
   termination_timeout              = var.vmss_termination_timeout
+  disable_automatic_os_updates     = var.vmss_disable_automatic_os_updates
 
   # Managed Disks
   disk_iops_read_write       = var.disk_iops_read_write

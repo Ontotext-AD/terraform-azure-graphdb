@@ -408,6 +408,12 @@ variable "vmss_termination_timeout" {
   }
 }
 
+variable "vmss_disable_automatic_os_updates" {
+  description = "Disables Ubuntu unattended-upgrades and prevents needrestart from restarting GraphDB services. OS patching must then be done manually, one node at a time."
+  type        = bool
+  default     = true
+}
+
 # Customer provided user data scripts
 variable "user_supplied_scripts" {
   description = "Array of additional shell scripts to execute sequentially after the templated user data shell scripts."

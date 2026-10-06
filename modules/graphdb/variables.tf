@@ -198,6 +198,12 @@ variable "termination_timeout" {
   type        = string
 }
 
+variable "disable_automatic_os_updates" {
+  description = "Disables Ubuntu unattended-upgrades and prevents needrestart from restarting GraphDB services. OS patching must then be done manually, one node at a time."
+  type        = bool
+  default     = true
+}
+
 # GraphDB VM
 
 variable "node_count_name" {
