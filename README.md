@@ -184,6 +184,7 @@ az vm image terms accept --offer graphdb-ee --plan graphdb-byol --publisher onto
 | instance\_type | Azure instance type | `string` | n/a | yes |
 | ssh\_key | Public key for accessing the GraphDB instances | `string` | `null` | no |
 | vmss\_termination\_timeout | Length of time (in minutes, between 5 and 15) a notification is sent to the VM on the instance metadata server before the VM gets deleted. | `string` | `"PT5M"` | no |
+| vmss\_disable\_automatic\_os\_updates | Disables Ubuntu unattended-upgrades and prevents needrestart from restarting GraphDB services. OS patching must then be done manually, one node at a time. | `bool` | `true` | no |
 | user\_supplied\_scripts | Array of additional shell scripts to execute sequentially after the templated user data shell scripts. | `list(string)` | `[]` | no |
 | user\_supplied\_rendered\_templates | Array of additional rendered templates to execute sequentially after the templated user data shell scripts | `list(string)` | `[]` | no |
 | user\_supplied\_templates | Array of additional sh.tpl files to execute sequentially after the templated user data shell scripts. Accepts template and variables as part of the templatefile Function | `list(string)` | `[]` | no |
