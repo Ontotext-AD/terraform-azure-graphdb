@@ -5,6 +5,8 @@
 * Added `vmss_disable_automatic_os_updates` (defaults to `true`), which disables Ubuntu unattended-upgrades and prevents needrestart from restarting GraphDB services, so OS updates no longer restart cluster nodes at random times.
   * **Behaviour change:** automatic OS security patching is now disabled by default. Patch nodes manually, one at a time, and wait for the cluster to be healthy before moving to the next node. Set the variable to `false` to keep the previous behaviour.
   * The VMSS uses the `Manual` upgrade mode, so the change applies only to new or reimaged instances. Existing nodes keep their current settings until they are reimaged.
+* Updated GraphDB default version to [11.5.2](https://graphdb.ontotext.com/documentation/11.5/release-notes.html#graphdb-11-5-2)
+
 
 # 3.4.0
 

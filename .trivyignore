@@ -8,3 +8,11 @@ AVD-AZU-0057
 # Storage account with blob containers should use customer-managed keys for encryption.
 # Reason: Disabled until implemented
 AZU-0060
+
+# Rule: Security group rule allows unrestricted ingress from any IP address.
+# Reason: Public Application Gateway by design; restrict via inbound_allowed_address_prefix(es)
+AZU-0047
+
+# Rule: Security group rule allows unrestricted egress to any IP address.
+# Reason: GraphDB VMs need outbound access to Azure services and package repositories; restrict via outbound_allowed_address_prefix(es)
+AZU-0051
