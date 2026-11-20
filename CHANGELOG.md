@@ -1,6 +1,10 @@
 # GraphDB Azure Terraform Module Changelog
 
-# 3.5.0
+## 3.5.1
+
+* Updated GraphDB default version to [11.5.3](https://graphdb.ontotext.com/documentation/11.5/release-notes.html#graphdb-11-5-3)
+
+## 3.5.0
 
 * Added `vmss_disable_automatic_os_updates` (defaults to `true`), which disables Ubuntu unattended-upgrades and prevents needrestart from restarting GraphDB services, so OS updates no longer restart cluster nodes at random times.
   * **Behaviour change:** automatic OS security patching is now disabled by default. Patch nodes manually, one at a time, and wait for the cluster to be healthy before moving to the next node. Set the variable to `false` to keep the previous behaviour.
@@ -8,7 +12,7 @@
 * Updated GraphDB default version to [11.5.2](https://graphdb.ontotext.com/documentation/11.5/release-notes.html#graphdb-11-5-2)
 
 
-# 3.4.0
+## 3.4.0
 
 * Added termination_notification for the VMSS – defaults to 5 minutes.
 * Fixed an issue with the public AppGW NSG when gateway_allowed_address_prefixes were set, but the public access was still enabled.
